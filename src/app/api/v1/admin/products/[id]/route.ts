@@ -11,7 +11,6 @@ const patchSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   pricePaise: z.number().int().positive().optional(),
-  sku: z.string().min(1).optional(),
   stock: z.number().int().min(0).optional(),
   images: zImageRefArray().optional(),
   tags: z.array(z.string()).optional(),

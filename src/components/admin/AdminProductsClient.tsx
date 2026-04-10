@@ -29,7 +29,6 @@ type EditForm = {
   name: string;
   description: string;
   priceRupees: string;
-  sku: string;
   stock: string;
   images: string;
   tags: string;
@@ -41,7 +40,6 @@ const emptyEdit: EditForm = {
   name: "",
   description: "",
   priceRupees: "",
-  sku: "",
   stock: "0",
   images: "",
   tags: "",
@@ -56,7 +54,6 @@ export function AdminProductsClient() {
     name: "",
     description: "",
     priceRupees: "",
-    sku: "",
     stock: "50",
     images: "",
     tags: "",
@@ -99,7 +96,6 @@ export function AdminProductsClient() {
       name: p.name,
       description: p.description ?? "",
       priceRupees: (p.pricePaise / 100).toFixed(2),
-      sku: p.sku,
       stock: String(p.stock),
       images: p.images.join(", "),
       tags: (p.tags ?? []).join(", "),
@@ -134,7 +130,6 @@ export function AdminProductsClient() {
           name: editForm.name,
           description: editForm.description,
           pricePaise,
-          sku: editForm.sku,
           stock: Number(editForm.stock) || 0,
           images,
           tags: editForm.tags
@@ -167,7 +162,6 @@ export function AdminProductsClient() {
           name: form.name,
           description: form.description,
           pricePaise,
-          sku: form.sku,
           stock: Number(form.stock) || 0,
           images: form.images
             .split(",")
@@ -185,7 +179,6 @@ export function AdminProductsClient() {
         name: "",
         description: "",
         priceRupees: "",
-        sku: "",
         stock: "50",
         images: "",
         tags: "",
@@ -241,9 +234,11 @@ export function AdminProductsClient() {
           URL slug (auto):{" "}
           <span className="font-mono text-ink">/product/{slugify(form.name)}</span>
         </p>
+        <p className="text-xs text-ink-muted">
+          SKU is generated when you create the product (e.g. <span className="font-mono">PRB-…</span>).
+        </p>
         {(
           [
-            ["sku", "SKU"],
             ["priceRupees", "Price (INR)"],
             ["stock", "Stock"],
           ] as const
@@ -376,9 +371,12 @@ export function AdminProductsClient() {
                         URL slug (auto):{" "}
                         <span className="font-mono text-ink">/product/{slugify(editForm.name)}</span>
                       </p>
+                      <p className="text-xs text-ink-muted">
+                        SKU (does not change):{" "}
+                        <span className="font-mono text-ink">{p.sku}</span>
+                      </p>
                       {(
                         [
-                          ["sku", "SKU"],
                           ["priceRupees", "Price (INR)"],
                           ["stock", "Stock"],
                         ] as const
