@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AdminMultiImageField } from "@/components/admin/AdminMultiImageField";
+import { slugify } from "@/lib/slugify";
 
 type CategoryRow = {
   _id: string;
@@ -23,7 +24,6 @@ function parseImageUrls(raw: string): string[] {
 
 type EditForm = {
   name: string;
-  slug: string;
   description: string;
   sortOrder: string;
   imagesCsv: string;
@@ -31,7 +31,6 @@ type EditForm = {
 
 const emptyEdit: EditForm = {
   name: "",
-  slug: "",
   description: "",
   sortOrder: "0",
   imagesCsv: "",
@@ -42,7 +41,6 @@ export function AdminCategoriesClient() {
   const [msg, setMsg] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
-    slug: "",
     description: "",
     sortOrder: "0",
     imagesCsv: "",
@@ -61,7 +59,6 @@ export function AdminCategoriesClient() {
     setEditMsg(null);
     setEditForm({
       name: c.name,
-      slug: c.slug,
       description: c.description ?? "",
       sortOrder: String(c.sortOrder ?? 0),
       imagesCsv: c.images.join(", "),
@@ -88,7 +85,6 @@ export function AdminCategoriesClient() {
         method: "PATCH",
         body: JSON.stringify({
           name: editForm.name,
-          slug: editForm.slug,
           description: editForm.description,
           sortOrder: Number(editForm.sortOrder) || 0,
           images,
@@ -115,13 +111,12 @@ export function AdminCategoriesClient() {
         method: "POST",
         body: JSON.stringify({
           name: form.name,
-          slug: form.slug,
           description: form.description,
           sortOrder: Number(form.sortOrder) || 0,
           images,
         }),
       });
-      setForm({ name: "", slug: "", description: "", sortOrder: "0", imagesCsv: "" });
+      setForm({ name: "", description: "", sortOrder: "0", imagesCsv: "" });
       await qc.invalidateQueries({ queryKey: ["admin-categories"] });
       await qc.invalidateQueries({ queryKey: ["categories"] });
       setMsg("Category created");
@@ -146,23 +141,26 @@ export function AdminCategoriesClient() {
       >
         <h3 className="font-display text-lg text-ink">New category</h3>
         {msg ? <p className="text-sm text-accent">{msg}</p> : null}
-        {(
-          [
-            ["name", "Name"],
-            ["slug", "Slug"],
-            ["sortOrder", "Sort order"],
-          ] as const
-        ).map(([k, label]) => (
-          <label key={k} className="block text-xs text-ink-muted">
-            {label}
-            <input
-              required={k !== "sortOrder"}
-              className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-              value={form[k]}
-              onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
-            />
-          </label>
-        ))}
+        <label className="block text-xs text-ink-muted">
+          Name
+          <input
+            required
+            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+        </label>
+        <p className="text-xs text-ink-muted">
+          URL slug (auto): <span className="font-mono text-ink">/category/{slugify(form.name)}</span>
+        </p>
+        <label className="block text-xs text-ink-muted">
+          Sort order
+          <input
+            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+            value={form.sortOrder}
+            onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
+          />
+        </label>
         <AdminMultiImageField
           label="Images (at least one required)"
           imagesOnly
@@ -219,25 +217,29 @@ export function AdminCategoriesClient() {
               <form onSubmit={saveEdit} className="mt-4 space-y-3 border-t border-sand-deep pt-4">
                 <p className="text-xs font-medium text-ink">Edit category</p>
                 {editMsg ? <p className="text-sm text-rose">{editMsg}</p> : null}
-                {(
-                  [
-                    ["name", "Name"],
-                    ["slug", "Slug"],
-                    ["sortOrder", "Sort order"],
-                  ] as const
-                ).map(([k, label]) => (
-                  <label key={k} className="block text-xs text-ink-muted">
-                    {label}
-                    <input
-                      required={k !== "sortOrder"}
-                      className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-                      value={editForm[k]}
-                      onChange={(e) =>
-                        setEditForm((f) => ({ ...f, [k]: e.target.value }))
-                      }
-                    />
-                  </label>
-                ))}
+                <label className="block text-xs text-ink-muted">
+                  Name
+                  <input
+                    required
+                    className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </label>
+                <p className="text-xs text-ink-muted">
+                  URL slug (auto):{" "}
+                  <span className="font-mono text-ink">/category/{slugify(editForm.name)}</span>
+                </p>
+                <label className="block text-xs text-ink-muted">
+                  Sort order
+                  <input
+                    className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                    value={editForm.sortOrder}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, sortOrder: e.target.value }))
+                    }
+                  />
+                </label>
                 <AdminMultiImageField
                   label="Images (at least one required)"
                   imagesOnly

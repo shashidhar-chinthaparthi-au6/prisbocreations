@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AdminMultiImageField } from "@/components/admin/AdminMultiImageField";
+import { slugify } from "@/lib/slugify";
 
 type SubRow = {
   _id: string;
@@ -27,7 +28,6 @@ function parseImageUrls(raw: string): string[] {
 type EditForm = {
   categoryId: string;
   name: string;
-  slug: string;
   description: string;
   sortOrder: string;
   imagesCsv: string;
@@ -36,7 +36,6 @@ type EditForm = {
 const emptyEdit: EditForm = {
   categoryId: "",
   name: "",
-  slug: "",
   description: "",
   sortOrder: "0",
   imagesCsv: "",
@@ -48,7 +47,6 @@ export function AdminSubcategoriesClient() {
   const [form, setForm] = useState({
     categoryId: "",
     name: "",
-    slug: "",
     description: "",
     sortOrder: "0",
     imagesCsv: "",
@@ -73,13 +71,18 @@ export function AdminSubcategoriesClient() {
     return m;
   }, [categories]);
 
+  const categorySlugById = useMemo(() => {
+    const m = new Map<string, string>();
+    categories?.forEach((c) => m.set(c._id, c.slug));
+    return m;
+  }, [categories]);
+
   function startEdit(s: SubRow) {
     setEditingId(s._id);
     setEditMsg(null);
     setEditForm({
       categoryId: s.categoryId,
       name: s.name,
-      slug: s.slug,
       description: s.description ?? "",
       sortOrder: String(s.sortOrder ?? 0),
       imagesCsv: s.images.join(", "),
@@ -103,7 +106,6 @@ export function AdminSubcategoriesClient() {
         body: JSON.stringify({
           categoryId: editForm.categoryId,
           name: editForm.name,
-          slug: editForm.slug,
           description: editForm.description || undefined,
           sortOrder: Number(editForm.sortOrder) || 0,
           images,
@@ -127,7 +129,6 @@ export function AdminSubcategoriesClient() {
         body: JSON.stringify({
           categoryId: form.categoryId,
           name: form.name,
-          slug: form.slug,
           description: form.description || undefined,
           sortOrder: Number(form.sortOrder) || 0,
           ...(images.length ? { images } : {}),
@@ -136,7 +137,6 @@ export function AdminSubcategoriesClient() {
       setForm({
         categoryId: form.categoryId,
         name: "",
-        slug: "",
         description: "",
         sortOrder: "0",
         imagesCsv: "",
@@ -155,6 +155,9 @@ export function AdminSubcategoriesClient() {
     await qc.invalidateQueries({ queryKey: ["admin-subcategories"] });
     await qc.invalidateQueries({ queryKey: ["admin-products"] });
   }
+
+  const createParentSlug = categorySlugById.get(form.categoryId) ?? "category";
+  const editParentSlug = categorySlugById.get(editForm.categoryId) ?? "category";
 
   return (
     <div className="grid gap-10 lg:grid-cols-2">
@@ -183,23 +186,29 @@ export function AdminSubcategoriesClient() {
             ))}
           </select>
         </label>
-        {(
-          [
-            ["name", "Name"],
-            ["slug", "URL slug"],
-            ["sortOrder", "Sort order"],
-          ] as const
-        ).map(([k, label]) => (
-          <label key={k} className="block text-xs text-ink-muted">
-            {label}
-            <input
-              required={k !== "sortOrder"}
-              className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-              value={form[k]}
-              onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
-            />
-          </label>
-        ))}
+        <label className="block text-xs text-ink-muted">
+          Name
+          <input
+            required
+            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+        </label>
+        <p className="text-xs text-ink-muted">
+          URL slug (auto):{" "}
+          <span className="font-mono text-ink">
+            /category/{createParentSlug}/{slugify(form.name)}
+          </span>
+        </p>
+        <label className="block text-xs text-ink-muted">
+          Sort order
+          <input
+            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+            value={form.sortOrder}
+            onChange={(e) => setForm((f) => ({ ...f, sortOrder: e.target.value }))}
+          />
+        </label>
         <label className="block text-xs text-ink-muted">
           Description
           <textarea
@@ -275,25 +284,31 @@ export function AdminSubcategoriesClient() {
                     ))}
                   </select>
                 </label>
-                {(
-                  [
-                    ["name", "Name"],
-                    ["slug", "URL slug"],
-                    ["sortOrder", "Sort order"],
-                  ] as const
-                ).map(([k, label]) => (
-                  <label key={k} className="block text-xs text-ink-muted">
-                    {label}
-                    <input
-                      required={k !== "sortOrder"}
-                      className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-                      value={editForm[k]}
-                      onChange={(e) =>
-                        setEditForm((f) => ({ ...f, [k]: e.target.value }))
-                      }
-                    />
-                  </label>
-                ))}
+                <label className="block text-xs text-ink-muted">
+                  Name
+                  <input
+                    required
+                    className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </label>
+                <p className="text-xs text-ink-muted">
+                  URL slug (auto):{" "}
+                  <span className="font-mono text-ink">
+                    /category/{editParentSlug}/{slugify(editForm.name)}
+                  </span>
+                </p>
+                <label className="block text-xs text-ink-muted">
+                  Sort order
+                  <input
+                    className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                    value={editForm.sortOrder}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, sortOrder: e.target.value }))
+                    }
+                  />
+                </label>
                 <label className="block text-xs text-ink-muted">
                   Description
                   <textarea

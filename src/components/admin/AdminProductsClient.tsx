@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AdminMultiImageField } from "@/components/admin/AdminMultiImageField";
 import { formatInrFromPaise } from "@/lib/format";
+import { slugify } from "@/lib/slugify";
 
 type ProductRow = {
   _id: string;
@@ -26,7 +27,6 @@ type SubRow = { _id: string; categoryId: string; name: string; slug: string };
 type EditForm = {
   subcategoryId: string;
   name: string;
-  slug: string;
   description: string;
   priceRupees: string;
   sku: string;
@@ -39,7 +39,6 @@ type EditForm = {
 const emptyEdit: EditForm = {
   subcategoryId: "",
   name: "",
-  slug: "",
   description: "",
   priceRupees: "",
   sku: "",
@@ -55,7 +54,6 @@ export function AdminProductsClient() {
   const [form, setForm] = useState({
     subcategoryId: "",
     name: "",
-    slug: "",
     description: "",
     priceRupees: "",
     sku: "",
@@ -99,7 +97,6 @@ export function AdminProductsClient() {
     setEditForm({
       subcategoryId: p.subcategoryId,
       name: p.name,
-      slug: p.slug,
       description: p.description ?? "",
       priceRupees: (p.pricePaise / 100).toFixed(2),
       sku: p.sku,
@@ -135,7 +132,6 @@ export function AdminProductsClient() {
         body: JSON.stringify({
           subcategoryId: editForm.subcategoryId,
           name: editForm.name,
-          slug: editForm.slug,
           description: editForm.description,
           pricePaise,
           sku: editForm.sku,
@@ -169,7 +165,6 @@ export function AdminProductsClient() {
         body: JSON.stringify({
           subcategoryId: form.subcategoryId,
           name: form.name,
-          slug: form.slug,
           description: form.description,
           pricePaise,
           sku: form.sku,
@@ -188,7 +183,6 @@ export function AdminProductsClient() {
       setForm({
         subcategoryId: form.subcategoryId,
         name: "",
-        slug: "",
         description: "",
         priceRupees: "",
         sku: "",
@@ -234,10 +228,21 @@ export function AdminProductsClient() {
             ))}
           </select>
         </label>
+        <label className="block text-xs text-ink-muted">
+          Name
+          <input
+            required
+            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+        </label>
+        <p className="text-xs text-ink-muted">
+          URL slug (auto):{" "}
+          <span className="font-mono text-ink">/product/{slugify(form.name)}</span>
+        </p>
         {(
           [
-            ["name", "Name"],
-            ["slug", "Slug"],
             ["sku", "SKU"],
             ["priceRupees", "Price (INR)"],
             ["stock", "Stock"],
@@ -358,10 +363,21 @@ export function AdminProductsClient() {
                           ))}
                         </select>
                       </label>
+                      <label className="block text-xs text-ink-muted">
+                        Name
+                        <input
+                          required
+                          className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                          value={editForm.name}
+                          onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                        />
+                      </label>
+                      <p className="text-xs text-ink-muted">
+                        URL slug (auto):{" "}
+                        <span className="font-mono text-ink">/product/{slugify(editForm.name)}</span>
+                      </p>
                       {(
                         [
-                          ["name", "Name"],
-                          ["slug", "Slug"],
                           ["sku", "SKU"],
                           ["priceRupees", "Price (INR)"],
                           ["stock", "Stock"],

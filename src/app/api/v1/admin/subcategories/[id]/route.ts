@@ -3,12 +3,12 @@ import { connectDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { zImageRef, zImageRefArray } from "@/lib/api/imageRef";
+import { slugify } from "@/lib/slugify";
 import { adminUpdateSubcategory, adminDeleteSubcategory } from "@/lib/services/catalogService";
 
 const patchSchema = z.object({
   categoryId: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
-  slug: z.string().min(1).optional(),
   description: z.string().optional(),
   sortOrder: z.number().optional(),
   images: zImageRefArray().optional(),
@@ -27,8 +27,10 @@ export async function PATCH(
   try {
     await connectDb();
     const { id } = await ctx.params;
-    const body = patchSchema.parse(await req.json());
-    const doc = await adminUpdateSubcategory(id, body);
+    const patch = patchSchema.parse(await req.json());
+    const next =
+      patch.name !== undefined ? { ...patch, slug: slugify(patch.name) } : patch;
+    const doc = await adminUpdateSubcategory(id, next);
     if (!doc) return jsonError("Not found", 404);
     return jsonOk(doc);
   } catch (e) {
