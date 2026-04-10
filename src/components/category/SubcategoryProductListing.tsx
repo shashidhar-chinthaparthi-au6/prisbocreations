@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatInrFromPaise } from "@/lib/format";
+import { ProductGridCarousel } from "@/components/category/ProductGridCarousel";
 import { QuickAddToCart } from "@/components/category/QuickAddToCart";
 import { StoreMedia } from "@/components/store/StoreMedia";
 
@@ -163,17 +164,12 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
               className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white shadow-sm"
             >
               <Link href={`/product/${p.slug}`} className="block">
-                <div className="relative aspect-[4/3] w-full bg-sand-deep">
-                  {p.images[0] ? (
-                    <StoreMedia
-                      src={p.images[0]}
-                      alt=""
-                      fill
-                      className="object-cover transition hover:opacity-95"
-                      sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
-                      videoControls={false}
-                    />
-                  ) : null}
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-sand-deep">
+                  <ProductGridCarousel
+                    images={p.images}
+                    productName={p.name}
+                    sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
+                  />
                 </div>
               </Link>
               <div className="flex flex-1 flex-col p-4">

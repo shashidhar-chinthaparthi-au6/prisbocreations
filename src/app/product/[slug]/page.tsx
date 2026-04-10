@@ -4,7 +4,7 @@ import { connectDb } from "@/lib/db";
 import { getProductBreadcrumb } from "@/lib/services/catalogService";
 import { formatInrFromPaise } from "@/lib/format";
 import { AddToCart } from "@/components/product/AddToCart";
-import { StoreMedia } from "@/components/store/StoreMedia";
+import { ProductGallery } from "@/components/product/ProductGallery";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -23,29 +23,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="grid gap-10 lg:grid-cols-2">
-      <div className="space-y-3">
-        <div className="relative aspect-square overflow-hidden rounded-2xl border border-sand-deep bg-sand-deep">
-          {p.images[0] ? (
-            <StoreMedia src={p.images[0]} alt={p.name} fill className="object-cover" priority />
-          ) : null}
-        </div>
-        {p.images.length > 1 ? (
-          <div className="grid grid-cols-4 gap-2">
-            {p.images.slice(1, 5).map((src) => (
-              <div key={src} className="relative aspect-square overflow-hidden rounded-lg bg-sand-deep">
-                <StoreMedia
-                  src={src}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="120px"
-                  videoControls={false}
-                />
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
+      <ProductGallery images={p.images} productName={p.name} />
       <div className="space-y-6">
         {cat && sub ? (
           <p className="text-sm text-ink-muted">
