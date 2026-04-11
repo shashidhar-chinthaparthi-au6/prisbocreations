@@ -27,7 +27,7 @@ const VIEW_KEY = "prisbo_subcategory_view";
 type ViewMode = "list" | "grid";
 
 export function SubcategoryProductListing({ products }: { products: ListingProduct[] }) {
-  const [view, setView] = useState<ViewMode>("list");
+  const [view, setView] = useState<ViewMode>("grid");
 
   useEffect(() => {
     try {

@@ -23,28 +23,54 @@ function scanRows(raw: unknown): Array<{ date: string; activity: string; locatio
   return out;
 }
 
+/** Shiprocket may wrap the payload, or use alternate keys. */
+function unwrapWebhookBody(raw: Record<string, unknown>): Record<string, unknown> {
+  const inner = raw.payload ?? raw.data;
+  if (inner && typeof inner === "object" && !Array.isArray(inner)) {
+    return inner as Record<string, unknown>;
+  }
+  return raw;
+}
+
+/** Canonical 24-char hex so uppercase channel_order_id from Shiprocket still matches. */
+function canonicalOrderObjectId(raw: string): string | null {
+  const s = raw.trim();
+  if (!s || !mongoose.Types.ObjectId.isValid(s)) return null;
+  try {
+    return new mongoose.Types.ObjectId(s).toString();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Applies Shiprocket shipment webhook JSON. Idempotent; ignores unknown orders.
  * `channel_order_id` is our Mongo order id (set when creating Shiprocket orders).
  */
-export async function applyShiprocketShipmentWebhook(body: Record<string, unknown>): Promise<{
+export async function applyShiprocketShipmentWebhook(rawBody: Record<string, unknown>): Promise<{
   ok: true;
   matched: boolean;
   orderId?: string;
 }> {
   await connectDb();
+  const body = unwrapWebhookBody(rawBody);
 
   const channelRaw =
     body.channel_order_id != null ? String(body.channel_order_id).trim() : "";
-  let mongoId: string | null =
-    channelRaw && mongoose.Types.ObjectId.isValid(channelRaw) && String(new mongoose.Types.ObjectId(channelRaw)) === channelRaw
-      ? channelRaw
-      : null;
+  let mongoId: string | null = channelRaw ? canonicalOrderObjectId(channelRaw) : null;
 
   if (!mongoId && body.order_id != null) {
     const srId = Number(body.order_id);
     if (Number.isFinite(srId) && srId > 0) {
       const o = await Order.findOne({ "shiprocket.shiprocketOrderId": srId }).select("_id").lean();
+      if (o?._id) mongoId = String(o._id);
+    }
+  }
+
+  if (!mongoId && body.shipment_id != null) {
+    const sid = Number(body.shipment_id);
+    if (Number.isFinite(sid) && sid > 0) {
+      const o = await Order.findOne({ "shiprocket.shipmentId": sid }).select("_id").lean();
       if (o?._id) mongoId = String(o._id);
     }
   }
@@ -64,7 +90,7 @@ export async function applyShiprocketShipmentWebhook(body: Record<string, unknow
     typeof body.courier_name === "string" && body.courier_name.trim()
       ? body.courier_name.trim()
       : undefined;
-  const scans = scanRows(body.scans);
+  const scans = scanRows(body.scans ?? body.scan);
 
   const $set: Record<string, unknown> = {
     "shiprocket.lastWebhookAt": new Date(),

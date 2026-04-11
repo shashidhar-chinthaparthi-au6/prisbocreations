@@ -79,7 +79,7 @@ export default async function SubcategoryProductsPage({
           <p className="mt-2 max-w-2xl text-ink-muted">{sub.description}</p>
         ) : null}
         <p className="mt-2 text-sm text-ink-muted">
-          Switch between list and grid. Add to cart here or open a product for full details.
+          Grid by default; switch to list if you prefer. Add to cart here or open a product for full details.
         </p>
       </div>
 

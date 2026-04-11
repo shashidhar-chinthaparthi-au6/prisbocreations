@@ -6,6 +6,9 @@ import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
 import { OrderCancelPanel } from "@/components/orders/OrderCancelPanel";
 
+/** Always read latest order from DB (webhooks update shiprocket fields). */
+export const dynamic = "force-dynamic";
+
 export default async function OrderDetailPage({
   params,
   searchParams,
@@ -36,6 +39,33 @@ export default async function OrderDetailPage({
   const shippingPaise = (order as { shippingPaise?: number }).shippingPaise ?? 0;
   const canCancel = ["pending", "paid", "processing"].includes(order.status);
   const cancelReason = (order as { cancelReason?: string }).cancelReason;
+  const shiprocketCourierId = (order as { shiprocketCourierId?: number }).shiprocketCourierId;
+  const srRaw = (order as { shiprocket?: Record<string, unknown> | null }).shiprocket;
+  const sr = srRaw && typeof srRaw === "object" ? srRaw : null;
+  const srStatus = typeof sr?.status === "string" ? sr.status : "";
+  const srAwb = typeof sr?.awb === "string" ? sr.awb : "";
+  const srTrackingUrl = typeof sr?.trackingUrl === "string" ? sr.trackingUrl : "";
+  const srFreight = typeof sr?.freightChargeRupees === "number" ? sr.freightChargeRupees : null;
+  const srCod = typeof sr?.codChargeRupees === "number" ? sr.codChargeRupees : null;
+  const srTotal = typeof sr?.totalShippingRupees === "number" ? sr.totalShippingRupees : null;
+  const srCourier = typeof sr?.courierName === "string" ? sr.courierName : "";
+  const srLastErr = typeof sr?.lastError === "string" ? sr.lastError : "";
+  const srWebhookStatus = typeof sr?.webhookStatus === "string" ? sr.webhookStatus : "";
+  const srScans = Array.isArray(sr?.webhookScans)
+    ? (sr.webhookScans as Array<{ date?: string; activity?: string; location?: string }>)
+    : [];
+  const srHasWebhook = Boolean(srWebhookStatus || srScans.length || sr?.lastWebhookAt);
+  const srHasRichContent = Boolean(
+    srStatus || srAwb || srTrackingUrl || srLastErr || srHasWebhook,
+  );
+  const awaitingCarrier =
+    order.status !== "cancelled" &&
+    typeof shiprocketCourierId === "number" &&
+    shiprocketCourierId > 0 &&
+    (order.status === "processing" || order.status === "paid" || order.status === "shipped") &&
+    !srHasRichContent;
+  const showDeliveryTracking =
+    order.status !== "cancelled" && (srHasRichContent || awaitingCarrier || (sr && Object.keys(sr).length > 0));
 
   return (
     <div className="space-y-6">
@@ -142,117 +172,126 @@ export default async function OrderDetailPage({
           <p className="font-display text-xl text-ink">Total {formatInrFromPaise(order.totalPaise)}</p>
         </div>
       </div>
-      {(() => {
-        const sr = (order as { shiprocket?: Record<string, unknown> | null }).shiprocket;
-        if (!sr || typeof sr !== "object") return null;
-        const status = typeof sr.status === "string" ? sr.status : "";
-        const awb = typeof sr.awb === "string" ? sr.awb : "";
-        const trackingUrl = typeof sr.trackingUrl === "string" ? sr.trackingUrl : "";
-        const freight = typeof sr.freightChargeRupees === "number" ? sr.freightChargeRupees : null;
-        const cod = typeof sr.codChargeRupees === "number" ? sr.codChargeRupees : null;
-        const total = typeof sr.totalShippingRupees === "number" ? sr.totalShippingRupees : null;
-        const courier = typeof sr.courierName === "string" ? sr.courierName : "";
-        const lastErr = typeof sr.lastError === "string" ? sr.lastError : "";
-        const webhookStatus = typeof sr.webhookStatus === "string" ? sr.webhookStatus : "";
-        const scans = Array.isArray(sr.webhookScans)
-          ? (sr.webhookScans as Array<{ date?: string; activity?: string; location?: string }>)
-          : [];
-        const hasWebhook = Boolean(webhookStatus || scans.length || sr.lastWebhookAt);
-        if (!status && !awb && !lastErr && !hasWebhook) return null;
-        return (
-          <div className="rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
-            <h2 className="font-display text-lg text-ink">Delivery &amp; tracking</h2>
-            <p className="mt-2 text-sm capitalize text-ink-muted">Shipment status: {status || "—"}</p>
-            {webhookStatus ? (
-              <p className="mt-1 text-sm text-ink">
-                Live carrier status: <span className="font-medium">{webhookStatus}</span>
-                {sr.lastWebhookAt ? (
-                  <span className="ml-2 text-xs text-ink-muted">
-                    · updated {new Date(String(sr.lastWebhookAt)).toLocaleString("en-IN")}
-                  </span>
-                ) : null}
+      {showDeliveryTracking ? (
+        <div className="rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
+          <h2 className="font-display text-lg text-ink">Delivery &amp; tracking</h2>
+          {awaitingCarrier ? (
+            <p className="mt-2 text-sm text-ink-muted">
+              Your order includes a courier choice. AWB and tracking will show here once the shipment
+              is created in Shiprocket. Refresh in a minute if you still don&apos;t see updates.
+            </p>
+          ) : null}
+          {srHasRichContent ? (
+            <>
+              <p className="mt-2 text-sm capitalize text-ink-muted">
+                Shipment status: {srStatus || "—"}
               </p>
-            ) : null}
-            {courier ? (
-              <p className="mt-1 text-sm text-ink-muted">
-                Courier: <span className="text-ink">{courier}</span>
-              </p>
-            ) : null}
-            {freight != null ? (
-              <ul className="mt-3 space-y-1 text-sm text-ink-muted">
-                <li>
-                  Freight:{" "}
-                  <span className="font-medium text-ink">
-                    {formatInrFromPaise(Math.round(freight * 100))}
-                  </span>
-                </li>
-                {cod != null && cod > 0 ? (
-                  <li>
-                    COD charges:{" "}
-                    <span className="font-medium text-ink">
-                      {formatInrFromPaise(Math.round(cod * 100))}
-                    </span>
-                  </li>
-                ) : null}
-                {total != null ? (
-                  <li>
-                    Total shipping (estimate):{" "}
-                    <span className="font-medium text-ink">
-                      {formatInrFromPaise(Math.round(total * 100))}
-                    </span>
-                  </li>
-                ) : null}
-              </ul>
-            ) : null}
-            {sr.chargesBreakdown && typeof sr.chargesBreakdown === "object" ? (
-              <details className="mt-3 text-xs text-ink-muted">
-                <summary className="cursor-pointer text-accent">All carrier charges (raw)</summary>
-                <pre className="mt-2 max-h-40 overflow-auto rounded bg-sand/50 p-2 font-mono text-[11px]">
-                  {JSON.stringify(sr.chargesBreakdown, null, 2)}
-                </pre>
-              </details>
-            ) : null}
-            {awb ? (
-              <p className="mt-3 text-sm">
-                AWB: <span className="font-mono text-ink">{awb}</span>
-              </p>
-            ) : null}
-            {trackingUrl ? (
-              <p className="mt-2">
-                <a
-                  href={trackingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-accent hover:underline"
-                >
-                  Track shipment →
-                </a>
-              </p>
-            ) : null}
-            {lastErr ? (
-              <p className="mt-2 text-xs text-rose" role="alert">
-                {lastErr}
-              </p>
-            ) : null}
-            {scans.length > 0 ? (
-              <div className="mt-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Recent scans (webhook)
+              {srWebhookStatus || srHasWebhook ? (
+                <div className="mt-3 rounded-xl border border-sand-deep bg-sand/30 px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    Live tracking
+                  </p>
+                  {srWebhookStatus ? (
+                    <p className="mt-1 text-sm text-ink">
+                      Carrier status: <span className="font-medium">{srWebhookStatus}</span>
+                      {sr?.lastWebhookAt ? (
+                        <span className="ml-2 text-xs text-ink-muted">
+                          · {new Date(String(sr.lastWebhookAt)).toLocaleString("en-IN")}
+                        </span>
+                      ) : null}
+                    </p>
+                  ) : sr?.lastWebhookAt ? (
+                    <p className="mt-1 text-xs text-ink-muted">
+                      Last update {new Date(String(sr.lastWebhookAt)).toLocaleString("en-IN")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              {srCourier ? (
+                <p className="mt-1 text-sm text-ink-muted">
+                  Courier: <span className="text-ink">{srCourier}</span>
                 </p>
-                <ul className="mt-2 max-h-52 space-y-1 overflow-y-auto text-xs text-ink-muted">
-                  {scans.map((s, i) => (
-                    <li key={i} className="rounded-lg border border-sand-deep/60 bg-sand/20 px-2 py-1.5">
-                      <span className="font-medium text-ink">{s.activity ?? "—"}</span>
-                      {s.location ? <span> · {s.location}</span> : null}
-                      {s.date ? <span className="mt-0.5 block text-[10px]">{s.date}</span> : null}
+              ) : null}
+              {srFreight != null ? (
+                <ul className="mt-3 space-y-1 text-sm text-ink-muted">
+                  <li>
+                    Freight:{" "}
+                    <span className="font-medium text-ink">
+                      {formatInrFromPaise(Math.round(srFreight * 100))}
+                    </span>
+                  </li>
+                  {srCod != null && srCod > 0 ? (
+                    <li>
+                      COD charges:{" "}
+                      <span className="font-medium text-ink">
+                        {formatInrFromPaise(Math.round(srCod * 100))}
+                      </span>
                     </li>
-                  ))}
+                  ) : null}
+                  {srTotal != null ? (
+                    <li>
+                      Total shipping (estimate):{" "}
+                      <span className="font-medium text-ink">
+                        {formatInrFromPaise(Math.round(srTotal * 100))}
+                      </span>
+                    </li>
+                  ) : null}
                 </ul>
-              </div>
-            ) : null}
-          </div>
-        );
-      })()}
+              ) : null}
+              {sr?.chargesBreakdown && typeof sr.chargesBreakdown === "object" ? (
+                <details className="mt-3 text-xs text-ink-muted">
+                  <summary className="cursor-pointer text-accent">All carrier charges (raw)</summary>
+                  <pre className="mt-2 max-h-40 overflow-auto rounded bg-sand/50 p-2 font-mono text-[11px]">
+                    {JSON.stringify(sr.chargesBreakdown, null, 2)}
+                  </pre>
+                </details>
+              ) : null}
+              {srAwb ? (
+                <p className="mt-3 text-sm">
+                  AWB: <span className="font-mono text-ink">{srAwb}</span>
+                </p>
+              ) : null}
+              {srTrackingUrl ? (
+                <p className="mt-2">
+                  <a
+                    href={srTrackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-accent hover:underline"
+                  >
+                    Track shipment →
+                  </a>
+                </p>
+              ) : null}
+              {srLastErr ? (
+                <p className="mt-2 text-xs text-rose" role="alert">
+                  {srLastErr}
+                </p>
+              ) : null}
+              {srScans.length > 0 ? (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    Recent scans (webhook)
+                  </p>
+                  <ul className="mt-2 max-h-52 space-y-1 overflow-y-auto text-xs text-ink-muted">
+                    {srScans.map((s, i) => (
+                      <li key={i} className="rounded-lg border border-sand-deep/60 bg-sand/20 px-2 py-1.5">
+                        <span className="font-medium text-ink">{s.activity ?? "—"}</span>
+                        {s.location ? <span> · {s.location}</span> : null}
+                        {s.date ? <span className="mt-0.5 block text-[10px]">{s.date}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </>
+          ) : sr && Object.keys(sr).length > 0 && !awaitingCarrier ? (
+            <p className="mt-2 text-sm text-ink-muted">
+              Carrier details are being processed. Refresh this page shortly.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <OrderCancelPanel
         orderId={String(order._id)}
         guestEmail={!session ? sp.email?.trim() ?? null : null}

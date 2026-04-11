@@ -7,6 +7,7 @@ import { formatInrFromPaise } from "@/lib/format";
 import { PrintInvoiceButton } from "@/components/orders/PrintInvoiceButton";
 
 export const metadata = { title: "Invoice" };
+export const dynamic = "force-dynamic";
 
 export default async function OrderInvoicePage({
   params,
