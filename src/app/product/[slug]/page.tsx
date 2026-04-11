@@ -8,15 +8,25 @@ import { ProductPageClient } from "@/components/product/ProductPageClient";
 
 export const dynamic = "force-dynamic";
 
+async function productSlugFromParams(
+  params: Promise<{ slug: string }>,
+): Promise<string> {
+  const raw = await params;
+  const slug = raw && typeof raw.slug === "string" ? raw.slug.trim() : "";
+  return slug;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+  const slug = await productSlugFromParams(params);
+  if (!slug) return { title: "Product" };
   await connectDb();
   const nav = await getProductBreadcrumb(slug);
   return { title: nav?.product?.name ?? "Product" };
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+  const slug = await productSlugFromParams(params);
+  if (!slug) notFound();
   await connectDb();
   const nav = await getProductBreadcrumb(slug);
   if (!nav?.product) notFound();
