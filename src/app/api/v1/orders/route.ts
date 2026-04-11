@@ -1,16 +1,22 @@
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { connectDb } from "@/lib/db";
 import { getOptionalAuth, requireAuth } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { createOrderFromCart, listOrdersForUser } from "@/lib/services/orderService";
 
+/** Treat "", null as undefined so optional .min(1) fields do not fail on empty string. */
+function emptyToUndefined<V>(schema: z.ZodType<V>) {
+  return z.preprocess((val) => (val === "" || val === null ? undefined : val), schema);
+}
+
 const lineSchema = z.object({
   productId: z.string().min(1),
-  quantity: z.number().int().positive(),
-  optionKey: z.string().min(1).optional(),
-  colorKey: z.string().min(1).max(64).optional(),
-  customerImageUrl: z.string().url().max(2000).optional(),
-  customerNotes: z.string().max(2000).optional(),
+  quantity: z.coerce.number().int().positive(),
+  optionKey: emptyToUndefined(z.string().min(1).optional()),
+  colorKey: emptyToUndefined(z.string().min(1).max(64).optional()),
+  /** URL checked again in orderService (trusted host); avoid z.url() rejecting valid S3/edge cases */
+  customerImageUrl: emptyToUndefined(z.string().max(2000).optional()),
+  customerNotes: emptyToUndefined(z.string().max(2000).optional()),
 });
 
 const shipSchema = z.object({
@@ -27,10 +33,20 @@ const shipSchema = z.object({
 const createSchema = z.object({
   lines: z.array(lineSchema).min(1),
   shipping: shipSchema,
-  guestEmail: z.string().email().optional(),
+  guestEmail: emptyToUndefined(z.string().trim().email().optional()),
   paymentMethod: z.enum(["online", "cod"]).optional().default("online"),
-  shiprocketCourierId: z.number().int().positive().optional(),
+  shiprocketCourierId: emptyToUndefined(z.coerce.number().int().positive().optional()),
 });
+
+function zodMessage(err: ZodError): string {
+  const flat = err.flatten();
+  const parts: string[] = [];
+  for (const [key, msgs] of Object.entries(flat.fieldErrors)) {
+    if (msgs?.length) parts.push(`${key}: ${msgs.join(", ")}`);
+  }
+  if (flat.formErrors.length) parts.push(...flat.formErrors);
+  return parts.length ? parts.join("; ") : "Invalid input";
+}
 
 export async function GET() {
   const auth = await requireAuth();
@@ -68,7 +84,7 @@ export async function POST(req: Request) {
     return jsonOk(order);
   } catch (e) {
     if (e instanceof z.ZodError) {
-      return jsonError("Invalid input", 400, { issues: e.flatten() });
+      return jsonError(zodMessage(e), 400, { issues: e.flatten() });
     }
     const msg = e instanceof Error ? e.message : "Order failed";
     return jsonError(msg, 400);
