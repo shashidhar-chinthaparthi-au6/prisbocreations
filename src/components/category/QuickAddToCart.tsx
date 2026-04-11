@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useCart } from "@/components/cart/CartProvider";
 
 export function QuickAddToCart({
   product,
   stock,
+  requiresOptionChoice,
   compact = false,
 }: {
   product: { id: string; slug: string; name: string; pricePaise: number; image?: string };
   stock: number;
+  /** When true, product has priced packs — user must open product page to pick an option. */
+  requiresOptionChoice?: boolean;
   compact?: boolean;
 }) {
   const { add } = useCart();
@@ -21,6 +25,7 @@ export function QuickAddToCart({
   function onAdd(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (requiresOptionChoice) return;
     const n = Math.min(Math.max(1, qty), max);
     add({
       productId: product.id,
@@ -32,6 +37,22 @@ export function QuickAddToCart({
     });
     setFlash(true);
     window.setTimeout(() => setFlash(false), 1400);
+  }
+
+  if (requiresOptionChoice) {
+    return (
+      <div
+        className={`flex flex-wrap items-center gap-2 ${compact ? "" : "justify-end"}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Link
+          href={`/product/${product.slug}`}
+          className="rounded-full border border-sand-deep bg-white px-3 py-1.5 text-xs font-medium text-accent hover:bg-sand/50 sm:text-sm"
+        >
+          Choose pack →
+        </Link>
+      </div>
+    );
   }
 
   return (

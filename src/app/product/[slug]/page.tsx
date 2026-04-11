@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connectDb } from "@/lib/db";
 import { getProductBreadcrumb } from "@/lib/services/catalogService";
-import { formatInrFromPaise } from "@/lib/format";
-import { AddToCart } from "@/components/product/AddToCart";
+import { sanitizeProductDescription } from "@/lib/sanitize-html";
+import { ProductPurchaseClient } from "@/components/product/ProductPurchaseClient";
 import { ProductGallery } from "@/components/product/ProductGallery";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -20,6 +20,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!nav?.product) notFound();
 
   const { product: p, category: cat, subcategory: sub } = nav;
+  const descriptionHtml = sanitizeProductDescription(
+    typeof p.description === "string" ? p.description : "",
+  );
+  const cartOptions = Array.isArray(p.options)
+    ? p.options.map((o) => ({
+        key: o.key,
+        label: o.label,
+        pricePaise: o.pricePaise,
+        stock: o.stock,
+      }))
+    : undefined;
 
   return (
     <div className="grid gap-10 lg:grid-cols-2">
@@ -43,28 +54,35 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div>
           <p className="text-sm text-ink-muted">SKU {p.sku}</p>
           <h1 className="font-display text-3xl text-ink">{p.name}</h1>
-          <p className="mt-3 text-2xl font-semibold text-ink">{formatInrFromPaise(p.pricePaise)}</p>
-          <p className="mt-2 text-sm text-ink-muted">In stock: {p.stock}</p>
+          <ProductPurchaseClient
+            product={{
+              id: String(p._id),
+              slug: p.slug,
+              name: p.name,
+              pricePaise: p.pricePaise,
+              stock: p.stock,
+              image: p.images[0],
+              options: cartOptions?.length ? cartOptions : undefined,
+            }}
+          >
+            <div
+              className="prose prose-slate mt-6 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
+              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+            />
+            {p.tags?.length ? (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {p.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full bg-sand-deep px-3 py-1 text-xs text-ink-muted"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </ProductPurchaseClient>
         </div>
-        <p className="leading-relaxed text-ink-muted">{p.description}</p>
-        {p.tags?.length ? (
-          <div className="flex flex-wrap gap-2">
-            {p.tags.map((t) => (
-              <span key={t} className="rounded-full bg-sand-deep px-3 py-1 text-xs text-ink-muted">
-                {t}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <AddToCart
-          product={{
-            id: String(p._id),
-            slug: p.slug,
-            name: p.name,
-            pricePaise: p.pricePaise,
-            image: p.images[0],
-          }}
-        />
         {cat && sub ? (
           <Link
             href={`/category/${cat.slug}/${sub.slug}`}

@@ -4,8 +4,81 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AdminMultiImageField } from "@/components/admin/AdminMultiImageField";
+import { AdminRichTextEditor } from "@/components/admin/AdminRichTextEditor";
+import { isHtmlContentEmpty } from "@/lib/sanitize-html";
 import { formatInrFromPaise } from "@/lib/format";
 import { slugify } from "@/lib/slugify";
+import type { ProductOption } from "@/lib/product-options";
+import {
+  minOptionPricePaise,
+  productHasOptions,
+  productOptionsFromDoc,
+} from "@/lib/product-options";
+
+type OptionRowForm = {
+  key: string;
+  label: string;
+  priceRupees: string;
+  stock: string;
+  sku: string;
+};
+
+function emptyOptionRow(): OptionRowForm {
+  return { key: "", label: "", priceRupees: "", stock: "0", sku: "" };
+}
+
+const OPTION_KEY_RX = /^[a-z0-9-]+$/;
+
+function buildOptionsPayload(
+  rows: OptionRowForm[],
+):
+  | { ok: true; options: ProductOption[] }
+  | { ok: false; error: string } {
+  const active = rows.filter(
+    (r) =>
+      r.key.trim() ||
+      r.label.trim() ||
+      r.priceRupees.trim() ||
+      r.sku.trim() ||
+      (r.stock.trim() && r.stock !== "0"),
+  );
+  if (active.length === 0) return { ok: true, options: [] };
+  const out: ProductOption[] = [];
+  for (const r of active) {
+    const key = r.key.trim();
+    const label = r.label.trim();
+    if (!OPTION_KEY_RX.test(key)) {
+      return {
+        ok: false,
+        error:
+          "Each pack needs a valid key: lowercase letters, numbers, and hyphens only (e.g. pack-30).",
+      };
+    }
+    if (!label) return { ok: false, error: "Each pack needs a label (e.g. Pack of 30)." };
+    const pricePaise = Math.round(Number(r.priceRupees) * 100);
+    if (!Number.isFinite(pricePaise) || pricePaise <= 0) {
+      return { ok: false, error: "Each pack needs a valid price in INR." };
+    }
+    const stock = Math.max(0, Math.floor(Number(r.stock)) || 0);
+    const sku = r.sku.trim();
+    out.push({ key, label, pricePaise, stock, ...(sku ? { sku } : {}) });
+  }
+  if (new Set(out.map((o) => o.key)).size !== out.length) {
+    return { ok: false, error: "Duplicate pack keys. Use a unique key for each row." };
+  }
+  return { ok: true, options: out };
+}
+
+function rowsFromOptions(opts: ProductOption[] | undefined): OptionRowForm[] {
+  if (!opts?.length) return [];
+  return opts.map((o) => ({
+    key: o.key,
+    label: o.label,
+    priceRupees: (o.pricePaise / 100).toFixed(2),
+    stock: String(o.stock ?? 0),
+    sku: o.sku?.trim() ?? "",
+  }));
+}
 
 type ProductRow = {
   _id: string;
@@ -19,6 +92,7 @@ type ProductRow = {
   subcategoryId: string;
   description?: string;
   tags?: string[];
+  options?: ProductOption[];
 };
 
 type CategoryRow = { _id: string; name: string; slug: string };
@@ -33,6 +107,7 @@ type EditForm = {
   images: string;
   tags: string;
   isActive: boolean;
+  optionRows: OptionRowForm[];
 };
 
 const emptyEdit: EditForm = {
@@ -44,7 +119,123 @@ const emptyEdit: EditForm = {
   images: "",
   tags: "",
   isActive: true,
+  optionRows: [],
 };
+
+function PackOptionsEditor({
+  rows,
+  onChange,
+}: {
+  rows: OptionRowForm[];
+  onChange: (next: OptionRowForm[]) => void;
+}) {
+  return (
+    <div className="space-y-2 rounded-lg border border-sand-deep/70 bg-sand/25 p-3">
+      <p className="text-xs font-medium text-ink">Packs / variants (optional)</p>
+      <p className="text-xs text-ink-muted">
+        Leave empty for a single price. Keys: lowercase letters, numbers, hyphens only (e.g.{" "}
+        <span className="font-mono">pack-30</span>). Shoppers pick a pack on the product page; each
+        row has its own price and stock.
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-xs text-ink-muted">No pack rows — base price and stock above apply.</p>
+      ) : null}
+      <div className="space-y-2">
+        {rows.map((r, i) => (
+          <div
+            key={i}
+            className="grid gap-2 rounded border border-sand-deep bg-white p-2 sm:grid-cols-2 xl:grid-cols-12 xl:items-end"
+          >
+            <label className="xl:col-span-2 block text-xs text-ink-muted">
+              Key
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-1.5 font-mono text-sm"
+                value={r.key}
+                placeholder="pack-30"
+                onChange={(e) =>
+                  onChange(rows.map((row, j) => (j === i ? { ...row, key: e.target.value } : row)))
+                }
+              />
+            </label>
+            <label className="xl:col-span-3 block text-xs text-ink-muted">
+              Label
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-1.5 text-sm"
+                value={r.label}
+                placeholder="Pack of 30"
+                onChange={(e) =>
+                  onChange(rows.map((row, j) => (j === i ? { ...row, label: e.target.value } : row)))
+                }
+              />
+            </label>
+            <label className="xl:col-span-2 block text-xs text-ink-muted">
+              Price (INR)
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-1.5 text-sm"
+                value={r.priceRupees}
+                placeholder="299"
+                onChange={(e) =>
+                  onChange(
+                    rows.map((row, j) =>
+                      j === i ? { ...row, priceRupees: e.target.value } : row,
+                    ),
+                  )
+                }
+              />
+            </label>
+            <label className="xl:col-span-2 block text-xs text-ink-muted">
+              Stock
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-1.5 text-sm"
+                value={r.stock}
+                onChange={(e) =>
+                  onChange(rows.map((row, j) => (j === i ? { ...row, stock: e.target.value } : row)))
+                }
+              />
+            </label>
+            <label className="xl:col-span-2 block text-xs text-ink-muted">
+              SKU (optional)
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-1.5 font-mono text-sm"
+                value={r.sku}
+                onChange={(e) =>
+                  onChange(rows.map((row, j) => (j === i ? { ...row, sku: e.target.value } : row)))
+                }
+              />
+            </label>
+            <div className="flex items-end xl:col-span-1">
+              <button
+                type="button"
+                className="w-full rounded border border-sand-deep py-1.5 text-xs text-rose hover:bg-rose/5"
+                onClick={() => onChange(rows.filter((_, j) => j !== i))}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-3 pt-1">
+        <button
+          type="button"
+          className="text-xs font-medium text-accent hover:underline"
+          onClick={() => onChange([...rows, emptyOptionRow()])}
+        >
+          + Add pack row
+        </button>
+        {rows.length > 0 ? (
+          <button
+            type="button"
+            className="text-xs text-ink-muted hover:underline"
+            onClick={() => onChange([])}
+          >
+            Clear all packs
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export function AdminProductsClient() {
   const qc = useQueryClient();
@@ -57,6 +248,7 @@ export function AdminProductsClient() {
     stock: "50",
     images: "",
     tags: "",
+    optionRows: [] as OptionRowForm[],
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>(emptyEdit);
@@ -100,6 +292,7 @@ export function AdminProductsClient() {
       images: p.images.join(", "),
       tags: (p.tags ?? []).join(", "),
       isActive: p.isActive,
+      optionRows: rowsFromOptions(p.options),
     });
   }
 
@@ -118,10 +311,19 @@ export function AdminProductsClient() {
       setEditMsg("Subcategory and a valid price are required.");
       return;
     }
+    if (isHtmlContentEmpty(editForm.description)) {
+      setEditMsg("Description is required.");
+      return;
+    }
     const images = editForm.images
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
+    const builtOpts = buildOptionsPayload(editForm.optionRows);
+    if (!builtOpts.ok) {
+      setEditMsg(builtOpts.error);
+      return;
+    }
     try {
       await apiFetch(`/api/v1/admin/products/${editingId}`, {
         method: "PATCH",
@@ -137,6 +339,7 @@ export function AdminProductsClient() {
             .map((s) => s.trim())
             .filter(Boolean),
           isActive: editForm.isActive,
+          options: builtOpts.options,
         }),
       });
       await qc.invalidateQueries({ queryKey: ["admin-products"] });
@@ -152,6 +355,15 @@ export function AdminProductsClient() {
     const pricePaise = Math.round(Number(form.priceRupees) * 100);
     if (!form.subcategoryId || !pricePaise) {
       setMsg("Subcategory and price required");
+      return;
+    }
+    if (isHtmlContentEmpty(form.description)) {
+      setMsg("Description is required");
+      return;
+    }
+    const builtOpts = buildOptionsPayload(form.optionRows);
+    if (!builtOpts.ok) {
+      setMsg(builtOpts.error);
       return;
     }
     try {
@@ -172,6 +384,7 @@ export function AdminProductsClient() {
             .map((s) => s.trim())
             .filter(Boolean),
           isActive: true,
+          ...(builtOpts.options.length ? { options: builtOpts.options } : {}),
         }),
       });
       setForm({
@@ -182,6 +395,7 @@ export function AdminProductsClient() {
         stock: "50",
         images: "",
         tags: "",
+        optionRows: [],
       });
       await qc.invalidateQueries({ queryKey: ["admin-products"] });
       setMsg("Product created");
@@ -253,16 +467,14 @@ export function AdminProductsClient() {
             />
           </label>
         ))}
-        <label className="block text-xs text-ink-muted">
-          Description
-          <textarea
-            required
-            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-            rows={3}
+        <div className="block text-xs text-ink-muted">
+          <span className="mb-1 block">Description</span>
+          <AdminRichTextEditor
+            id="admin-product-description-new"
             value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            onChange={(description) => setForm((f) => ({ ...f, description }))}
           />
-        </label>
+        </div>
         <AdminMultiImageField
           label="Product media — images or video (MP4, WebM, MOV); images can be cropped before upload"
           value={form.images}
@@ -276,6 +488,10 @@ export function AdminProductsClient() {
             onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
           />
         </label>
+        <PackOptionsEditor
+          rows={form.optionRows}
+          onChange={(optionRows) => setForm((f) => ({ ...f, optionRows }))}
+        />
         <button
           type="submit"
           className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white"
@@ -312,8 +528,28 @@ export function AdminProductsClient() {
                     </span>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs">{p.sku}</td>
-                  <td className="px-4 py-3">{formatInrFromPaise(p.pricePaise)}</td>
-                  <td className="px-4 py-3">{p.stock}</td>
+                  <td className="px-4 py-3">
+                    {productHasOptions(p) ? (
+                      <>
+                        <span className="text-xs text-ink-muted">From </span>
+                        {formatInrFromPaise(minOptionPricePaise(p))}
+                      </>
+                    ) : (
+                      formatInrFromPaise(p.pricePaise)
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {productHasOptions(p) ? (
+                      <span className="text-ink-muted">
+                        {productOptionsFromDoc(p).length} packs
+                        <span className="mt-0.5 block text-xs text-ink-muted/90">
+                          base stock {p.stock}
+                        </span>
+                      </span>
+                    ) : (
+                      p.stock
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <button
@@ -393,18 +629,16 @@ export function AdminProductsClient() {
                           />
                         </label>
                       ))}
-                      <label className="block text-xs text-ink-muted">
-                        Description
-                        <textarea
-                          required
-                          className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                          rows={3}
+                      <div className="block text-xs text-ink-muted">
+                        <span className="mb-1 block">Description</span>
+                        <AdminRichTextEditor
+                          id="admin-product-description-edit"
                           value={editForm.description}
-                          onChange={(e) =>
-                            setEditForm((f) => ({ ...f, description: e.target.value }))
+                          onChange={(description) =>
+                            setEditForm((f) => ({ ...f, description }))
                           }
                         />
-                      </label>
+                      </div>
                       <AdminMultiImageField
                         label="Product media"
                         value={editForm.images}
@@ -418,6 +652,10 @@ export function AdminProductsClient() {
                           onChange={(e) => setEditForm((f) => ({ ...f, tags: e.target.value }))}
                         />
                       </label>
+                      <PackOptionsEditor
+                        rows={editForm.optionRows}
+                        onChange={(optionRows) => setEditForm((f) => ({ ...f, optionRows }))}
+                      />
                       <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
                         <input
                           type="checkbox"

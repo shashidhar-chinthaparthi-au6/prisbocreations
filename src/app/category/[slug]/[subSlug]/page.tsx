@@ -23,15 +23,28 @@ export async function generateMetadata({
 }
 
 function serializeProducts(products: Awaited<ReturnType<typeof listProducts>>): ListingProduct[] {
-  return products.map((p) => ({
-    _id: String(p._id),
-    slug: p.slug,
-    name: p.name,
-    sku: p.sku,
-    pricePaise: p.pricePaise,
-    stock: p.stock,
-    images: p.images ?? [],
-  }));
+  return products.map((p) => {
+    const raw = (p as { options?: ListingProduct["options"] }).options;
+    const options =
+      Array.isArray(raw) && raw.length
+        ? raw.map((o) => ({
+            key: String(o.key),
+            label: String(o.label),
+            pricePaise: Number(o.pricePaise) || 0,
+            stock: Number(o.stock) || 0,
+          }))
+        : undefined;
+    return {
+      _id: String(p._id),
+      slug: p.slug,
+      name: p.name,
+      sku: p.sku,
+      pricePaise: p.pricePaise,
+      stock: p.stock,
+      images: p.images ?? [],
+      options,
+    };
+  });
 }
 
 export default async function SubcategoryProductsPage({

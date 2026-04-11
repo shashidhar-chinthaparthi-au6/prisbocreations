@@ -6,17 +6,40 @@ import { zImageRefArray } from "@/lib/api/imageRef";
 import { generateSku } from "@/lib/generate-sku";
 import { slugify } from "@/lib/slugify";
 import { adminCreateProduct, adminListProducts } from "@/lib/services/catalogService";
+import { isHtmlContentEmpty, sanitizeProductDescription } from "@/lib/sanitize-html";
 
-const createSchema = z.object({
-  subcategoryId: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string().min(1),
-  pricePaise: z.number().int().positive(),
+const productOptionSchema = z.object({
+  key: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
+  label: z.string().min(1).max(200),
+  pricePaise: z.number().int().min(0),
   stock: z.number().int().min(0),
-  images: zImageRefArray(),
-  tags: z.array(z.string()).optional(),
-  isActive: z.boolean().optional(),
+  sku: z.string().max(80).optional(),
 });
+
+const createSchema = z
+  .object({
+    subcategoryId: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string().min(1).max(250_000),
+    pricePaise: z.number().int().positive(),
+    stock: z.number().int().min(0),
+    images: zImageRefArray(),
+    tags: z.array(z.string()).optional(),
+    isActive: z.boolean().optional(),
+    options: z.array(productOptionSchema).max(24).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const opts = data.options;
+    if (!opts?.length) return;
+    const keys = opts.map((o) => o.key);
+    if (new Set(keys).size !== keys.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Duplicate option keys",
+        path: ["options"],
+      });
+    }
+  });
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -31,10 +54,17 @@ export async function POST(req: Request) {
   try {
     await connectDb();
     const body = createSchema.parse(await req.json());
+    const { options, description: rawDescription, ...rest } = body;
+    const description = sanitizeProductDescription(rawDescription);
+    if (isHtmlContentEmpty(description)) {
+      return jsonError("Description cannot be empty", 400);
+    }
     const p = await adminCreateProduct({
-      ...body,
+      ...rest,
+      description,
       slug: slugify(body.name),
       sku: generateSku(),
+      ...(options?.length ? { options } : {}),
     });
     return jsonOk(p);
   } catch (e) {

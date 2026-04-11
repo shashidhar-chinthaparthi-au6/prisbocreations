@@ -3,8 +3,7 @@ import { verifyWebhookSignature } from "@/lib/services/paymentService";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { Order } from "@/lib/models/Order";
 import { Payment } from "@/lib/models/Payment";
-import { Product } from "@/lib/models/Product";
-import { markOrderPaid } from "@/lib/services/orderService";
+import { decrementInventoryForOrderItems, markOrderPaid } from "@/lib/services/orderService";
 
 /** Razorpay may send payment.captured — verify HMAC when webhook secret is set */
 export async function POST(req: Request) {
@@ -52,11 +51,7 @@ export async function POST(req: Request) {
       raw: entity,
     });
     await markOrderPaid(order._id.toString());
-    for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: -item.quantity },
-      });
-    }
+    await decrementInventoryForOrderItems(order.items);
   }
 
   return jsonOk({ processed: true });

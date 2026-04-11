@@ -21,7 +21,7 @@ export function CartClient() {
       <div className="space-y-4 lg:col-span-2">
         {lines.map((l) => (
           <div
-            key={l.productId}
+            key={l.id}
             className="flex gap-4 rounded-2xl border border-sand-deep bg-white p-4 shadow-sm"
           >
             <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-sand-deep">
@@ -41,6 +41,9 @@ export function CartClient() {
                 <Link href={`/product/${l.slug}`} className="font-medium text-ink hover:text-accent">
                   {l.name}
                 </Link>
+                {l.optionLabel ? (
+                  <p className="text-xs text-accent">{l.optionLabel}</p>
+                ) : null}
                 <p className="text-sm text-ink-muted">{formatInrFromPaise(l.pricePaise)} each</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -48,12 +51,12 @@ export function CartClient() {
                   type="number"
                   min={1}
                   value={l.quantity}
-                  onChange={(e) => setQty(l.productId, Math.max(1, Number(e.target.value) || 1))}
+                  onChange={(e) => setQty(l.id, Math.max(1, Number(e.target.value) || 1))}
                   className="w-16 rounded border border-sand-deep px-2 py-1 text-sm"
                 />
                 <button
                   type="button"
-                  onClick={() => remove(l.productId)}
+                  onClick={() => remove(l.id)}
                   className="text-sm text-rose hover:underline"
                 >
                   Remove

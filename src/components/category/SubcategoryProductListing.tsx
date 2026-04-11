@@ -6,6 +6,7 @@ import { formatInrFromPaise } from "@/lib/format";
 import { ProductGridCarousel } from "@/components/category/ProductGridCarousel";
 import { QuickAddToCart } from "@/components/category/QuickAddToCart";
 import { StoreMedia } from "@/components/store/StoreMedia";
+import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 
 export type ListingProduct = {
   _id: string;
@@ -15,6 +16,7 @@ export type ListingProduct = {
   pricePaise: number;
   stock: number;
   images: string[];
+  options?: { key: string; label: string; pricePaise: number; stock: number }[];
 };
 
 const VIEW_KEY = "prisbo_subcategory_view";
@@ -98,7 +100,10 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => (
+                {products.map((p) => {
+                  const multi = productHasOptions(p);
+                  const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
+                  return (
                   <tr key={p._id} className="border-b border-sand-deep/80 last:border-0">
                     <td className="px-3 py-3 sm:px-4">
                       <div className="flex items-center gap-3">
@@ -132,33 +137,45 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                       {p.sku}
                     </td>
                     <td className="px-3 py-3 text-right font-semibold text-ink sm:px-4">
-                      {formatInrFromPaise(p.pricePaise)}
+                      {multi ? (
+                        <span>
+                          <span className="text-xs font-normal text-ink-muted">From </span>
+                          {formatInrFromPaise(listPrice)}
+                        </span>
+                      ) : (
+                        formatInrFromPaise(listPrice)
+                      )}
                     </td>
                     <td className="hidden px-3 py-3 text-right text-ink-muted md:table-cell md:px-4">
-                      {p.stock}
+                      {multi ? "—" : p.stock}
                     </td>
                     <td className="px-3 py-3 text-right sm:px-4">
                       <QuickAddToCart
                         compact
-                        stock={p.stock}
+                        stock={multi ? 1 : p.stock}
+                        requiresOptionChoice={multi}
                         product={{
                           id: p._id,
                           slug: p.slug,
                           name: p.name,
-                          pricePaise: p.pricePaise,
+                          pricePaise: listPrice,
                           image: p.images[0],
                         }}
                       />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => (
+          {products.map((p) => {
+            const multi = productHasOptions(p);
+            const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
+            return (
             <div
               key={p._id}
               className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white shadow-sm"
@@ -181,24 +198,35 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                 </Link>
                 <p className="mt-1 font-mono text-xs text-ink-muted">{p.sku}</p>
                 <p className="mt-2 font-display text-lg font-semibold text-ink">
-                  {formatInrFromPaise(p.pricePaise)}
+                  {multi ? (
+                    <span>
+                      <span className="text-sm font-normal text-ink-muted">From </span>
+                      {formatInrFromPaise(listPrice)}
+                    </span>
+                  ) : (
+                    formatInrFromPaise(listPrice)
+                  )}
                 </p>
-                <p className="text-xs text-ink-muted">Stock: {p.stock}</p>
+                <p className="text-xs text-ink-muted">
+                  {multi ? "Multiple packs — open product to choose" : `Stock: ${p.stock}`}
+                </p>
                 <div className="mt-3 border-t border-sand-deep pt-3">
                   <QuickAddToCart
-                    stock={p.stock}
+                    stock={multi ? 1 : p.stock}
+                    requiresOptionChoice={multi}
                     product={{
                       id: p._id,
                       slug: p.slug,
                       name: p.name,
-                      pricePaise: p.pricePaise,
+                      pricePaise: listPrice,
                       image: p.images[0],
                     }}
                   />
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>

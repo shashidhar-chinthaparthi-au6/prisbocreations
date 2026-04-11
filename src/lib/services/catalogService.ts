@@ -204,6 +204,14 @@ export async function adminDeleteSubcategory(id: string) {
   await Subcategory.findByIdAndDelete(id);
 }
 
+export type AdminProductOptionInput = {
+  key: string;
+  label: string;
+  pricePaise: number;
+  stock: number;
+  sku?: string;
+};
+
 export async function adminCreateProduct(input: {
   subcategoryId: string;
   name: string;
@@ -215,8 +223,19 @@ export async function adminCreateProduct(input: {
   images: string[];
   tags?: string[];
   isActive?: boolean;
+  options?: AdminProductOptionInput[];
 }) {
-  return Product.create(input);
+  const { options, ...rest } = input;
+  return Product.create({
+    ...rest,
+    options: (options ?? []).map((o) => ({
+      key: o.key.trim(),
+      label: o.label.trim(),
+      pricePaise: o.pricePaise,
+      stock: o.stock,
+      sku: o.sku?.trim() ?? "",
+    })),
+  });
 }
 
 export async function adminUpdateProduct(
@@ -232,9 +251,20 @@ export async function adminUpdateProduct(
     images: string[];
     tags: string[];
     isActive: boolean;
-  }>
+    options: AdminProductOptionInput[];
+  }>,
 ) {
-  return Product.findByIdAndUpdate(id, patch, { new: true }).lean();
+  const next = { ...patch };
+  if (patch.options !== undefined) {
+    (next as { options: unknown }).options = patch.options.map((o) => ({
+      key: o.key.trim(),
+      label: o.label.trim(),
+      pricePaise: o.pricePaise,
+      stock: o.stock,
+      sku: o.sku?.trim() ?? "",
+    }));
+  }
+  return Product.findByIdAndUpdate(id, next, { new: true }).lean();
 }
 
 export async function adminDeleteProduct(id: string) {

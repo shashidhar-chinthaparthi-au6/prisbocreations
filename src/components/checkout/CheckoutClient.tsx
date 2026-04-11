@@ -77,7 +77,11 @@ export function CheckoutClient({
     setBusy(true);
     try {
       const orderBody: Record<string, unknown> = {
-        lines: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+        lines: lines.map((l) => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          ...(l.optionKey ? { optionKey: l.optionKey } : {}),
+        })),
         shipping: ship,
         paymentMethod: "cod",
       };
@@ -113,7 +117,11 @@ export function CheckoutClient({
     setBusy(true);
     try {
       const orderBody: Record<string, unknown> = {
-        lines: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+        lines: lines.map((l) => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          ...(l.optionKey ? { optionKey: l.optionKey } : {}),
+        })),
         shipping: ship,
         paymentMethod: "online",
       };

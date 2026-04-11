@@ -9,6 +9,8 @@ const OrderItemSchema = new Schema(
     unitPricePaise: { type: Number, required: true },
     quantity: { type: Number, required: true, min: 1 },
     imageUrl: { type: String },
+    optionKey: { type: String },
+    optionLabel: { type: String },
   },
   { _id: false }
 );

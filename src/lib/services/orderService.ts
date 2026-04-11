@@ -1,8 +1,14 @@
 import mongoose from "mongoose";
 import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
+import { resolveProductLine } from "@/lib/product-options";
 
-export type CartLine = { productId: string; quantity: number };
+/** Server-side cart line from checkout API (optionKey when product has purchase options). */
+export type OrderCartLineInput = {
+  productId: string;
+  quantity: number;
+  optionKey?: string;
+};
 
 export type ShippingInput = {
   fullName: string;
@@ -19,10 +25,32 @@ function normalizeGuestEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+export async function decrementInventoryForOrderItems(
+  items: Array<{
+    productId: mongoose.Types.ObjectId;
+    quantity: number;
+    optionKey?: string | null;
+  }>,
+) {
+  for (const item of items) {
+    const pid = item.productId.toString();
+    const optKey = item.optionKey?.trim();
+    if (optKey) {
+      await Product.findByIdAndUpdate(
+        pid,
+        { $inc: { "options.$[o].stock": -item.quantity } },
+        { arrayFilters: [{ "o.key": optKey }] },
+      );
+    } else {
+      await Product.findByIdAndUpdate(pid, { $inc: { stock: -item.quantity } });
+    }
+  }
+}
+
 export async function createOrderFromCart(input: {
   userId?: string;
   guestEmail?: string;
-  lines: CartLine[];
+  lines: OrderCartLineInput[];
   shipping: ShippingInput;
   paymentMethod?: "online" | "cod";
 }) {
@@ -51,24 +79,31 @@ export async function createOrderFromCart(input: {
     unitPricePaise: number;
     quantity: number;
     imageUrl?: string;
+    optionKey?: string;
+    optionLabel?: string;
   }> = [];
 
   for (const line of input.lines) {
     const p = byId.get(line.productId);
     if (!p) throw new Error("Invalid product in cart");
     if (line.quantity < 1) throw new Error("Invalid quantity");
-    if (p.stock < line.quantity) throw new Error(`Insufficient stock for ${p.name}`);
 
-    const unitPricePaise = p.pricePaise;
-    subtotalPaise += unitPricePaise * line.quantity;
+    const resolved = resolveProductLine(p, line.optionKey ?? undefined);
+    if (resolved.stock < line.quantity) {
+      throw new Error(`Insufficient stock for ${p.name}`);
+    }
+
+    subtotalPaise += resolved.unitPricePaise * line.quantity;
     items.push({
       productId: p._id,
-      name: p.name,
+      name: resolved.optionLabel ? `${p.name} — ${resolved.optionLabel}` : p.name,
       slug: p.slug,
-      sku: p.sku,
-      unitPricePaise,
+      sku: resolved.sku,
+      unitPricePaise: resolved.unitPricePaise,
       quantity: line.quantity,
       imageUrl: p.images?.[0],
+      optionKey: resolved.optionKey,
+      optionLabel: resolved.optionLabel,
     });
   }
 
@@ -87,11 +122,7 @@ export async function createOrderFromCart(input: {
   });
 
   if (paymentMethod === "cod") {
-    for (const item of items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: -item.quantity },
-      });
-    }
+    await decrementInventoryForOrderItems(items);
   }
 
   return order;
@@ -124,7 +155,7 @@ export async function getOrderById(orderId: string) {
 
 export async function updateOrderStatus(
   orderId: string,
-  status: "pending" | "paid" | "processing" | "shipped" | "cancelled"
+  status: "pending" | "paid" | "processing" | "shipped" | "cancelled",
 ) {
   return Order.findByIdAndUpdate(orderId, { status }, { new: true }).lean();
 }
@@ -134,9 +165,5 @@ export async function attachRazorpayOrderId(orderId: string, razorpayOrderId: st
 }
 
 export async function markOrderPaid(orderId: string) {
-  return Order.findByIdAndUpdate(
-    orderId,
-    { status: "paid" },
-    { new: true }
-  ).lean();
+  return Order.findByIdAndUpdate(orderId, { status: "paid" }, { new: true }).lean();
 }

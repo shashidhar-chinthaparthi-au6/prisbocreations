@@ -7,6 +7,7 @@ import { createOrderFromCart, listOrdersForUser } from "@/lib/services/orderServ
 const lineSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive(),
+  optionKey: z.string().min(1).optional(),
 });
 
 const shipSchema = z.object({

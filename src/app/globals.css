@@ -15,3 +15,12 @@ body {
 .glass {
   @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-sm;
 }
+
+/* TipTap placeholder */
+.admin-rich-text .tiptap p.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #94a3b8;
+  pointer-events: none;
+  height: 0;
+}

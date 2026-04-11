@@ -3,8 +3,11 @@ import Razorpay from "razorpay";
 import { getEnv } from "@/lib/env";
 import { Payment } from "@/lib/models/Payment";
 import { Order } from "@/lib/models/Order";
-import { Product } from "@/lib/models/Product";
-import { attachRazorpayOrderId, markOrderPaid } from "./orderService";
+import {
+  attachRazorpayOrderId,
+  decrementInventoryForOrderItems,
+  markOrderPaid,
+} from "./orderService";
 
 function getRazorpay() {
   const env = getEnv();
@@ -113,12 +116,7 @@ export async function recordVerifiedPayment(input: {
   });
 
   await markOrderPaid(order._id.toString());
-
-  for (const item of order.items) {
-    await Product.findByIdAndUpdate(item.productId, {
-      $inc: { stock: -item.quantity },
-    });
-  }
+  await decrementInventoryForOrderItems(order.items);
 
   return { ok: true as const };
 }

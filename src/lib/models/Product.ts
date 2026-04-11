@@ -1,5 +1,16 @@
 import mongoose, { Schema, type InferSchemaType, type Model, type Types } from "mongoose";
 
+const ProductOptionSchema = new Schema(
+  {
+    key: { type: String, required: true, trim: true },
+    label: { type: String, required: true, trim: true },
+    pricePaise: { type: Number, required: true, min: 0 },
+    stock: { type: Number, required: true, default: 0, min: 0 },
+    sku: { type: String, trim: true, default: "" },
+  },
+  { _id: false }
+);
+
 const ProductSchema = new Schema(
   {
     subcategoryId: {
@@ -15,6 +26,8 @@ const ProductSchema = new Schema(
     currency: { type: String, default: "INR" },
     sku: { type: String, required: true, unique: true, trim: true },
     stock: { type: Number, required: true, default: 0, min: 0 },
+    /** When non-empty, buyers must pick an option (separate price/stock per row). */
+    options: { type: [ProductOptionSchema], default: [] },
     images: { type: [String], default: [] },
     tags: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
