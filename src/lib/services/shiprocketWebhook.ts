@@ -106,15 +106,25 @@ export async function applyShiprocketShipmentWebhook(rawBody: Record<string, unk
   const st = statusText.toLowerCase();
   const looksDelivered =
     st.includes("delivered") || st.includes("rto delivered") || st.includes("rto undelivered");
+  const looksCancelledLike =
+    st.includes("cancel") || st.includes("failed") || st.includes("undelivered");
   const looksInTransit =
-    st.includes("picked") ||
-    st.includes("manifest") ||
-    st.includes("dispatched") ||
-    st.includes("in transit") ||
-    st.includes("out for delivery") ||
-    st.includes("shipped") ||
-    st.includes("at hub") ||
-    st.includes("connected");
+    !looksCancelledLike &&
+    (st.includes("picked") ||
+      st.includes("pickup") ||
+      st.includes("manifest") ||
+      st.includes("dispatched") ||
+      st.includes("in transit") ||
+      st.includes("out for delivery") ||
+      st.includes("shipped") ||
+      st.includes("at hub") ||
+      st.includes("connected") ||
+      st.includes("label") ||
+      st.includes("awb") ||
+      st.includes("packed") ||
+      st.includes("ready to ship") ||
+      st.includes("handover") ||
+      st.includes("out for pickup"));
 
   const orderStatus = order.status;
   if (

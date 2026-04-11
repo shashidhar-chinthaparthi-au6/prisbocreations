@@ -353,7 +353,14 @@ export async function updateOrderStatus(
     ).lean();
   }
 
-  return Order.findByIdAndUpdate(orderId, { status }, { new: true }).lean();
+  const updated = await Order.findByIdAndUpdate(orderId, { status }, { new: true }).lean();
+  if (
+    updated &&
+    (status === "paid" || status === "processing" || status === "shipped")
+  ) {
+    void syncShiprocketForOrder(orderId).catch(() => {});
+  }
+  return updated;
 }
 
 export async function attachRazorpayOrderId(orderId: string, razorpayOrderId: string) {

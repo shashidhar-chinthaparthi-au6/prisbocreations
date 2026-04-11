@@ -186,7 +186,10 @@ export default async function OrderDetailPage({
               <p className="mt-2 text-sm capitalize text-ink-muted">
                 Shipment status: {srStatus || "—"}
               </p>
-              {srWebhookStatus || srHasWebhook ? (
+              {srWebhookStatus ||
+              srHasWebhook ||
+              srTrackingUrl ||
+              srAwb ? (
                 <div className="mt-3 rounded-xl border border-sand-deep bg-sand/30 px-3 py-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                     Live tracking
@@ -203,6 +206,11 @@ export default async function OrderDetailPage({
                   ) : sr?.lastWebhookAt ? (
                     <p className="mt-1 text-xs text-ink-muted">
                       Last update {new Date(String(sr.lastWebhookAt)).toLocaleString("en-IN")}
+                    </p>
+                  ) : srTrackingUrl || srAwb ? (
+                    <p className="mt-1 text-sm text-ink-muted">
+                      Detailed carrier milestones will appear here when Shiprocket webhooks are received.
+                      Use “Track shipment” below for the courier&apos;s live map and status.
                     </p>
                   ) : null}
                 </div>
