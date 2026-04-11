@@ -29,6 +29,9 @@ function loadRazorpay(): Promise<boolean> {
 
 type PayMode = "razorpay" | "cod";
 
+/** Set to `true` when Razorpay online checkout should be offered again. */
+const ONLINE_CHECKOUT_ENABLED = false;
+
 type ShipCourierRow = {
   courierId: number;
   courierName: string;
@@ -50,7 +53,7 @@ export function CheckoutClient({
   const { lines, subtotalPaise, clear } = useCart();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [payMode, setPayMode] = useState<PayMode>("razorpay");
+  const [payMode, setPayMode] = useState<PayMode>(ONLINE_CHECKOUT_ENABLED ? "razorpay" : "cod");
   const [guestEmail, setGuestEmail] = useState(defaultEmail);
   const [ship, setShip] = useState({
     fullName: "",
@@ -87,7 +90,7 @@ export function CheckoutClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             deliveryPostalCode: pin,
-            cod: payMode === "cod",
+            cod: !ONLINE_CHECKOUT_ENABLED || payMode === "cod",
           }),
         });
         const json = (await res.json()) as {
@@ -289,6 +292,10 @@ export function CheckoutClient({
   }
 
   async function submit() {
+    if (!ONLINE_CHECKOUT_ENABLED) {
+      await submitCod();
+      return;
+    }
     if (payMode === "cod") await submitCod();
     else await payOnline();
   }
@@ -423,21 +430,31 @@ export function CheckoutClient({
 
         <fieldset className="space-y-3 border-0 p-0">
           <legend className="text-sm font-medium text-ink">Payment</legend>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-sand-deep p-3 has-[:checked]:border-accent">
-            <input
-              type="radio"
-              name="pay"
-              className="mt-1"
-              checked={payMode === "razorpay"}
-              onChange={() => setPayMode("razorpay")}
-            />
-            <span>
-              <span className="font-medium text-ink">Pay online</span>
-              <span className="mt-0.5 block text-xs text-ink-muted">
-                Card, UPI, netbanking via Razorpay
+          {!ONLINE_CHECKOUT_ENABLED ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-3 text-sm text-amber-950">
+              <p className="font-medium text-ink">Pay online — temporarily unavailable</p>
+              <p className="mt-1 text-xs leading-relaxed text-amber-950/95">
+                We&apos;re pausing card / UPI checkout for a short time. It will be back soon. Please
+                use <strong>cash on delivery</strong> below to complete your order.
+              </p>
+            </div>
+          ) : (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-sand-deep p-3 has-[:checked]:border-accent">
+              <input
+                type="radio"
+                name="pay"
+                className="mt-1"
+                checked={payMode === "razorpay"}
+                onChange={() => setPayMode("razorpay")}
+              />
+              <span>
+                <span className="font-medium text-ink">Pay online</span>
+                <span className="mt-0.5 block text-xs text-ink-muted">
+                  Card, UPI, netbanking via Razorpay
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+          )}
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-sand-deep p-3 has-[:checked]:border-accent">
             <input
               type="radio"
@@ -473,7 +490,7 @@ export function CheckoutClient({
             "Pay with Razorpay"
           )}
         </button>
-        {payMode === "razorpay" ? (
+        {ONLINE_CHECKOUT_ENABLED && payMode === "razorpay" ? (
           <p className="text-xs text-ink-muted">
             You will be redirected to Razorpay secure checkout. Use test cards from Razorpay docs in
             test mode.
