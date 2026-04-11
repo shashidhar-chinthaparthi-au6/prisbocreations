@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/cart/CartProvider";
 import { apiFetch } from "@/lib/api/fetch-client";
@@ -29,6 +29,16 @@ function loadRazorpay(): Promise<boolean> {
 
 type PayMode = "razorpay" | "cod";
 
+type ShipCourierRow = {
+  courierId: number;
+  courierName: string;
+  freightChargeRupees: number;
+  codChargesRupees: number;
+  totalChargeRupees: number;
+  estimatedDeliveryDays?: string;
+  rating?: number;
+};
+
 export function CheckoutClient({
   isAuthenticated,
   defaultEmail = "",
@@ -52,6 +62,70 @@ export function CheckoutClient({
     postalCode: "",
     country: "India",
   });
+  const [shipQuotes, setShipQuotes] = useState<ShipCourierRow[]>([]);
+  const [shipQuoteLoading, setShipQuoteLoading] = useState(false);
+  const [shipQuoteErr, setShipQuoteErr] = useState<string | null>(null);
+  const [selectedShiprocketCourierId, setSelectedShiprocketCourierId] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const pin = ship.postalCode.replace(/\D/g, "");
+    if (pin.length !== 6) {
+      setShipQuotes([]);
+      setSelectedShiprocketCourierId(null);
+      setShipQuoteErr(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setShipQuoteLoading(true);
+      setShipQuoteErr(null);
+      try {
+        const res = await fetch("/api/v1/shipping/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deliveryPostalCode: pin,
+            cod: payMode === "cod",
+          }),
+        });
+        const json = (await res.json()) as {
+          ok?: boolean;
+          error?: string;
+          data?: { couriers?: ShipCourierRow[] };
+        };
+        if (res.status === 503) {
+          if (!cancelled) setShipQuotes([]);
+          return;
+        }
+        if (!res.ok || !json.ok) {
+          throw new Error(json.error ?? "Could not load delivery quotes");
+        }
+        const rows = json.data?.couriers ?? [];
+        if (!cancelled) {
+          setShipQuotes(rows);
+          setSelectedShiprocketCourierId(rows[0]?.courierId ?? null);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setShipQuotes([]);
+          setShipQuoteErr(e instanceof Error ? e.message : "Quote failed");
+        }
+      } finally {
+        if (!cancelled) setShipQuoteLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ship.postalCode, payMode]);
+
+  const deliveryPaise = useMemo(() => {
+    const row = shipQuotes.find((c) => c.courierId === selectedShiprocketCourierId);
+    return row ? Math.round(row.totalChargeRupees * 100) : 0;
+  }, [shipQuotes, selectedShiprocketCourierId]);
+  const grandTotalPaise = subtotalPaise + deliveryPaise;
 
   function thankYouPath(orderId: string, opts: { paid?: boolean; cod?: boolean }) {
     const q = new URLSearchParams();
@@ -90,6 +164,9 @@ export function CheckoutClient({
         })),
         shipping: ship,
         paymentMethod: "cod",
+        ...(selectedShiprocketCourierId
+          ? { shiprocketCourierId: selectedShiprocketCourierId }
+          : {}),
       };
       if (!isAuthenticated) {
         orderBody.guestEmail = guestEmail.trim();
@@ -135,6 +212,9 @@ export function CheckoutClient({
         })),
         shipping: ship,
         paymentMethod: "online",
+        ...(selectedShiprocketCourierId
+          ? { shiprocketCourierId: selectedShiprocketCourierId }
+          : {}),
       };
       if (!isAuthenticated) {
         orderBody.guestEmail = guestEmail.trim();
@@ -262,13 +342,84 @@ export function CheckoutClient({
             />
           </label>
         ))}
+        {ship.postalCode.replace(/\D/g, "").length === 6 ? (
+          <div className="rounded-xl border border-sand-deep/80 bg-sand/20 p-4">
+            <p className="text-sm font-medium text-ink">Delivery options (Shiprocket)</p>
+            <p className="mt-1 text-xs text-ink-muted">
+              Estimated courier charges for your pincode. The total below includes this delivery
+              estimate (same as charged on Razorpay or your COD invoice).
+            </p>
+            {shipQuoteLoading ? (
+              <p className="mt-3 inline-flex items-center gap-2 text-sm text-ink-muted">
+                <Spinner size="sm" />
+                Loading quotes…
+              </p>
+            ) : null}
+            {shipQuoteErr ? <p className="mt-2 text-xs text-rose">{shipQuoteErr}</p> : null}
+            {!shipQuoteLoading && shipQuotes.length > 0 ? (
+              <ul className="mt-3 max-h-56 space-y-2 overflow-y-auto text-sm">
+                {shipQuotes.map((c) => (
+                  <li key={c.courierId}>
+                    <label className="flex cursor-pointer gap-3 rounded-lg border border-sand-deep bg-white p-2 has-[:checked]:border-accent">
+                      <input
+                        type="radio"
+                        name="sr-courier"
+                        className="mt-1"
+                        checked={selectedShiprocketCourierId === c.courierId}
+                        onChange={() => setSelectedShiprocketCourierId(c.courierId)}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="font-medium text-ink">{c.courierName}</span>
+                        <span className="mt-1 block text-xs text-ink-muted">
+                          Freight {formatInrFromPaise(Math.round(c.freightChargeRupees * 100))}
+                          {payMode === "cod" && c.codChargesRupees > 0
+                            ? ` · COD charges ${formatInrFromPaise(Math.round(c.codChargesRupees * 100))}`
+                            : null}
+                          {" · "}
+                          Total {formatInrFromPaise(Math.round(c.totalChargeRupees * 100))}
+                          {c.estimatedDeliveryDays ? ` · ~${c.estimatedDeliveryDays} days` : null}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {!shipQuoteLoading && !shipQuoteErr && shipQuotes.length === 0 ? (
+              <p className="mt-2 text-xs text-ink-muted">
+                Quotes unavailable (configure Shiprocket or check pincode).
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <div className="space-y-4 rounded-2xl border border-sand-deep bg-white p-6">
         <h2 className="font-display text-xl text-ink">Summary</h2>
         <p className="text-sm text-ink-muted">
           {lines.reduce((n, l) => n + l.quantity, 0)} items
         </p>
-        <p className="font-display text-2xl text-ink">{formatInrFromPaise(subtotalPaise)}</p>
+        <dl className="mt-3 space-y-2 text-sm">
+          <div className="flex justify-between gap-4 text-ink-muted">
+            <dt>Subtotal</dt>
+            <dd className="text-ink">{formatInrFromPaise(subtotalPaise)}</dd>
+          </div>
+          <div className="flex justify-between gap-4 text-ink-muted">
+            <dt>Delivery (estimate)</dt>
+            <dd className="text-ink">{formatInrFromPaise(deliveryPaise)}</dd>
+          </div>
+          <div className="flex justify-between gap-4 border-t border-sand-deep pt-2 font-display text-xl text-ink">
+            <dt>Total</dt>
+            <dd>{formatInrFromPaise(grandTotalPaise)}</dd>
+          </div>
+        </dl>
+        {ship.postalCode.replace(/\D/g, "").length === 6 &&
+        !shipQuoteLoading &&
+        shipQuotes.length === 0 &&
+        !shipQuoteErr ? (
+          <p className="mt-2 text-xs text-amber-800">
+            No courier quotes — delivery will show as ₹0 until quotes load or Shiprocket is configured.
+          </p>
+        ) : null}
 
         <fieldset className="space-y-3 border-0 p-0">
           <legend className="text-sm font-medium text-ink">Payment</legend>

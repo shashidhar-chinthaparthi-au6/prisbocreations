@@ -29,6 +29,7 @@ const createSchema = z.object({
   shipping: shipSchema,
   guestEmail: z.string().email().optional(),
   paymentMethod: z.enum(["online", "cod"]).optional().default("online"),
+  shiprocketCourierId: z.number().int().positive().optional(),
 });
 
 export async function GET() {
@@ -50,6 +51,7 @@ export async function POST(req: Request) {
         lines: body.lines,
         shipping: body.shipping,
         paymentMethod: body.paymentMethod,
+        shiprocketCourierId: body.shiprocketCourierId,
       });
       return jsonOk(order);
     }
@@ -61,6 +63,7 @@ export async function POST(req: Request) {
       lines: body.lines,
       shipping: body.shipping,
       paymentMethod: body.paymentMethod,
+      shiprocketCourierId: body.shiprocketCourierId,
     });
     return jsonOk(order);
   } catch (e) {

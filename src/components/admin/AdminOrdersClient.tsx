@@ -8,12 +8,22 @@ import { Spinner } from "@/components/ui/Spinner";
 
 type OrderRow = {
   _id: string;
+  invoiceNumber?: string;
   status: string;
   totalPaise: number;
   createdAt: string;
   userId?: string;
   guestEmail?: string;
   paymentMethod?: string;
+  shiprocket?: {
+    awb?: string;
+    courierName?: string;
+    freightChargeRupees?: number;
+    totalShippingRupees?: number;
+    status?: string;
+    trackingUrl?: string;
+    lastError?: string;
+  } | null;
 };
 
 const statuses = ["pending", "paid", "processing", "shipped", "cancelled"] as const;
@@ -48,13 +58,14 @@ export function AdminOrdersClient() {
             <th className="px-4 py-3">User</th>
             <th className="px-4 py-3">Total</th>
             <th className="px-4 py-3">Pay</th>
+            <th className="px-4 py-3">Shipment</th>
             <th className="px-4 py-3">Status</th>
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan={5} className="px-4 py-6">
+              <td colSpan={6} className="px-4 py-6">
                 <span className="inline-flex items-center gap-2 text-ink-muted">
                   <Spinner size="sm" />
                   Loading…
@@ -64,7 +75,12 @@ export function AdminOrdersClient() {
           ) : null}
           {orders?.map((o) => (
             <tr key={o._id} className="border-b border-sand-deep/80">
-              <td className="px-4 py-3 font-mono text-xs">{o._id}</td>
+              <td className="px-4 py-3 font-mono text-xs">
+                <div>{o._id}</div>
+                {o.invoiceNumber ? (
+                  <div className="mt-0.5 text-[10px] font-semibold text-ink-muted">{o.invoiceNumber}</div>
+                ) : null}
+              </td>
               <td className="px-4 py-3 text-xs">
                 {o.userId ? (
                   <span className="font-mono">{o.userId}</span>
@@ -75,6 +91,46 @@ export function AdminOrdersClient() {
               <td className="px-4 py-3">{formatInrFromPaise(o.totalPaise)}</td>
               <td className="px-4 py-3 text-xs capitalize text-ink-muted">
                 {o.paymentMethod === "cod" ? "COD" : "Online"}
+              </td>
+              <td className="px-4 py-3 text-xs text-ink-muted">
+                {o.shiprocket?.awb || o.shiprocket?.courierName || o.shiprocket?.status ? (
+                  <div className="max-w-[200px] space-y-1">
+                    {o.shiprocket.courierName ? (
+                      <p className="truncate text-ink">{o.shiprocket.courierName}</p>
+                    ) : null}
+                    {o.shiprocket.awb ? (
+                      <p className="font-mono text-[10px] text-ink">{o.shiprocket.awb}</p>
+                    ) : (
+                      <p className="capitalize">{o.shiprocket.status ?? "—"}</p>
+                    )}
+                    {typeof o.shiprocket.totalShippingRupees === "number" ? (
+                      <p>
+                        Ship:{" "}
+                        {formatInrFromPaise(Math.round(o.shiprocket.totalShippingRupees * 100))}
+                      </p>
+                    ) : typeof o.shiprocket.freightChargeRupees === "number" ? (
+                      <p>
+                        Freight:{" "}
+                        {formatInrFromPaise(Math.round(o.shiprocket.freightChargeRupees * 100))}
+                      </p>
+                    ) : null}
+                    {o.shiprocket.trackingUrl ? (
+                      <a
+                        href={o.shiprocket.trackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent hover:underline"
+                      >
+                        Track
+                      </a>
+                    ) : null}
+                    {o.shiprocket.lastError ? (
+                      <p className="text-[10px] text-rose">{o.shiprocket.lastError.slice(0, 80)}</p>
+                    ) : null}
+                  </div>
+                ) : (
+                  "—"
+                )}
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">

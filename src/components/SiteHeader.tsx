@@ -56,6 +56,9 @@ export async function SiteHeader() {
               <Link href="/categories" className="shrink-0 hover:text-accent">
                 Shop
               </Link>
+              <Link href="/track" className="shrink-0 hover:text-accent">
+                Track order
+              </Link>
               {session ? (
                 <>
                   <Link href="/orders" className="shrink-0 hover:text-accent">

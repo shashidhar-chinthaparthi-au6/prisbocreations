@@ -33,12 +33,51 @@ const ShippingSchema = new Schema(
   { _id: false }
 );
 
+/** Shiprocket logistics snapshot (optional). */
+const ShiprocketSnapshotSchema = new Schema(
+  {
+    status: { type: String },
+    channelOrderId: { type: String },
+    shiprocketOrderId: { type: Number },
+    shipmentId: { type: Number },
+    awb: { type: String },
+    courierId: { type: Number },
+    courierName: { type: String },
+    trackingUrl: { type: String },
+    freightChargeRupees: { type: Number },
+    codChargeRupees: { type: Number },
+    totalShippingRupees: { type: Number },
+    chargesBreakdown: { type: Schema.Types.Mixed },
+    lastError: { type: String },
+    rawCreate: { type: Schema.Types.Mixed },
+    cancelledAt: { type: Date },
+    /** Last Shiprocket shipment webhook (panel → Settings → Webhooks). */
+    lastWebhookAt: { type: Date },
+    webhookStatus: { type: String },
+    webhookScans: {
+      type: [
+        {
+          date: { type: String },
+          activity: { type: String },
+          location: { type: String },
+        },
+      ],
+      default: undefined,
+    },
+  },
+  { _id: false },
+);
+
 const OrderSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: false, index: true },
     guestEmail: { type: String, lowercase: true, trim: true },
+    /** Human-readable id for invoices and guest lookup (sparse for legacy docs). */
+    invoiceNumber: { type: String, trim: true, uppercase: true, sparse: true, unique: true },
     items: { type: [OrderItemSchema], required: true },
     subtotalPaise: { type: Number, required: true },
+    /** Delivery (Shiprocket quote at order time), paise. */
+    shippingPaise: { type: Number, default: 0, min: 0 },
     totalPaise: { type: Number, required: true },
     currency: { type: String, default: "INR" },
     status: {
@@ -55,6 +94,11 @@ const OrderSchema = new Schema(
     },
     razorpayOrderId: { type: String },
     notes: { type: String },
+    cancelReason: { type: String, trim: true },
+    orderCancelledAt: { type: Date },
+    /** Courier chosen at checkout (Shiprocket `courier_id` from serviceability). */
+    shiprocketCourierId: { type: Number },
+    shiprocket: { type: ShiprocketSnapshotSchema },
   },
   { timestamps: true }
 );

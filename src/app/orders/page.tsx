@@ -34,7 +34,9 @@ export default async function OrdersPage() {
                 href={`/orders/${o._id}`}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sand-deep bg-white p-4 shadow-sm hover:border-accent"
               >
-                <span className="font-mono text-xs text-ink-muted">{String(o._id)}</span>
+                <span className="min-w-0 font-mono text-xs text-ink-muted">
+                  {(o as { invoiceNumber?: string }).invoiceNumber ?? String(o._id)}
+                </span>
                 <span className="text-sm capitalize text-ink">
                   {o.status}
                   {(o as { paymentMethod?: string }).paymentMethod === "cod" ? (

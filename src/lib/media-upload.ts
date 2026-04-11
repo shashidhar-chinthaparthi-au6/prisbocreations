@@ -10,8 +10,8 @@ export const ADMIN_IMAGE_MIMES = [
 export const ADMIN_VIDEO_MIMES = ["video/mp4", "video/webm", "video/quicktime"] as const;
 
 export const MAX_ADMIN_IMAGE_BYTES = 5 * 1024 * 1024;
-/** Storefront buyer reference images (S3 customer-uploads/). */
-export const MAX_CUSTOMER_IMAGE_BYTES = 5 * 1024 * 1024;
+/** Storefront buyer reference images (S3 key uploads/customer-uploads/*). High-res phone / print refs. */
+export const MAX_CUSTOMER_IMAGE_BYTES = 30 * 1024 * 1024;
 /** Product videos (S3 direct upload; local dev writes to disk). */
 export const MAX_ADMIN_VIDEO_BYTES = 100 * 1024 * 1024;
 

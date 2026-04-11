@@ -48,7 +48,12 @@ export async function createPresignedPut(
   }
 
   const prefix = opts?.keyPrefix ?? "uploads";
-  const key = `${prefix}/${Date.now()}-${randomBytes(8).toString("hex")}${ext}`;
+  // Buyer refs use `uploads/customer-uploads/*` so one IAM policy `arn:...:bucket/uploads/*`
+  // covers admin catalog and storefront uploads (top-level `customer-uploads/*` often has no PutObject).
+  const key =
+    prefix === "customer-uploads"
+      ? `uploads/customer-uploads/${Date.now()}-${randomBytes(8).toString("hex")}${ext}`
+      : `${prefix}/${Date.now()}-${randomBytes(8).toString("hex")}${ext}`;
   const s3 = client(cfg);
 
   const command = new PutObjectCommand({
@@ -72,14 +77,16 @@ export function publicUrlToKey(url: string, cfg: S3Config): string | null {
   return rest;
 }
 
-/** Public URL must point at our bucket under `customer-uploads/`. */
+/** Public URL must point at our bucket under buyer-ref prefixes (see createPresignedPut). */
 export function publicUrlToCustomerUploadKey(url: string, cfg: S3Config): string | null {
   const base = cfg.publicBaseUrl.replace(/\/$/, "");
   if (!url.startsWith(base)) return null;
   const rest = url.slice(base.length).replace(/^\//, "");
-  if (!rest.startsWith("customer-uploads/")) return null;
   if (rest.includes("..") || rest.includes("//")) return null;
-  return rest;
+  if (rest.startsWith("uploads/customer-uploads/")) return rest;
+  /** Legacy keys before nested path (still valid if objects exist). */
+  if (rest.startsWith("customer-uploads/")) return rest;
+  return null;
 }
 
 export async function deleteObjectByKey(cfg: S3Config, key: string): Promise<void> {

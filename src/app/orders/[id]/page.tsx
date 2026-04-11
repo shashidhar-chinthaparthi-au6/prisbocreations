@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
+import { OrderCancelPanel } from "@/components/orders/OrderCancelPanel";
 
 export default async function OrderDetailPage({
   params,
@@ -28,6 +29,13 @@ export default async function OrderDetailPage({
     if (session) notFound();
     redirect(`/login?next=/orders/${id}`);
   }
+
+  const invoiceQs = sp.email?.trim() ? `?email=${encodeURIComponent(sp.email.trim())}` : "";
+  const invoiceHref = `/orders/${id}/invoice${invoiceQs}`;
+  const invoiceNumber = (order as { invoiceNumber?: string }).invoiceNumber;
+  const shippingPaise = (order as { shippingPaise?: number }).shippingPaise ?? 0;
+  const canCancel = ["pending", "paid", "processing"].includes(order.status);
+  const cancelReason = (order as { cancelReason?: string }).cancelReason;
 
   return (
     <div className="space-y-6">
@@ -60,14 +68,32 @@ export default async function OrderDetailPage({
           / Order detail
         </p>
         <h1 className="mt-2 font-display text-2xl text-ink">Order {String(order._id)}</h1>
-        <p className="mt-1 text-sm text-ink-muted">
+        {invoiceNumber ? (
+          <p className="mt-1 font-mono text-sm text-ink-muted">
+            Invoice <span className="text-ink">{invoiceNumber}</span>
+          </p>
+        ) : null}
+        <p className="mt-1 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
           <span className="capitalize">Status: {order.status}</span>
           {(order as { paymentMethod?: string }).paymentMethod === "cod" ? (
-            <span className="ml-2 rounded-full bg-sand-deep px-2 py-0.5 text-xs font-medium text-ink">
+            <span className="rounded-full bg-sand-deep px-2 py-0.5 text-xs font-medium text-ink">
               COD
             </span>
           ) : null}
+          <Link href={invoiceHref} className="text-accent hover:underline">
+            View invoice / print
+          </Link>
         </p>
+        {cancelReason ? (
+          <p className="mt-2 text-sm text-rose-800">
+            Cancelled
+            {(order as { orderCancelledAt?: Date }).orderCancelledAt
+              ? ` · ${new Date((order as { orderCancelledAt: Date }).orderCancelledAt).toLocaleString("en-IN")}`
+              : ""}
+            <br />
+            <span className="text-ink-muted">Reason:</span> {cancelReason}
+          </p>
+        ) : null}
       </div>
       <div className="rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
         <h2 className="font-display text-lg text-ink">Items</h2>
@@ -106,10 +132,133 @@ export default async function OrderDetailPage({
             );
           })}
         </ul>
-        <p className="mt-4 text-right font-display text-xl text-ink">
-          Total {formatInrFromPaise(order.totalPaise)}
-        </p>
+        <div className="mt-4 space-y-1 text-right text-sm">
+          <p className="text-ink-muted">
+            Subtotal <span className="text-ink">{formatInrFromPaise(order.subtotalPaise)}</span>
+          </p>
+          <p className="text-ink-muted">
+            Delivery <span className="text-ink">{formatInrFromPaise(shippingPaise)}</span>
+          </p>
+          <p className="font-display text-xl text-ink">Total {formatInrFromPaise(order.totalPaise)}</p>
+        </div>
       </div>
+      {(() => {
+        const sr = (order as { shiprocket?: Record<string, unknown> | null }).shiprocket;
+        if (!sr || typeof sr !== "object") return null;
+        const status = typeof sr.status === "string" ? sr.status : "";
+        const awb = typeof sr.awb === "string" ? sr.awb : "";
+        const trackingUrl = typeof sr.trackingUrl === "string" ? sr.trackingUrl : "";
+        const freight = typeof sr.freightChargeRupees === "number" ? sr.freightChargeRupees : null;
+        const cod = typeof sr.codChargeRupees === "number" ? sr.codChargeRupees : null;
+        const total = typeof sr.totalShippingRupees === "number" ? sr.totalShippingRupees : null;
+        const courier = typeof sr.courierName === "string" ? sr.courierName : "";
+        const lastErr = typeof sr.lastError === "string" ? sr.lastError : "";
+        const webhookStatus = typeof sr.webhookStatus === "string" ? sr.webhookStatus : "";
+        const scans = Array.isArray(sr.webhookScans)
+          ? (sr.webhookScans as Array<{ date?: string; activity?: string; location?: string }>)
+          : [];
+        const hasWebhook = Boolean(webhookStatus || scans.length || sr.lastWebhookAt);
+        if (!status && !awb && !lastErr && !hasWebhook) return null;
+        return (
+          <div className="rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
+            <h2 className="font-display text-lg text-ink">Delivery &amp; tracking</h2>
+            <p className="mt-2 text-sm capitalize text-ink-muted">Shipment status: {status || "—"}</p>
+            {webhookStatus ? (
+              <p className="mt-1 text-sm text-ink">
+                Live carrier status: <span className="font-medium">{webhookStatus}</span>
+                {sr.lastWebhookAt ? (
+                  <span className="ml-2 text-xs text-ink-muted">
+                    · updated {new Date(String(sr.lastWebhookAt)).toLocaleString("en-IN")}
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
+            {courier ? (
+              <p className="mt-1 text-sm text-ink-muted">
+                Courier: <span className="text-ink">{courier}</span>
+              </p>
+            ) : null}
+            {freight != null ? (
+              <ul className="mt-3 space-y-1 text-sm text-ink-muted">
+                <li>
+                  Freight:{" "}
+                  <span className="font-medium text-ink">
+                    {formatInrFromPaise(Math.round(freight * 100))}
+                  </span>
+                </li>
+                {cod != null && cod > 0 ? (
+                  <li>
+                    COD charges:{" "}
+                    <span className="font-medium text-ink">
+                      {formatInrFromPaise(Math.round(cod * 100))}
+                    </span>
+                  </li>
+                ) : null}
+                {total != null ? (
+                  <li>
+                    Total shipping (estimate):{" "}
+                    <span className="font-medium text-ink">
+                      {formatInrFromPaise(Math.round(total * 100))}
+                    </span>
+                  </li>
+                ) : null}
+              </ul>
+            ) : null}
+            {sr.chargesBreakdown && typeof sr.chargesBreakdown === "object" ? (
+              <details className="mt-3 text-xs text-ink-muted">
+                <summary className="cursor-pointer text-accent">All carrier charges (raw)</summary>
+                <pre className="mt-2 max-h-40 overflow-auto rounded bg-sand/50 p-2 font-mono text-[11px]">
+                  {JSON.stringify(sr.chargesBreakdown, null, 2)}
+                </pre>
+              </details>
+            ) : null}
+            {awb ? (
+              <p className="mt-3 text-sm">
+                AWB: <span className="font-mono text-ink">{awb}</span>
+              </p>
+            ) : null}
+            {trackingUrl ? (
+              <p className="mt-2">
+                <a
+                  href={trackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-accent hover:underline"
+                >
+                  Track shipment →
+                </a>
+              </p>
+            ) : null}
+            {lastErr ? (
+              <p className="mt-2 text-xs text-rose" role="alert">
+                {lastErr}
+              </p>
+            ) : null}
+            {scans.length > 0 ? (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  Recent scans (webhook)
+                </p>
+                <ul className="mt-2 max-h-52 space-y-1 overflow-y-auto text-xs text-ink-muted">
+                  {scans.map((s, i) => (
+                    <li key={i} className="rounded-lg border border-sand-deep/60 bg-sand/20 px-2 py-1.5">
+                      <span className="font-medium text-ink">{s.activity ?? "—"}</span>
+                      {s.location ? <span> · {s.location}</span> : null}
+                      {s.date ? <span className="mt-0.5 block text-[10px]">{s.date}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        );
+      })()}
+      <OrderCancelPanel
+        orderId={String(order._id)}
+        guestEmail={!session ? sp.email?.trim() ?? null : null}
+        canCancel={canCancel}
+      />
+
       <div className="rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
         <h2 className="font-display text-lg text-ink">Shipping</h2>
         <p className="mt-2 text-sm text-ink-muted">

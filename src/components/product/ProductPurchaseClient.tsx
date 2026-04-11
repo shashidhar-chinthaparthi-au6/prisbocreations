@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { uploadCustomerImageToS3 } from "@/lib/api/customer-upload-client";
+import { MAX_CUSTOMER_IMAGE_BYTES } from "@/lib/media-upload";
 import { formatInrFromPaise } from "@/lib/format";
 import { Spinner } from "@/components/ui/Spinner";
 import { isHtmlContentEmpty } from "@/lib/html-content-empty";
@@ -299,6 +300,10 @@ export function ProductPurchaseClient({
               <label className="block text-xs font-medium text-ink-muted">
                 Reference image{imgReq ? " (required)" : " (optional)"}
               </label>
+              <p className="text-[11px] text-ink-muted">
+                JPEG, PNG, WebP, or GIF — up to{" "}
+                {Math.round(MAX_CUSTOMER_IMAGE_BYTES / (1024 * 1024))} MB.
+              </p>
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"

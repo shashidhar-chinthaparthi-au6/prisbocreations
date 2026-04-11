@@ -1,6 +1,15 @@
+import { randomBytes } from "crypto";
 import mongoose from "mongoose";
 import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
+import { User } from "@/lib/models/User";
+import { getShiprocketConfig, isShiprocketConfigured } from "@/lib/shiprocket-config";
+import { shiprocketServiceability } from "@/lib/services/shiprocketApi";
+import {
+  cancelShiprocketForOrder,
+  syncShiprocketForOrder,
+  type ShiprocketOrderLean,
+} from "@/lib/services/shiprocketSync";
 import { isTrustedCustomerImageUrl } from "@/lib/customer-upload";
 import { resolveProductLine } from "@/lib/product-options";
 import { colorVariantsFromDoc } from "@/lib/product-color-variants";
@@ -28,6 +37,51 @@ export type ShippingInput = {
 
 function normalizeGuestEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+async function allocateInvoiceNumber(): Promise<string> {
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const suffix = randomBytes(3).toString("hex").toUpperCase();
+    const invoiceNumber = `PCB-${day}-${suffix}`;
+    const clash = await Order.exists({ invoiceNumber });
+    if (!clash) return invoiceNumber;
+  }
+  throw new Error("Could not allocate invoice number");
+}
+
+async function shippingPaiseForCheckout(input: {
+  shiprocketCourierId?: number;
+  shipping: ShippingInput;
+  paymentMethod: "online" | "cod";
+}): Promise<number> {
+  if (!isShiprocketConfigured()) return 0;
+  const id = input.shiprocketCourierId;
+  if (typeof id !== "number" || !Number.isFinite(id) || id <= 0) return 0;
+  const pin = input.shipping.postalCode.replace(/\D/g, "").slice(0, 6);
+  if (pin.length !== 6) {
+    throw new Error("Enter a valid 6-digit postal code when choosing a courier.");
+  }
+  const cfg = getShiprocketConfig();
+  if (!cfg) return 0;
+  const cod = input.paymentMethod === "cod";
+  const quotes = await shiprocketServiceability({
+    deliveryPostcode: pin,
+    weightKg: cfg.defaultWeightKg,
+    cod,
+  });
+  if (!quotes.length) {
+    throw new Error(
+      "Delivery quotes are unavailable right now. Try again in a moment or contact support.",
+    );
+  }
+  const row = quotes.find((q) => q.courierId === id);
+  if (!row) {
+    throw new Error(
+      "Selected delivery option is no longer available for this address. Go back to checkout and choose shipping again.",
+    );
+  }
+  return Math.max(0, Math.round(row.totalCharge * 100));
 }
 
 function customizationFlags(p: Record<string, unknown>) {
@@ -114,6 +168,8 @@ export async function createOrderFromCart(input: {
   lines: OrderCartLineInput[];
   shipping: ShippingInput;
   paymentMethod?: "online" | "cod";
+  /** Shiprocket serviceability `courier_id` from checkout quote */
+  shiprocketCourierId?: number;
 }) {
   if (!input.lines.length) throw new Error("Cart is empty");
 
@@ -206,19 +262,35 @@ export async function createOrderFromCart(input: {
   const paymentMethod = input.paymentMethod ?? "online";
   const status = paymentMethod === "cod" ? "processing" : "pending";
 
+  const shippingPaise = await shippingPaiseForCheckout({
+    shiprocketCourierId: input.shiprocketCourierId,
+    shipping: input.shipping,
+    paymentMethod,
+  });
+  const totalPaise = subtotalPaise + shippingPaise;
+  const invoiceNumber = await allocateInvoiceNumber();
+
   const order = await Order.create({
     ...(hasUser ? { userId: input.userId } : { guestEmail: normalizeGuestEmail(guest!) }),
+    invoiceNumber,
     items,
     subtotalPaise,
-    totalPaise: subtotalPaise,
+    shippingPaise,
+    totalPaise,
     currency: "INR",
     status,
     paymentMethod,
     shipping: input.shipping,
+    ...(typeof input.shiprocketCourierId === "number" &&
+    Number.isFinite(input.shiprocketCourierId) &&
+    input.shiprocketCourierId > 0
+      ? { shiprocketCourierId: input.shiprocketCourierId }
+      : {}),
   });
 
   if (paymentMethod === "cod") {
     await decrementInventoryForOrderItems(items);
+    void syncShiprocketForOrder(order._id.toString()).catch(() => {});
   }
 
   return order;
@@ -253,6 +325,11 @@ export async function updateOrderStatus(
   orderId: string,
   status: "pending" | "paid" | "processing" | "shipped" | "cancelled",
 ) {
+  const prev = await Order.findById(orderId).lean();
+  if (!prev) return null;
+  if (status === "cancelled" && prev.status !== "cancelled") {
+    await cancelShiprocketForOrder(prev as ShiprocketOrderLean);
+  }
   return Order.findByIdAndUpdate(orderId, { status }, { new: true }).lean();
 }
 
@@ -261,5 +338,111 @@ export async function attachRazorpayOrderId(orderId: string, razorpayOrderId: st
 }
 
 export async function markOrderPaid(orderId: string) {
-  return Order.findByIdAndUpdate(orderId, { status: "paid" }, { new: true }).lean();
+  const doc = await Order.findByIdAndUpdate(orderId, { status: "paid" }, { new: true }).lean();
+  if (doc) void syncShiprocketForOrder(orderId).catch(() => {});
+  return doc;
+}
+
+/** Restore stock when a paid / COD-placed order is cancelled before fulfilment. */
+export async function incrementInventoryForOrderItems(
+  items: Array<{
+    productId: mongoose.Types.ObjectId;
+    quantity: number;
+    optionKey?: string | null;
+  }>,
+) {
+  for (const item of items) {
+    const pid = item.productId.toString();
+    const optKey = item.optionKey?.trim();
+    if (optKey) {
+      await Product.findByIdAndUpdate(
+        pid,
+        { $inc: { "options.$[o].stock": item.quantity } },
+        { arrayFilters: [{ "o.key": optKey }] },
+      );
+    } else {
+      await Product.findByIdAndUpdate(pid, { $inc: { stock: item.quantity } });
+    }
+  }
+}
+
+export async function lookupOrderForTrack(identifier: string, email: string) {
+  const raw = identifier.trim();
+  const em = normalizeGuestEmail(email);
+  if (!raw || !em) throw new Error("Order or invoice number and email are required.");
+
+  let order;
+  if (mongoose.Types.ObjectId.isValid(raw) && String(new mongoose.Types.ObjectId(raw)) === raw) {
+    order = await Order.findById(raw).lean();
+  } else {
+    const inv = raw.toUpperCase().replace(/\s+/g, "");
+    order = await Order.findOne({ invoiceNumber: inv }).lean();
+  }
+  if (!order) throw new Error("No order matches these details.");
+
+  if (order.guestEmail) {
+    if (normalizeGuestEmail(order.guestEmail) !== em) throw new Error("No order matches these details.");
+    return order;
+  }
+  if (order.userId) {
+    const u = await User.findById(order.userId).lean();
+    if (!u || normalizeGuestEmail(u.email) !== em) throw new Error("No order matches these details.");
+    return order;
+  }
+  throw new Error("No order matches these details.");
+}
+
+export async function cancelOrderByOwner(input: {
+  orderId: string;
+  userId?: string;
+  guestEmail?: string;
+  reason: string;
+}) {
+  const reason = input.reason.trim();
+  if (reason.length < 3) {
+    throw new Error("Please enter a cancellation reason (at least 3 characters).");
+  }
+
+  const order = await Order.findById(input.orderId).lean();
+  if (!order) throw new Error("Order not found");
+
+  if (order.userId) {
+    if (!input.userId || order.userId.toString() !== input.userId) throw new Error("Order not found");
+  } else {
+    const ge = order.guestEmail;
+    if (!ge || !input.guestEmail || normalizeGuestEmail(ge) !== normalizeGuestEmail(input.guestEmail)) {
+      throw new Error("Order not found");
+    }
+  }
+
+  if (order.status === "cancelled") throw new Error("This order is already cancelled.");
+  if (order.status === "shipped") {
+    throw new Error("This order has shipped and cannot be cancelled online. Please contact support.");
+  }
+
+  const shouldRestoreStock = order.status === "paid" || order.status === "processing";
+
+  await cancelShiprocketForOrder(order as ShiprocketOrderLean);
+
+  const updated = await Order.findByIdAndUpdate(
+    input.orderId,
+    {
+      status: "cancelled",
+      cancelReason: reason,
+      orderCancelledAt: new Date(),
+    },
+    { new: true },
+  ).lean();
+
+  if (shouldRestoreStock && order.items?.length) {
+    await incrementInventoryForOrderItems(
+      order.items.map((it) => ({
+        productId: it.productId as mongoose.Types.ObjectId,
+        quantity: it.quantity,
+        optionKey: it.optionKey,
+      })),
+    );
+  }
+
+  return updated;
 }
