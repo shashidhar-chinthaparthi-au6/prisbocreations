@@ -5,6 +5,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AdminMultiImageField } from "@/components/admin/AdminMultiImageField";
 import { slugify } from "@/lib/slugify";
+import { Spinner } from "@/components/ui/Spinner";
 
 type CategoryRow = {
   _id: string;
@@ -48,6 +49,9 @@ export function AdminCategoriesClient() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>(emptyEdit);
   const [editMsg, setEditMsg] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["admin-categories"],
@@ -80,6 +84,7 @@ export function AdminCategoriesClient() {
       setEditMsg("Keep at least one image.");
       return;
     }
+    setSavingEdit(true);
     try {
       await apiFetch(`/api/v1/admin/categories/${editingId}`, {
         method: "PATCH",
@@ -95,6 +100,8 @@ export function AdminCategoriesClient() {
       cancelEdit();
     } catch (err) {
       setEditMsg(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -106,6 +113,7 @@ export function AdminCategoriesClient() {
       setMsg("Add at least one image (upload or paste URLs).");
       return;
     }
+    setCreating(true);
     try {
       await apiFetch("/api/v1/admin/categories", {
         method: "POST",
@@ -122,15 +130,22 @@ export function AdminCategoriesClient() {
       setMsg("Category created");
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setCreating(false);
     }
   }
 
   async function remove(id: string) {
     if (!confirm("Delete category and its products?")) return;
     if (editingId === id) cancelEdit();
-    await apiFetch(`/api/v1/admin/categories/${id}`, { method: "DELETE" });
-    await qc.invalidateQueries({ queryKey: ["admin-categories"] });
-    await qc.invalidateQueries({ queryKey: ["categories"] });
+    setDeletingId(id);
+    try {
+      await apiFetch(`/api/v1/admin/categories/${id}`, { method: "DELETE" });
+      await qc.invalidateQueries({ queryKey: ["admin-categories"] });
+      await qc.invalidateQueries({ queryKey: ["categories"] });
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   return (
@@ -178,14 +193,27 @@ export function AdminCategoriesClient() {
         </label>
         <button
           type="submit"
-          className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white"
+          disabled={creating}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
-          Create
+          {creating ? (
+            <>
+              <Spinner size="sm" className="text-white" />
+              Creating…
+            </>
+          ) : (
+            "Create"
+          )}
         </button>
       </form>
 
       <ul className="space-y-3">
-        {isLoading ? <li className="text-ink-muted">Loading…</li> : null}
+        {isLoading ? (
+          <li className="inline-flex items-center gap-2 text-ink-muted">
+            <Spinner size="sm" />
+            Loading…
+          </li>
+        ) : null}
         {rows?.map((c) => (
           <li
             key={c._id}
@@ -206,10 +234,18 @@ export function AdminCategoriesClient() {
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-rose hover:underline"
+                  disabled={deletingId === c._id}
+                  className="inline-flex items-center gap-1 text-xs text-rose hover:underline disabled:opacity-60"
                   onClick={() => remove(c._id)}
                 >
-                  Delete
+                  {deletingId === c._id ? (
+                    <>
+                      <Spinner size="sm" />
+                      Deleting…
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
                 </button>
               </div>
             </div>
@@ -260,9 +296,17 @@ export function AdminCategoriesClient() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="submit"
-                    className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white"
+                    disabled={savingEdit}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                   >
-                    Save changes
+                    {savingEdit ? (
+                      <>
+                        <Spinner size="sm" className="text-white" />
+                        Saving…
+                      </>
+                    ) : (
+                      "Save changes"
+                    )}
                   </button>
                   <button
                     type="button"

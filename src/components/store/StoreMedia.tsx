@@ -13,6 +13,9 @@ type Props = {
   priority?: boolean;
   /** For video URLs: show native controls (e.g. off for tiny cart/list thumbs). Default true. */
   videoControls?: boolean;
+  /** Image decoded / video first frame ready */
+  onMediaReady?: () => void;
+  onMediaError?: () => void;
 };
 
 /** Renders product media: `<video>` for MP4/WebM/MOV URLs, else Next/Image. */
@@ -24,6 +27,8 @@ export function StoreMedia({
   sizes,
   priority,
   videoControls = true,
+  onMediaReady,
+  onMediaError,
 }: Props) {
   if (isVideoUrl(src)) {
     if (fill) {
@@ -36,6 +41,8 @@ export function StoreMedia({
           playsInline
           preload="metadata"
           aria-label={alt}
+          onLoadedData={onMediaReady}
+          onError={onMediaError}
         />
       );
     }
@@ -48,6 +55,8 @@ export function StoreMedia({
         playsInline
         preload="metadata"
         aria-label={alt}
+        onLoadedData={onMediaReady}
+        onError={onMediaError}
       />
     );
   }
@@ -61,11 +70,22 @@ export function StoreMedia({
         className={className ?? "object-cover"}
         sizes={sizes}
         priority={priority}
+        onLoad={onMediaReady}
+        onError={onMediaError}
       />
     );
   }
 
   return (
-    <Image src={src} alt={alt} width={800} height={800} className={className ?? "object-cover"} sizes={sizes} />
+    <Image
+      src={src}
+      alt={alt}
+      width={800}
+      height={800}
+      className={className ?? "object-cover"}
+      sizes={sizes}
+      onLoad={onMediaReady}
+      onError={onMediaError}
+    />
   );
 }

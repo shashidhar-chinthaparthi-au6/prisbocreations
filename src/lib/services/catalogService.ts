@@ -210,6 +210,13 @@ export type AdminProductOptionInput = {
   pricePaise: number;
   stock: number;
   sku?: string;
+  description?: string;
+};
+
+export type AdminProductColorVariantInput = {
+  key: string;
+  label: string;
+  images: string[];
 };
 
 export async function adminCreateProduct(input: {
@@ -224,8 +231,16 @@ export async function adminCreateProduct(input: {
   tags?: string[];
   isActive?: boolean;
   options?: AdminProductOptionInput[];
+  colorVariants?: AdminProductColorVariantInput[];
+  allowCustomerCustomization?: boolean;
+  customizationInstructions?: string;
+  customizationTextLabel?: string;
+  customizationTextPlaceholder?: string;
+  customizationTextMaxLength?: number;
+  customizationImageRequired?: boolean;
+  customizationTextRequired?: boolean;
 }) {
-  const { options, ...rest } = input;
+  const { options, colorVariants, ...rest } = input;
   return Product.create({
     ...rest,
     options: (options ?? []).map((o) => ({
@@ -234,6 +249,12 @@ export async function adminCreateProduct(input: {
       pricePaise: o.pricePaise,
       stock: o.stock,
       sku: o.sku?.trim() ?? "",
+      description: o.description?.trim() ?? "",
+    })),
+    colorVariants: (colorVariants ?? []).map((v) => ({
+      key: v.key.trim(),
+      label: v.label.trim(),
+      images: (v.images ?? []).map((u) => u.trim()).filter(Boolean),
     })),
   });
 }
@@ -252,6 +273,14 @@ export async function adminUpdateProduct(
     tags: string[];
     isActive: boolean;
     options: AdminProductOptionInput[];
+    colorVariants: AdminProductColorVariantInput[];
+    allowCustomerCustomization: boolean;
+    customizationInstructions: string;
+    customizationTextLabel: string;
+    customizationTextPlaceholder: string;
+    customizationTextMaxLength: number;
+    customizationImageRequired: boolean;
+    customizationTextRequired: boolean;
   }>,
 ) {
   const next = { ...patch };
@@ -262,6 +291,14 @@ export async function adminUpdateProduct(
       pricePaise: o.pricePaise,
       stock: o.stock,
       sku: o.sku?.trim() ?? "",
+      description: o.description?.trim() ?? "",
+    }));
+  }
+  if (patch.colorVariants !== undefined) {
+    (next as { colorVariants: unknown }).colorVariants = patch.colorVariants.map((v) => ({
+      key: v.key.trim(),
+      label: v.label.trim(),
+      images: (v.images ?? []).map((u) => u.trim()).filter(Boolean),
     }));
   }
   return Product.findByIdAndUpdate(id, next, { new: true }).lean();

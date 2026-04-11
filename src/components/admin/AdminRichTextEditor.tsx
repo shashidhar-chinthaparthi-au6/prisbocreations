@@ -86,7 +86,10 @@ export function AdminRichTextEditor({
     if (!editor) return;
     const current = editor.getHTML();
     if (value === current) return;
-    editor.commands.setContent(value || "<p></p>", { emitUpdate: false });
+    editor.commands.setContent(value || "<p></p>", {
+      emitUpdate: false,
+      parseOptions: { preserveWhitespace: "full" },
+    });
   }, [value, editor]);
 
   const setLink = useCallback(() => {

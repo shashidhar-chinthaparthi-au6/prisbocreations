@@ -10,6 +10,7 @@ import {
   SubcategoryProductListing,
   type ListingProduct,
 } from "@/components/category/SubcategoryProductListing";
+import { colorVariantsFromDoc, listingCarouselImages } from "@/lib/product-color-variants";
 
 export async function generateMetadata({
   params,
@@ -34,6 +35,9 @@ function serializeProducts(products: Awaited<ReturnType<typeof listProducts>>): 
             stock: Number(o.stock) || 0,
           }))
         : undefined;
+    const cv = colorVariantsFromDoc(p);
+    const baseImages = p.images ?? [];
+    const carouselImages = listingCarouselImages(baseImages, cv);
     return {
       _id: String(p._id),
       slug: p.slug,
@@ -41,7 +45,9 @@ function serializeProducts(products: Awaited<ReturnType<typeof listProducts>>): 
       sku: p.sku,
       pricePaise: p.pricePaise,
       stock: p.stock,
-      images: p.images ?? [],
+      images: baseImages,
+      carouselImages,
+      hasColorVariants: cv.length > 0,
       options,
     };
   });

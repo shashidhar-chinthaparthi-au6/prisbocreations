@@ -1,13 +1,18 @@
 import mongoose from "mongoose";
 import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
+import { isTrustedCustomerImageUrl } from "@/lib/customer-upload";
 import { resolveProductLine } from "@/lib/product-options";
+import { colorVariantsFromDoc } from "@/lib/product-color-variants";
 
 /** Server-side cart line from checkout API (optionKey when product has purchase options). */
 export type OrderCartLineInput = {
   productId: string;
   quantity: number;
   optionKey?: string;
+  colorKey?: string;
+  customerImageUrl?: string;
+  customerNotes?: string;
 };
 
 export type ShippingInput = {
@@ -23,6 +28,62 @@ export type ShippingInput = {
 
 function normalizeGuestEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function customizationFlags(p: Record<string, unknown>) {
+  return {
+    allow: Boolean(p.allowCustomerCustomization),
+    imageRequired: p.customizationImageRequired !== false,
+    textRequired: Boolean(p.customizationTextRequired),
+    maxNotes:
+      typeof p.customizationTextMaxLength === "number" &&
+      Number.isFinite(p.customizationTextMaxLength)
+        ? Math.min(2000, Math.max(1, p.customizationTextMaxLength))
+        : 500,
+  };
+}
+
+function validateLineCustomization(
+  p: Record<string, unknown>,
+  line: OrderCartLineInput,
+): { customerImageUrl?: string; customerNotes?: string } {
+  const flags = customizationFlags(p);
+  const rawImg = line.customerImageUrl?.trim() ?? "";
+  const rawNotes = (line.customerNotes ?? "").trim();
+
+  if (!flags.allow) {
+    if (rawImg || rawNotes) {
+      throw new Error(`Personalisation is not enabled for ${String(p.name)}`);
+    }
+    return {};
+  }
+
+  if (rawNotes.length > flags.maxNotes) {
+    throw new Error(
+      `Notes are too long for ${String(p.name)} (max ${flags.maxNotes} characters)`,
+    );
+  }
+
+  if (flags.imageRequired && !rawImg) {
+    throw new Error(`Please upload a reference image for ${String(p.name)}`);
+  }
+
+  if (flags.textRequired && !rawNotes) {
+    throw new Error(`Please enter text for ${String(p.name)}`);
+  }
+
+  if (!flags.imageRequired && !flags.textRequired && !rawImg && !rawNotes) {
+    throw new Error(`Add an image or notes for ${String(p.name)}`);
+  }
+
+  if (rawImg && !isTrustedCustomerImageUrl(rawImg)) {
+    throw new Error("Invalid or disallowed image URL");
+  }
+
+  return {
+    customerImageUrl: rawImg || undefined,
+    customerNotes: rawNotes || undefined,
+  };
 }
 
 export async function decrementInventoryForOrderItems(
@@ -81,6 +142,10 @@ export async function createOrderFromCart(input: {
     imageUrl?: string;
     optionKey?: string;
     optionLabel?: string;
+    colorKey?: string;
+    colorLabel?: string;
+    customerImageUrl?: string;
+    customerNotes?: string;
   }> = [];
 
   for (const line of input.lines) {
@@ -93,17 +158,48 @@ export async function createOrderFromCart(input: {
       throw new Error(`Insufficient stock for ${p.name}`);
     }
 
+    const colors = colorVariantsFromDoc(p);
+    const colorKeyRaw = line.colorKey?.trim() ?? "";
+    if (colors.length > 0) {
+      if (!colorKeyRaw) throw new Error(`Choose a color for ${p.name}`);
+      const cv = colors.find((c) => c.key === colorKeyRaw);
+      if (!cv) throw new Error("Invalid color option");
+    } else if (colorKeyRaw) {
+      throw new Error("Invalid line");
+    }
+
+    const pRec = p as unknown as Record<string, unknown>;
+    const cust = validateLineCustomization(pRec, line);
+
+    const colorLabel =
+      colorKeyRaw && colors.length
+        ? colors.find((c) => c.key === colorKeyRaw)?.label
+        : undefined;
+    const titleParts: string[] = [];
+    if (colorLabel) titleParts.push(colorLabel);
+    if (resolved.optionLabel) titleParts.push(resolved.optionLabel);
+    const displayName =
+      titleParts.length > 0 ? `${p.name} — ${titleParts.join(" · ")}` : p.name;
+
+    let imageUrl: string | undefined = p.images?.[0];
+    if (colorKeyRaw && colors.length) {
+      const cv = colors.find((c) => c.key === colorKeyRaw);
+      if (cv?.images?.length) imageUrl = cv.images[0];
+    }
+
     subtotalPaise += resolved.unitPricePaise * line.quantity;
     items.push({
       productId: p._id,
-      name: resolved.optionLabel ? `${p.name} — ${resolved.optionLabel}` : p.name,
+      name: displayName,
       slug: p.slug,
       sku: resolved.sku,
       unitPricePaise: resolved.unitPricePaise,
       quantity: line.quantity,
-      imageUrl: p.images?.[0],
+      imageUrl,
       optionKey: resolved.optionKey,
       optionLabel: resolved.optionLabel,
+      ...(colorKeyRaw ? { colorKey: colorKeyRaw, colorLabel } : {}),
+      ...cust,
     });
   }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/components/cart/CartProvider";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { formatInrFromPaise } from "@/lib/format";
+import { Spinner } from "@/components/ui/Spinner";
 
 declare global {
   interface Window {
@@ -81,6 +82,11 @@ export function CheckoutClient({
           productId: l.productId,
           quantity: l.quantity,
           ...(l.optionKey ? { optionKey: l.optionKey } : {}),
+          ...(l.colorKey?.trim() ? { colorKey: l.colorKey.trim() } : {}),
+          ...(l.customerImageUrl?.trim()
+            ? { customerImageUrl: l.customerImageUrl.trim() }
+            : {}),
+          ...(l.customerNotes?.trim() ? { customerNotes: l.customerNotes.trim() } : {}),
         })),
         shipping: ship,
         paymentMethod: "cod",
@@ -121,6 +127,11 @@ export function CheckoutClient({
           productId: l.productId,
           quantity: l.quantity,
           ...(l.optionKey ? { optionKey: l.optionKey } : {}),
+          ...(l.colorKey?.trim() ? { colorKey: l.colorKey.trim() } : {}),
+          ...(l.customerImageUrl?.trim()
+            ? { customerImageUrl: l.customerImageUrl.trim() }
+            : {}),
+          ...(l.customerNotes?.trim() ? { customerNotes: l.customerNotes.trim() } : {}),
         })),
         shipping: ship,
         paymentMethod: "online",
@@ -298,13 +309,18 @@ export function CheckoutClient({
           type="button"
           disabled={busy}
           onClick={submit}
-          className="w-full rounded-full bg-accent py-3 text-sm font-semibold text-white hover:bg-accent-light disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-semibold text-white hover:bg-accent-light disabled:opacity-60"
         >
-          {busy
-            ? "Processing…"
-            : payMode === "cod"
-              ? "Place order (COD)"
-              : "Pay with Razorpay"}
+          {busy ? (
+            <>
+              <Spinner size="sm" className="text-white" />
+              Processing…
+            </>
+          ) : payMode === "cod" ? (
+            "Place order (COD)"
+          ) : (
+            "Pay with Razorpay"
+          )}
         </button>
         {payMode === "razorpay" ? (
           <p className="text-xs text-ink-muted">

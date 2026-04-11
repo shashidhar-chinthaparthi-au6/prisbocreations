@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { formatInrFromPaise } from "@/lib/format";
+import { Spinner } from "@/components/ui/Spinner";
 
 type OrderRow = {
   _id: string;
@@ -18,17 +20,23 @@ const statuses = ["pending", "paid", "processing", "shipped", "cancelled"] as co
 
 export function AdminOrdersClient() {
   const qc = useQueryClient();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: () => apiFetch<OrderRow[]>("/api/v1/admin/orders"),
   });
 
   async function setStatus(id: string, status: (typeof statuses)[number]) {
-    await apiFetch(`/api/v1/admin/orders/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
-    await qc.invalidateQueries({ queryKey: ["admin-orders"] });
+    setUpdatingId(id);
+    try {
+      await apiFetch(`/api/v1/admin/orders/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      await qc.invalidateQueries({ queryKey: ["admin-orders"] });
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   return (
@@ -46,8 +54,11 @@ export function AdminOrdersClient() {
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan={5} className="px-4 py-6 text-ink-muted">
-                Loading…
+              <td colSpan={5} className="px-4 py-6">
+                <span className="inline-flex items-center gap-2 text-ink-muted">
+                  <Spinner size="sm" />
+                  Loading…
+                </span>
               </td>
             </tr>
           ) : null}
@@ -66,19 +77,23 @@ export function AdminOrdersClient() {
                 {o.paymentMethod === "cod" ? "COD" : "Online"}
               </td>
               <td className="px-4 py-3">
-                <select
-                  className="rounded border border-sand-deep px-2 py-1 text-xs"
-                  value={o.status}
-                  onChange={(e) =>
-                    setStatus(o._id, e.target.value as (typeof statuses)[number])
-                  }
-                >
-                  {statuses.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  {updatingId === o._id ? <Spinner size="sm" className="text-ink-muted" /> : null}
+                  <select
+                    disabled={updatingId === o._id}
+                    className="rounded border border-sand-deep px-2 py-1 text-xs disabled:opacity-60"
+                    value={o.status}
+                    onChange={(e) =>
+                      setStatus(o._id, e.target.value as (typeof statuses)[number])
+                    }
+                  >
+                    {statuses.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </td>
             </tr>
           ))}

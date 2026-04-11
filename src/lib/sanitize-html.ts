@@ -1,16 +1,7 @@
 import DOMPurify from "isomorphic-dompurify";
 import type { Config } from "dompurify";
 
-/** True when HTML has no meaningful text (handles empty TipTap output). */
-export function isHtmlContentEmpty(html: string): boolean {
-  const noTags = html.replace(/<[^>]+>/g, " ");
-  const decoded = noTags
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&#160;/g, " ")
-    .replace(/&[a-z]+;/gi, " ")
-    .trim();
-  return decoded.length === 0;
-}
+export { isHtmlContentEmpty } from "./html-content-empty";
 
 const SANITIZE_CONFIG: Config = {
   ALLOWED_TAGS: [

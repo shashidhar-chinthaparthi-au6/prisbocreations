@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { getCroppedImageBlob, outputMimeForFile } from "@/lib/canvas-crop";
+import { Spinner } from "@/components/ui/Spinner";
 
 type Props = {
   imageSrc: string;
@@ -157,10 +158,17 @@ export function AdminImageCropDialog({
         <button
           type="button"
           disabled={busy}
-          className="rounded-full bg-accent py-2.5 text-sm font-semibold text-ink hover:bg-accent-light disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-accent py-2.5 text-sm font-semibold text-ink hover:bg-accent-light disabled:opacity-60"
           onClick={() => void apply()}
         >
-          {busy ? "Processing…" : submitLabel}
+          {busy ? (
+            <>
+              <Spinner size="sm" />
+              Processing…
+            </>
+          ) : (
+            submitLabel
+          )}
         </button>
       </div>
     </div>

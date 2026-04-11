@@ -35,16 +35,20 @@ function client(cfg: S3Config) {
   });
 }
 
+export type PresignedKeyPrefix = "uploads" | "customer-uploads";
+
 export async function createPresignedPut(
   cfg: S3Config,
   contentType: string,
+  opts?: { keyPrefix?: PresignedKeyPrefix },
 ): Promise<{ uploadUrl: string; publicUrl: string; key: string }> {
   const ext = extForContentType(contentType);
   if (!ext) {
     throw new Error("Unsupported content type");
   }
 
-  const key = `uploads/${Date.now()}-${randomBytes(8).toString("hex")}${ext}`;
+  const prefix = opts?.keyPrefix ?? "uploads";
+  const key = `${prefix}/${Date.now()}-${randomBytes(8).toString("hex")}${ext}`;
   const s3 = client(cfg);
 
   const command = new PutObjectCommand({
@@ -64,6 +68,16 @@ export function publicUrlToKey(url: string, cfg: S3Config): string | null {
   if (!url.startsWith(base)) return null;
   const rest = url.slice(base.length).replace(/^\//, "");
   if (!rest.startsWith("uploads/")) return null;
+  if (rest.includes("..") || rest.includes("//")) return null;
+  return rest;
+}
+
+/** Public URL must point at our bucket under `customer-uploads/`. */
+export function publicUrlToCustomerUploadKey(url: string, cfg: S3Config): string | null {
+  const base = cfg.publicBaseUrl.replace(/\/$/, "");
+  if (!url.startsWith(base)) return null;
+  const rest = url.slice(base.length).replace(/^\//, "");
+  if (!rest.startsWith("customer-uploads/")) return null;
   if (rest.includes("..") || rest.includes("//")) return null;
   return rest;
 }

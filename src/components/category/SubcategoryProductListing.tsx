@@ -16,6 +16,9 @@ export type ListingProduct = {
   pricePaise: number;
   stock: number;
   images: string[];
+  /** Gallery for grid cards (first colour’s images when colour variants exist). */
+  carouselImages: string[];
+  hasColorVariants?: boolean;
   options?: { key: string; label: string; pricePaise: number; stock: number }[];
 };
 
@@ -103,6 +106,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                 {products.map((p) => {
                   const multi = productHasOptions(p);
                   const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
+                  const thumb = p.carouselImages[0] ?? p.images[0];
                   return (
                   <tr key={p._id} className="border-b border-sand-deep/80 last:border-0">
                     <td className="px-3 py-3 sm:px-4">
@@ -111,9 +115,9 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                           href={`/product/${p.slug}`}
                           className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-sand-deep"
                         >
-                          {p.images[0] ? (
+                          {thumb ? (
                             <StoreMedia
-                              src={p.images[0]}
+                              src={thumb}
                               alt=""
                               fill
                               className="object-cover"
@@ -153,13 +157,13 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                       <QuickAddToCart
                         compact
                         stock={multi ? 1 : p.stock}
-                        requiresOptionChoice={multi}
+                        requiresOptionChoice={multi || Boolean(p.hasColorVariants)}
                         product={{
                           id: p._id,
                           slug: p.slug,
                           name: p.name,
                           pricePaise: listPrice,
-                          image: p.images[0],
+                          image: thumb,
                         }}
                       />
                     </td>
@@ -175,6 +179,8 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
           {products.map((p) => {
             const multi = productHasOptions(p);
             const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
+            const gridImages =
+              p.carouselImages.length > 0 ? p.carouselImages : p.images;
             return (
             <div
               key={p._id}
@@ -183,7 +189,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
               <Link href={`/product/${p.slug}`} className="block">
                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-sand-deep">
                   <ProductGridCarousel
-                    images={p.images}
+                    images={gridImages}
                     productName={p.name}
                     sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
                   />
@@ -208,18 +214,22 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                   )}
                 </p>
                 <p className="text-xs text-ink-muted">
-                  {multi ? "Multiple packs — open product to choose" : `Stock: ${p.stock}`}
+                  {multi
+                    ? "Multiple packs — open product to choose"
+                    : p.hasColorVariants
+                      ? "Colours — open product to choose"
+                      : `Stock: ${p.stock}`}
                 </p>
                 <div className="mt-3 border-t border-sand-deep pt-3">
                   <QuickAddToCart
                     stock={multi ? 1 : p.stock}
-                    requiresOptionChoice={multi}
+                    requiresOptionChoice={multi || Boolean(p.hasColorVariants)}
                     product={{
                       id: p._id,
                       slug: p.slug,
                       name: p.name,
                       pricePaise: listPrice,
-                      image: p.images[0],
+                      image: gridImages[0] ?? p.images[0],
                     }}
                   />
                 </div>

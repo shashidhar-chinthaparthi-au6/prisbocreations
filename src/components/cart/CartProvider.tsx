@@ -1,9 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { cartLineId as buildCartLineId } from "@/lib/cart-line-id";
 
 export type CartLine = {
-  /** Stable row id: `${productId}::${optionKey || ""}` */
   id: string;
   productId: string;
   slug: string;
@@ -13,6 +13,10 @@ export type CartLine = {
   quantity: number;
   optionKey?: string;
   optionLabel?: string;
+  colorKey?: string;
+  colorLabel?: string;
+  customerImageUrl?: string;
+  customerNotes?: string;
 };
 
 type CartContextValue = {
@@ -29,10 +33,6 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 const STORAGE = "prisbo_cart_v2";
 
-export function cartLineId(productId: string, optionKey?: string) {
-  return `${productId}::${optionKey ?? ""}`;
-}
-
 function migrateFromV1(raw: unknown): CartLine[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -44,8 +44,26 @@ function migrateFromV1(raw: unknown): CartLine[] {
       const productId = String(l.productId);
       const optionKey =
         typeof l.optionKey === "string" && l.optionKey.trim() ? l.optionKey.trim() : undefined;
+      const colorKey =
+        typeof l.colorKey === "string" && l.colorKey.trim() ? l.colorKey.trim() : undefined;
+      const colorLabel =
+        typeof l.colorLabel === "string" && l.colorLabel.trim() ? l.colorLabel.trim() : undefined;
+      const customerImageUrl =
+        typeof l.customerImageUrl === "string" && l.customerImageUrl.trim()
+          ? l.customerImageUrl.trim()
+          : undefined;
+      const customerNotes =
+        typeof l.customerNotes === "string" && l.customerNotes.trim()
+          ? l.customerNotes.trim()
+          : undefined;
       const id =
-        typeof l.id === "string" && l.id.length > 0 ? l.id : cartLineId(productId, optionKey);
+        typeof l.id === "string" && l.id.length > 0
+          ? l.id
+          : buildCartLineId(productId, optionKey, {
+              colorKey,
+              customerImageUrl,
+              customerNotes,
+            });
       return {
         id,
         productId,
@@ -56,6 +74,10 @@ function migrateFromV1(raw: unknown): CartLine[] {
         quantity: Math.max(1, Number(l.quantity) || 1),
         optionKey,
         optionLabel: typeof l.optionLabel === "string" ? l.optionLabel : undefined,
+        colorKey,
+        colorLabel,
+        customerImageUrl,
+        customerNotes,
       };
     })
     .filter((l) => l.slug && l.name);
@@ -98,7 +120,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       count,
       subtotalPaise,
       add: (line) => {
-        const id = cartLineId(line.productId, line.optionKey);
+        const id = buildCartLineId(line.productId, line.optionKey, {
+          colorKey: line.colorKey,
+          customerImageUrl: line.customerImageUrl,
+          customerNotes: line.customerNotes,
+        });
         const qty = line.quantity ?? 1;
         setLines((prev) => {
           const i = prev.findIndex((p) => p.id === id);
@@ -115,6 +141,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 quantity: qty,
                 optionKey: line.optionKey,
                 optionLabel: line.optionLabel,
+                colorKey: line.colorKey,
+                colorLabel: line.colorLabel,
+                customerImageUrl: line.customerImageUrl,
+                customerNotes: line.customerNotes,
               },
             ];
           }

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AdminMultiImageField } from "@/components/admin/AdminMultiImageField";
 import { slugify } from "@/lib/slugify";
+import { Spinner } from "@/components/ui/Spinner";
 
 type SubRow = {
   _id: string;
@@ -54,6 +55,9 @@ export function AdminSubcategoriesClient() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>(emptyEdit);
   const [editMsg, setEditMsg] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -100,6 +104,7 @@ export function AdminSubcategoriesClient() {
     if (!editingId) return;
     setEditMsg(null);
     const images = parseImageUrls(editForm.imagesCsv);
+    setSavingEdit(true);
     try {
       await apiFetch(`/api/v1/admin/subcategories/${editingId}`, {
         method: "PATCH",
@@ -116,6 +121,8 @@ export function AdminSubcategoriesClient() {
       cancelEdit();
     } catch (err) {
       setEditMsg(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -123,6 +130,7 @@ export function AdminSubcategoriesClient() {
     e.preventDefault();
     setMsg(null);
     const images = parseImageUrls(form.imagesCsv);
+    setCreating(true);
     try {
       await apiFetch("/api/v1/admin/subcategories", {
         method: "POST",
@@ -145,15 +153,22 @@ export function AdminSubcategoriesClient() {
       setMsg("Subcategory created");
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setCreating(false);
     }
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this subcategory and all its products?")) return;
     if (editingId === id) cancelEdit();
-    await apiFetch(`/api/v1/admin/subcategories/${id}`, { method: "DELETE" });
-    await qc.invalidateQueries({ queryKey: ["admin-subcategories"] });
-    await qc.invalidateQueries({ queryKey: ["admin-products"] });
+    setDeletingId(id);
+    try {
+      await apiFetch(`/api/v1/admin/subcategories/${id}`, { method: "DELETE" });
+      await qc.invalidateQueries({ queryKey: ["admin-subcategories"] });
+      await qc.invalidateQueries({ queryKey: ["admin-products"] });
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   const createParentSlug = categorySlugById.get(form.categoryId) ?? "category";
@@ -226,14 +241,27 @@ export function AdminSubcategoriesClient() {
         />
         <button
           type="submit"
-          className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white"
+          disabled={creating}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
-          Create
+          {creating ? (
+            <>
+              <Spinner size="sm" className="text-white" />
+              Creating…
+            </>
+          ) : (
+            "Create"
+          )}
         </button>
       </form>
 
       <ul className="space-y-3">
-        {isLoading ? <li className="text-ink-muted">Loading…</li> : null}
+        {isLoading ? (
+          <li className="inline-flex items-center gap-2 text-ink-muted">
+            <Spinner size="sm" />
+            Loading…
+          </li>
+        ) : null}
         {rows?.map((s) => (
           <li
             key={s._id}
@@ -256,10 +284,18 @@ export function AdminSubcategoriesClient() {
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-rose hover:underline"
+                  disabled={deletingId === s._id}
+                  className="inline-flex items-center gap-1 text-xs text-rose hover:underline disabled:opacity-60"
                   onClick={() => remove(s._id)}
                 >
-                  Delete
+                  {deletingId === s._id ? (
+                    <>
+                      <Spinner size="sm" />
+                      Deleting…
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
                 </button>
               </div>
             </div>
@@ -329,9 +365,17 @@ export function AdminSubcategoriesClient() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="submit"
-                    className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white"
+                    disabled={savingEdit}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                   >
-                    Save changes
+                    {savingEdit ? (
+                      <>
+                        <Spinner size="sm" className="text-white" />
+                        Saving…
+                      </>
+                    ) : (
+                      "Save changes"
+                    )}
                   </button>
                   <button
                     type="button"

@@ -49,7 +49,7 @@ export function QuickAddToCart({
           href={`/product/${product.slug}`}
           className="rounded-full border border-sand-deep bg-white px-3 py-1.5 text-xs font-medium text-accent hover:bg-sand/50 sm:text-sm"
         >
-          Choose pack →
+          Choose options →
         </Link>
       </div>
     );

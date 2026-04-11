@@ -72,16 +72,39 @@ export default async function OrderDetailPage({
       <div className="rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
         <h2 className="font-display text-lg text-ink">Items</h2>
         <ul className="mt-4 divide-y divide-sand-deep">
-          {order.items.map((it, i) => (
-            <li key={i} className="flex justify-between gap-4 py-3 text-sm">
-              <span>
-                {it.name} × {it.quantity}
-              </span>
-              <span className="text-ink-muted">
-                {formatInrFromPaise(it.unitPricePaise * it.quantity)}
-              </span>
-            </li>
-          ))}
+          {order.items.map((it, i) => {
+            const item = it as typeof it & {
+              customerImageUrl?: string;
+              customerNotes?: string;
+            };
+            return (
+              <li key={i} className="flex flex-col gap-2 border-b border-sand-deep/60 py-3 text-sm last:border-0 sm:flex-row sm:justify-between sm:gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-ink">
+                    {item.name} × {item.quantity}
+                  </p>
+                  {item.customerNotes?.trim() ? (
+                    <p className="mt-1 whitespace-pre-wrap text-xs text-ink-muted">
+                      {item.customerNotes}
+                    </p>
+                  ) : null}
+                  {item.customerImageUrl ? (
+                    <div className="relative mt-2 inline-block h-24 w-24 overflow-hidden rounded-lg border border-sand-deep bg-sand">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.customerImageUrl}
+                        alt="Customer reference"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                <span className="shrink-0 text-ink-muted sm:text-right">
+                  {formatInrFromPaise(item.unitPricePaise * item.quantity)}
+                </span>
+              </li>
+            );
+          })}
         </ul>
         <p className="mt-4 text-right font-display text-xl text-ink">
           Total {formatInrFromPaise(order.totalPaise)}

@@ -4,6 +4,8 @@ export type ProductOption = {
   pricePaise: number;
   stock: number;
   sku?: string;
+  /** Sanitized HTML; optional — empty uses product-level description on storefront. */
+  description?: string;
 };
 
 type ProductLike = {

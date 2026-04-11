@@ -41,8 +41,24 @@ export function CartClient() {
                 <Link href={`/product/${l.slug}`} className="font-medium text-ink hover:text-accent">
                   {l.name}
                 </Link>
+                {l.colorLabel ? (
+                  <p className="text-xs text-accent">{l.colorLabel}</p>
+                ) : null}
                 {l.optionLabel ? (
                   <p className="text-xs text-accent">{l.optionLabel}</p>
+                ) : null}
+                {l.customerNotes?.trim() ? (
+                  <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{l.customerNotes}</p>
+                ) : null}
+                {l.customerImageUrl ? (
+                  <div className="relative mt-2 h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-sand-deep bg-sand">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={l.customerImageUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
                 ) : null}
                 <p className="text-sm text-ink-muted">{formatInrFromPaise(l.pricePaise)} each</p>
               </div>

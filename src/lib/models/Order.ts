@@ -11,6 +11,10 @@ const OrderItemSchema = new Schema(
     imageUrl: { type: String },
     optionKey: { type: String },
     optionLabel: { type: String },
+    colorKey: { type: String },
+    colorLabel: { type: String },
+    customerImageUrl: { type: String },
+    customerNotes: { type: String },
   },
   { _id: false }
 );
@@ -60,5 +64,8 @@ export type OrderDoc = InferSchemaType<typeof OrderSchema> & {
   userId?: Types.ObjectId;
 };
 
-export const Order: Model<OrderDoc> =
-  mongoose.models.Order || mongoose.model<OrderDoc>("Order", OrderSchema);
+if (mongoose.models.Order) {
+  delete mongoose.models.Order;
+}
+
+export const Order: Model<OrderDoc> = mongoose.model<OrderDoc>("Order", OrderSchema);

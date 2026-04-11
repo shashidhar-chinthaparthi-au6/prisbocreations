@@ -8,6 +8,9 @@ const lineSchema = z.object({
   productId: z.string().min(1),
   quantity: z.number().int().positive(),
   optionKey: z.string().min(1).optional(),
+  colorKey: z.string().min(1).max(64).optional(),
+  customerImageUrl: z.string().url().max(2000).optional(),
+  customerNotes: z.string().max(2000).optional(),
 });
 
 const shipSchema = z.object({

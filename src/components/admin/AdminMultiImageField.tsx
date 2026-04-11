@@ -109,6 +109,18 @@ export function AdminMultiImageField({
     [urls, onChange],
   );
 
+  const moveItem = useCallback(
+    (index: number, delta: -1 | 1) => {
+      const nextIndex = index + delta;
+      if (nextIndex < 0 || nextIndex >= urls.length) return;
+      const next = [...urls];
+      const [item] = next.splice(index, 1);
+      next.splice(nextIndex, 0, item);
+      onChange(joinUrls(next));
+    },
+    [urls, onChange],
+  );
+
   function revokeSession(s: CropSession | null) {
     if (s?.src) URL.revokeObjectURL(s.src);
   }
@@ -308,6 +320,10 @@ export function AdminMultiImageField({
           Images up to 5&nbsp;MB; video (MP4, WebM, MOV) up to 100&nbsp;MB. Videos upload without cropping.
         </p>
       )}
+      <p className="text-[11px] text-ink-muted">
+        List order is saved as-is (e.g. first image is the primary where this media is shown). Use
+        ↑ / ↓ on each row to reorder.
+      </p>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
         <input
@@ -448,7 +464,10 @@ export function AdminMultiImageField({
               </button>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-mono text-[11px] text-ink-muted">{url}</p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-ink-muted">
+                    #{i + 1}
+                  </span>
                   <button
                     type="button"
                     className="text-xs font-medium text-accent hover:underline"
@@ -475,6 +494,28 @@ export function AdminMultiImageField({
                     </button>
                   ) : null}
                 </div>
+              </div>
+              <div className="flex shrink-0 flex-col gap-0.5">
+                <button
+                  type="button"
+                  disabled={disabled || i === 0}
+                  title="Move earlier in list"
+                  aria-label="Move earlier in gallery order"
+                  className="rounded border border-sand-deep px-1.5 py-0.5 text-xs text-ink hover:bg-sand-deep disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() => moveItem(i, -1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled || i >= urls.length - 1}
+                  title="Move later in list"
+                  aria-label="Move later in gallery order"
+                  className="rounded border border-sand-deep px-1.5 py-0.5 text-xs text-ink hover:bg-sand-deep disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() => moveItem(i, 1)}
+                >
+                  ↓
+                </button>
               </div>
               <button
                 type="button"

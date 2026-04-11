@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api/fetch-client";
+import { Spinner } from "@/components/ui/Spinner";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -75,9 +76,16 @@ export function RegisterForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-full bg-accent py-3 text-sm font-semibold text-white hover:bg-accent-light disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-semibold text-white hover:bg-accent-light disabled:opacity-60"
       >
-        {loading ? "Creating…" : "Create account"}
+        {loading ? (
+          <>
+            <Spinner size="sm" className="text-white" />
+            Creating…
+          </>
+        ) : (
+          "Create account"
+        )}
       </button>
     </form>
   );
