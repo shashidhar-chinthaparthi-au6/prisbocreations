@@ -14,6 +14,7 @@ export type ShiprocketOrderLean = {
   status: string;
   paymentMethod?: string;
   subtotalPaise: number;
+  shippingPaise?: number;
   totalPaise: number;
   shipping: {
     fullName: string;
@@ -140,6 +141,7 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
         : quotes[0]!;
 
     const subTotalRupees = order.subtotalPaise / 100;
+    const shippingChargesRupees = (order.shippingPaise ?? 0) / 100;
     const channelOrderId = order._id.toString();
 
     const createBody = await shiprocketCreateAdhoc({
@@ -163,6 +165,7 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
         sellingPriceRupees: it.unitPricePaise / 100,
       })),
       subTotalRupees,
+      shippingChargesRupees,
     });
 
     const created = parseCreateResponse(createBody);
@@ -207,6 +210,8 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
           chargesBreakdown: {
             ...assignCharges,
             orderItemsSubtotalRupees: subTotalRupees,
+            storeDeliveryFeeRupees: shippingChargesRupees,
+            storeOrderTotalRupees: subTotalRupees + shippingChargesRupees,
           },
           lastError: msg,
           rawCreate: createBody,
@@ -244,6 +249,8 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
           quotedCodRupees: selected.codCharges,
           quotedTotalRupees: selected.totalCharge,
           orderItemsSubtotalRupees: subTotalRupees,
+          storeDeliveryFeeRupees: shippingChargesRupees,
+          storeOrderTotalRupees: subTotalRupees + shippingChargesRupees,
         },
         rawCreate: createBody,
       },

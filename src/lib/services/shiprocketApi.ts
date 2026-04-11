@@ -174,7 +174,10 @@ export type CreateAdhocInput = {
   };
   paymentMethod: "Prepaid" | "COD";
   orderItems: Array<{ name: string; sku: string; units: number; sellingPriceRupees: number }>;
+  /** Sum of line items (products only), rupees — must match order_items. */
   subTotalRupees: number;
+  /** Delivery fee charged to the customer at checkout, rupees (COD collect = sub_total + shipping_charges). */
+  shippingChargesRupees?: number;
 };
 
 export async function shiprocketCreateAdhoc(input: CreateAdhocInput): Promise<Record<string, unknown>> {
@@ -213,6 +216,11 @@ export async function shiprocketCreateAdhoc(input: CreateAdhocInput): Promise<Re
     height: cfg.defaultHeightCm,
     weight: cfg.defaultWeightKg,
   };
+
+  const shipRupee = input.shippingChargesRupees ?? 0;
+  if (shipRupee > 0) {
+    payload.shipping_charges = Math.round(shipRupee * 100) / 100;
+  }
 
   return srFetch("/v1/external/orders/create/adhoc", {
     method: "POST",
