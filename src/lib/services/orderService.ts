@@ -290,7 +290,8 @@ export async function createOrderFromCart(input: {
 
   if (paymentMethod === "cod") {
     await decrementInventoryForOrderItems(items);
-    void syncShiprocketForOrder(order._id.toString()).catch(() => {});
+    /** Must await: on serverless, a fire-and-forget task is often cut off when the HTTP response ends. */
+    await syncShiprocketForOrder(order._id.toString());
   }
 
   return order;
@@ -358,7 +359,7 @@ export async function updateOrderStatus(
     updated &&
     (status === "paid" || status === "processing" || status === "shipped")
   ) {
-    void syncShiprocketForOrder(orderId).catch(() => {});
+    await syncShiprocketForOrder(orderId);
   }
   return updated;
 }
@@ -369,7 +370,7 @@ export async function attachRazorpayOrderId(orderId: string, razorpayOrderId: st
 
 export async function markOrderPaid(orderId: string) {
   const doc = await Order.findByIdAndUpdate(orderId, { status: "paid" }, { new: true }).lean();
-  if (doc) void syncShiprocketForOrder(orderId).catch(() => {});
+  if (doc) await syncShiprocketForOrder(orderId);
   return doc;
 }
 

@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
+import { isShiprocketConfigured } from "@/lib/shiprocket-config";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
 import { OrderCancelPanel } from "@/components/orders/OrderCancelPanel";
+import { RetryShipmentSyncButton } from "@/components/orders/RetryShipmentSyncButton";
 
 /** Always read latest order from DB (webhooks update shiprocket fields). */
 export const dynamic = "force-dynamic";
@@ -66,6 +68,8 @@ export default async function OrderDetailPage({
     !srHasRichContent;
   const showDeliveryTracking =
     order.status !== "cancelled" && (srHasRichContent || awaitingCarrier || (sr && Object.keys(sr).length > 0));
+  const shiprocketEnvOk = isShiprocketConfigured();
+  const guestEmailForSync = !session && sp.email?.trim() ? sp.email.trim() : "";
 
   return (
     <div className="space-y-6">
@@ -176,10 +180,27 @@ export default async function OrderDetailPage({
         <div className="rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
           <h2 className="font-display text-lg text-ink">Delivery &amp; tracking</h2>
           {awaitingCarrier ? (
-            <p className="mt-2 text-sm text-ink-muted">
-              Your order includes a courier choice. AWB and tracking will show here once the shipment
-              is created in Shiprocket. Refresh in a minute if you still don&apos;t see updates.
-            </p>
+            <div className="mt-2 space-y-2">
+              {shiprocketEnvOk ? (
+                <p className="text-sm text-ink-muted">
+                  Your order includes a courier choice. AWB and tracking appear here as soon as
+                  Shiprocket has created the shipment. If you still see this after checkout, use the
+                  button below once — the page will refresh with courier details.
+                </p>
+              ) : (
+                <p className="text-sm text-amber-900">
+                  Courier quotes were saved at checkout, but the shop&apos;s Shiprocket connection is
+                  not active on the server (missing API env). AWB cannot be created until that is fixed;
+                  contact the store if this persists.
+                </p>
+              )}
+              {shiprocketEnvOk ? (
+                <RetryShipmentSyncButton
+                  orderId={id}
+                  guestEmail={guestEmailForSync || undefined}
+                />
+              ) : null}
+            </div>
           ) : null}
           {srHasRichContent ? (
             <>
