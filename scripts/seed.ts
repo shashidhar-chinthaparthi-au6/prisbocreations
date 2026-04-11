@@ -20,6 +20,7 @@ if (!uri) {
   process.exit(1);
 }
 
+
 /** Compact image helper — topic-matched Unsplash photos */
 const u = (id: string, sig?: string) =>
   `https://images.unsplash.com/${id}${sig ? `?${sig}` : "?w=900&q=80"}`;
