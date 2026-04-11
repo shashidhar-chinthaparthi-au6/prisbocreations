@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   await connectDb();
   const nav = await getProductBreadcrumb(slug);
-  return { title: nav?.product.name ?? "Product" };
+  return { title: nav?.product?.name ?? "Product" };
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -25,22 +25,42 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const descriptionHtml = sanitizeProductDescription(
     typeof p.description === "string" ? p.description : "",
   );
-  const cartOptions = Array.isArray(p.options)
-    ? p.options.map((o) => {
-        const raw =
-          typeof (o as { description?: string }).description === "string"
-            ? (o as { description?: string }).description ?? ""
-            : "";
-        const packDesc = sanitizeProductDescription(raw);
-        return {
-          key: o.key,
-          label: o.label,
-          pricePaise: o.pricePaise,
-          stock: o.stock,
-          ...(!isHtmlContentEmpty(packDesc) ? { descriptionHtml: packDesc } : {}),
-        };
-      })
-    : undefined;
+  const cartOptions = (() => {
+    const opts = p.options;
+    if (!Array.isArray(opts) || opts.length === 0) return undefined;
+    type CartOpt = {
+      key: string;
+      label: string;
+      pricePaise: number;
+      stock: number;
+      descriptionHtml?: string;
+    };
+    const out: CartOpt[] = [];
+    for (const o of opts) {
+      if (!o || typeof o !== "object" || Array.isArray(o)) continue;
+      const r = o as unknown as Record<string, unknown>;
+      if (
+        typeof r.key !== "string" ||
+        typeof r.label !== "string" ||
+        typeof r.pricePaise !== "number" ||
+        !Number.isFinite(r.pricePaise) ||
+        typeof r.stock !== "number" ||
+        !Number.isFinite(r.stock)
+      ) {
+        continue;
+      }
+      const raw = typeof r.description === "string" ? r.description : "";
+      const packDesc = sanitizeProductDescription(raw);
+      out.push({
+        key: r.key,
+        label: r.label,
+        pricePaise: r.pricePaise,
+        stock: r.stock,
+        ...(!isHtmlContentEmpty(packDesc) ? { descriptionHtml: packDesc } : {}),
+      });
+    }
+    return out.length ? out : undefined;
+  })();
 
   const colorVariants = colorVariantsFromDoc(p);
   const defaultImages = Array.isArray(p.images) ? p.images : [];

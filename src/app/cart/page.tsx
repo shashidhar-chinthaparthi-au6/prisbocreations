@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { CartClient } from "@/components/cart/CartClient";
 
 export const metadata = { title: "Cart" };

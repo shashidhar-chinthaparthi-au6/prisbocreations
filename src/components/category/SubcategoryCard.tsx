@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { StoreMedia } from "@/components/store/StoreMedia";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -77,7 +77,7 @@ export function SubcategoryCard({ href, name, description, imageUrls }: Props) {
                   key={`${src}-${i}`}
                   className="relative h-full w-full min-w-full shrink-0 snap-start"
                 >
-                  <Image
+                  <StoreMedia
                     src={src}
                     alt={`${name} — preview ${i + 1}`}
                     fill
