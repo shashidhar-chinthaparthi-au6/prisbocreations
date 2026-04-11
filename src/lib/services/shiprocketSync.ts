@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { resolveCustomerTrackingUrl } from "@/lib/courier-tracking-url";
 import { Order } from "@/lib/models/Order";
 import { getShiprocketConfig, isShiprocketConfigured } from "@/lib/shiprocket-config";
 import {
@@ -64,23 +65,69 @@ function parseCreateResponse(body: Record<string, unknown>): {
   };
 }
 
+function collectAssignLayers(body: Record<string, unknown>): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  const push = (x: unknown) => {
+    if (x && typeof x === "object" && !Array.isArray(x)) out.push(x as Record<string, unknown>);
+  };
+  push(body);
+  push(body.data);
+  push(body.response);
+  const resp = body.response;
+  if (resp && typeof resp === "object" && !Array.isArray(resp)) {
+    push((resp as Record<string, unknown>).data);
+    push((resp as Record<string, unknown>).payload);
+  }
+  const data = body.data;
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    push((data as Record<string, unknown>).response);
+  }
+  return out;
+}
+
+function extractAwbFromLayers(layers: Record<string, unknown>[]): string | null {
+  const keys = [
+    "awb_code",
+    "awb",
+    "airway_bill_no",
+    "airway_bill_number",
+    "awb_number",
+    "tracking_number",
+    "lrnum",
+  ];
+  for (const data of layers) {
+    for (const k of keys) {
+      const v = data[k];
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+  }
+  return null;
+}
+
+function extractCourierFromLayers(layers: Record<string, unknown>[]): string | null {
+  const keys = ["courier_name", "courierName", "courier"];
+  for (const data of layers) {
+    for (const k of keys) {
+      const v = data[k];
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+  }
+  return null;
+}
+
 function parseAssignResponse(body: Record<string, unknown>): {
   awb: string | null;
   courierName: string | null;
   charges: Record<string, unknown>;
 } {
-  const data = (body.response as Record<string, unknown> | undefined) ?? body;
-  const awb =
-    (data.awb_code as string | undefined) ??
-    (data.awb as string | undefined) ??
-    (body.awb_code as string | undefined) ??
-    null;
-  const courierName =
-    (data.courier_name as string | undefined) ?? (body.courier_name as string | undefined) ?? null;
+  const layers = collectAssignLayers(body);
+  const primary = layers[1] ?? layers[0] ?? body;
+  const awb = extractAwbFromLayers(layers);
+  const courierName = extractCourierFromLayers(layers);
   return {
-    awb: awb?.trim() || null,
-    courierName: courierName?.trim() || null,
-    charges: typeof data === "object" && data ? { ...data } : {},
+    awb,
+    courierName,
+    charges: typeof primary === "object" && primary ? { ...primary } : {},
   };
 }
 
@@ -194,6 +241,9 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
       awb = parsed.awb;
       courierName = parsed.courierName ?? courierName;
       assignCharges = { ...assignCharges, ...parsed.charges };
+      if (!awb && assignCharges && typeof assignCharges === "object") {
+        awb = extractAwbFromLayers([assignCharges as Record<string, unknown>]);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Assign AWB failed";
       await Order.findByIdAndUpdate(orderId, {
@@ -239,7 +289,11 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
         awb: awb ?? undefined,
         courierId: selected.courierId,
         courierName: courierName ?? selected.courierName,
-        trackingUrl: awb ? `https://shiprocket.co/tracking/${encodeURIComponent(awb)}` : undefined,
+        trackingUrl: awb
+          ? resolveCustomerTrackingUrl(awb, {
+              courierName: courierName ?? selected.courierName,
+            })
+          : undefined,
         freightChargeRupees: freight,
         codChargeRupees: codCh,
         totalShippingRupees: totalShip || freight + codCh,

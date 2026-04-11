@@ -4,8 +4,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api/fetch-client";
+import { resolveCustomerTrackingUrl, shiprocketAggregateTrackingUrl } from "@/lib/courier-tracking-url";
 import { formatInrFromPaise } from "@/lib/format";
 import { Spinner } from "@/components/ui/Spinner";
+
+type LookupShiprocket = {
+  status?: string;
+  awb?: string;
+  trackingUrl?: string;
+  courierName?: string;
+  webhookStatus?: string;
+  lastWebhookAt?: string;
+  freightChargeRupees?: number;
+  codChargeRupees?: number;
+  totalShippingRupees?: number;
+};
 
 type LookupOrder = {
   _id: string;
@@ -16,8 +29,118 @@ type LookupOrder = {
   subtotalPaise?: number;
   shippingPaise?: number;
   createdAt?: string;
-  shiprocket?: { trackingUrl?: string; awb?: string; status?: string; courierName?: string };
+  shiprocket?: LookupShiprocket | null;
 };
+
+function TrackDeliverySummary({ order }: { order: LookupOrder }) {
+  const sr = order.shiprocket;
+  if (!sr) return null;
+  const hasAny =
+    Boolean(sr.status) ||
+    Boolean(sr.courierName) ||
+    Boolean(sr.awb?.trim()) ||
+    Boolean(sr.trackingUrl?.trim()) ||
+    Boolean(sr.webhookStatus);
+  if (!hasAny) return null;
+
+  const awb = typeof sr.awb === "string" ? sr.awb.trim() : "";
+  const courier = typeof sr.courierName === "string" ? sr.courierName : "";
+  const storedUrl = typeof sr.trackingUrl === "string" ? sr.trackingUrl.trim() : "";
+  const primaryHref =
+    awb !== ""
+      ? resolveCustomerTrackingUrl(awb, { storedUrl, courierName: courier || undefined })
+      : storedUrl.startsWith("http")
+        ? storedUrl
+        : "";
+  const canTrack = primaryHref.startsWith("http");
+  const mirror =
+    awb && canTrack && !primaryHref.includes("shiprocket.co/tracking")
+      ? shiprocketAggregateTrackingUrl(awb)
+      : "";
+
+  return (
+    <div className="mt-4 border-t border-sand-deep pt-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Delivery &amp; tracking</h3>
+      {sr.status ? (
+        <p className="mt-2 text-sm capitalize text-ink-muted">
+          Shipment: <span className="text-ink">{sr.status.replace(/_/g, " ")}</span>
+        </p>
+      ) : null}
+      {courier ? (
+        <p className="mt-1 text-sm text-ink-muted">
+          Courier: <span className="text-ink">{courier}</span>
+        </p>
+      ) : null}
+      {awb ? (
+        <p className="mt-2 font-mono text-sm text-ink">
+          <span className="text-ink-muted">AWB:</span> <span className="font-semibold">{awb}</span>
+        </p>
+      ) : (
+        <p className="mt-2 text-sm text-amber-950">
+          AWB not on file yet — open the full order page after pickup, or check your email.
+        </p>
+      )}
+      {canTrack ? (
+        <p className="mt-2">
+          <a
+            href={primaryHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-accent hover:underline"
+          >
+            Track package →
+          </a>
+        </p>
+      ) : null}
+      {mirror ? (
+        <p className="mt-1">
+          <a
+            href={mirror}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-ink-muted underline hover:text-accent"
+          >
+            Open on Shiprocket tracking
+          </a>
+        </p>
+      ) : null}
+      {sr.webhookStatus ? (
+        <p className="mt-2 text-xs text-ink-muted">
+          Last carrier update: <span className="font-medium text-ink">{sr.webhookStatus}</span>
+          {sr.lastWebhookAt ? (
+            <span className="ml-1">· {new Date(sr.lastWebhookAt).toLocaleString("en-IN")}</span>
+          ) : null}
+        </p>
+      ) : null}
+      {typeof sr.freightChargeRupees === "number" ? (
+        <ul className="mt-2 space-y-1 text-xs text-ink-muted">
+          <li>
+            Freight:{" "}
+            <span className="font-medium text-ink">
+              {formatInrFromPaise(Math.round(sr.freightChargeRupees * 100))}
+            </span>
+          </li>
+          {typeof sr.codChargeRupees === "number" && sr.codChargeRupees > 0 ? (
+            <li>
+              COD charges:{" "}
+              <span className="font-medium text-ink">
+                {formatInrFromPaise(Math.round(sr.codChargeRupees * 100))}
+              </span>
+            </li>
+          ) : null}
+          {typeof sr.totalShippingRupees === "number" ? (
+            <li>
+              Shipping total (est.):{" "}
+              <span className="font-medium text-ink">
+                {formatInrFromPaise(Math.round(sr.totalShippingRupees * 100))}
+              </span>
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 export function TrackOrderForm() {
   const router = useRouter();
@@ -119,19 +242,8 @@ export function TrackOrderForm() {
               <dt className="text-ink-muted">Total</dt>
               <dd className="font-medium text-ink">{formatInrFromPaise(found.totalPaise)}</dd>
             </div>
-            {found.shiprocket?.trackingUrl ? (
-              <div className="pt-2">
-                <a
-                  href={found.shiprocket.trackingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-accent hover:underline"
-                >
-                  Track shipment →
-                </a>
-              </div>
-            ) : null}
           </dl>
+          <TrackDeliverySummary order={found} />
           <div className="flex flex-wrap gap-3 pt-2">
             <button
               type="button"

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { resolveCustomerTrackingUrl } from "@/lib/courier-tracking-url";
 import { connectDb } from "@/lib/db";
 import { Order } from "@/lib/models/Order";
 
@@ -98,7 +99,7 @@ export async function applyShiprocketShipmentWebhook(rawBody: Record<string, unk
   if (statusText) $set["shiprocket.webhookStatus"] = statusText;
   if (awb) {
     $set["shiprocket.awb"] = awb;
-    $set["shiprocket.trackingUrl"] = `https://shiprocket.co/tracking/${encodeURIComponent(awb)}`;
+    $set["shiprocket.trackingUrl"] = resolveCustomerTrackingUrl(awb, { courierName });
   }
   if (courierName) $set["shiprocket.courierName"] = courierName;
   if (scans.length) $set["shiprocket.webhookScans"] = scans;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
+import { resolveCustomerTrackingUrl, shiprocketAggregateTrackingUrl } from "@/lib/courier-tracking-url";
 import { isShiprocketConfigured } from "@/lib/shiprocket-config";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
@@ -70,6 +71,22 @@ export default async function OrderDetailPage({
     order.status !== "cancelled" && (srHasRichContent || awaitingCarrier || (sr && Object.keys(sr).length > 0));
   const shiprocketEnvOk = isShiprocketConfigured();
   const guestEmailForSync = !session && sp.email?.trim() ? sp.email.trim() : "";
+  const awbForTracking = srAwb.trim();
+  const primaryTrackingHref =
+    awbForTracking !== ""
+      ? resolveCustomerTrackingUrl(awbForTracking, {
+          storedUrl: srTrackingUrl || undefined,
+          courierName: srCourier || undefined,
+        })
+      : srTrackingUrl.trim();
+  const canOpenTrack =
+    primaryTrackingHref.startsWith("http://") || primaryTrackingHref.startsWith("https://");
+  const shiprocketMirrorHref =
+    awbForTracking &&
+    canOpenTrack &&
+    !primaryTrackingHref.includes("shiprocket.co/tracking")
+      ? shiprocketAggregateTrackingUrl(awbForTracking)
+      : "";
 
   return (
     <div className="space-y-6">
@@ -207,6 +224,53 @@ export default async function OrderDetailPage({
               <p className="mt-2 text-sm capitalize text-ink-muted">
                 Shipment status: {srStatus || "—"}
               </p>
+              {srCourier ? (
+                <p className="mt-1 text-sm text-ink-muted">
+                  Courier: <span className="text-ink">{srCourier}</span>
+                </p>
+              ) : null}
+              {awbForTracking || canOpenTrack ? (
+                <div className="mt-3 rounded-xl border border-accent/25 bg-accent/5 px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    Tracking number &amp; link
+                  </p>
+                  {awbForTracking ? (
+                    <p className="mt-1 font-mono text-sm text-ink">
+                      <span className="text-ink-muted">AWB:</span>{" "}
+                      <span className="font-semibold">{awbForTracking}</span>
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-amber-950">
+                      No AWB yet — the courier may assign it after manifest. Refresh later or check the
+                      tracking link if shown.
+                    </p>
+                  )}
+                  {canOpenTrack ? (
+                    <p className="mt-2">
+                      <a
+                        href={primaryTrackingHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-accent hover:underline"
+                      >
+                        Track package →
+                      </a>
+                    </p>
+                  ) : null}
+                  {shiprocketMirrorHref ? (
+                    <p className="mt-1">
+                      <a
+                        href={shiprocketMirrorHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-ink-muted underline hover:text-accent"
+                      >
+                        Open on Shiprocket tracking
+                      </a>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               {srWebhookStatus ||
               srHasWebhook ||
               srTrackingUrl ||
@@ -230,16 +294,11 @@ export default async function OrderDetailPage({
                     </p>
                   ) : srTrackingUrl || srAwb ? (
                     <p className="mt-1 text-sm text-ink-muted">
-                      Detailed carrier milestones will appear here when Shiprocket webhooks are received.
-                      Use “Track shipment” below for the courier&apos;s live map and status.
+                      Detailed milestones appear here when Shiprocket sends webhooks. Use the tracking
+                      link above for live map status.
                     </p>
                   ) : null}
                 </div>
-              ) : null}
-              {srCourier ? (
-                <p className="mt-1 text-sm text-ink-muted">
-                  Courier: <span className="text-ink">{srCourier}</span>
-                </p>
               ) : null}
               {srFreight != null ? (
                 <ul className="mt-3 space-y-1 text-sm text-ink-muted">
@@ -274,23 +333,6 @@ export default async function OrderDetailPage({
                     {JSON.stringify(sr.chargesBreakdown, null, 2)}
                   </pre>
                 </details>
-              ) : null}
-              {srAwb ? (
-                <p className="mt-3 text-sm">
-                  AWB: <span className="font-mono text-ink">{srAwb}</span>
-                </p>
-              ) : null}
-              {srTrackingUrl ? (
-                <p className="mt-2">
-                  <a
-                    href={srTrackingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-accent hover:underline"
-                  >
-                    Track shipment →
-                  </a>
-                </p>
               ) : null}
               {srLastErr ? (
                 <p className="mt-2 text-xs text-rose" role="alert">
