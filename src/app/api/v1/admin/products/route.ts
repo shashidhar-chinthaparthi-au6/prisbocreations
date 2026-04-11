@@ -100,7 +100,15 @@ export async function POST(req: Request) {
     });
     return jsonOk(p);
   } catch (e) {
-    if (e instanceof z.ZodError) return jsonError("Invalid input", 400);
+    if (e instanceof z.ZodError) {
+      const issue = e.issues[0];
+      if (issue) {
+        const path = issue.path.filter((p): p is string | number => p !== undefined).join(".");
+        const where = path ? ` (${path})` : "";
+        return jsonError(`${issue.message}${where}`, 400);
+      }
+      return jsonError("Invalid input", 400);
+    }
     const msg = e instanceof Error ? e.message : "Failed";
     return jsonError(msg, 400);
   }

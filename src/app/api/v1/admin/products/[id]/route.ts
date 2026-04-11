@@ -99,7 +99,15 @@ export async function PATCH(
     if (!p) return jsonError("Not found", 404);
     return jsonOk(p);
   } catch (e) {
-    if (e instanceof z.ZodError) return jsonError("Invalid input", 400);
+    if (e instanceof z.ZodError) {
+      const issue = e.issues[0];
+      if (issue) {
+        const path = issue.path.filter((p): p is string | number => p !== undefined).join(".");
+        const where = path ? ` (${path})` : "";
+        return jsonError(`${issue.message}${where}`, 400);
+      }
+      return jsonError("Invalid input", 400);
+    }
     return jsonError("Update failed", 400);
   }
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
+import { isImageRef } from "@/lib/api/imageRef";
 import { AdminMultiImageField } from "@/components/admin/AdminMultiImageField";
 import { AdminRichTextEditor } from "@/components/admin/AdminRichTextEditor";
 import { isHtmlContentEmpty } from "@/lib/sanitize-html";
@@ -494,6 +495,12 @@ export function AdminProductsClient() {
   const [creating, setCreating] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const formMsgRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (!msg) return;
+    formMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [msg]);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -573,7 +580,7 @@ export function AdminProductsClient() {
       setEditMsg(builtOpts.error);
       return;
     }
-    const builtColors = buildColorVariantsPayload(editForm.colorVariantRows);
+    const builtColors = buildColorVariantsPayload(editForm.colorVariantRows ?? []);
     if (!builtColors.ok) {
       setEditMsg(builtColors.error);
       return;
@@ -619,8 +626,8 @@ export function AdminProductsClient() {
     e.preventDefault();
     setMsg(null);
     const pricePaise = Math.round(Number(form.priceRupees) * 100);
-    if (!form.subcategoryId || !pricePaise) {
-      setMsg("Subcategory and price required");
+    if (!form.subcategoryId || !Number.isFinite(pricePaise) || pricePaise <= 0) {
+      setMsg("Subcategory and a valid price are required.");
       return;
     }
     if (isHtmlContentEmpty(form.description)) {
@@ -632,10 +639,32 @@ export function AdminProductsClient() {
       setMsg(builtOpts.error);
       return;
     }
-    const builtColors = buildColorVariantsPayload(form.colorVariantRows);
+    const builtColors = buildColorVariantsPayload(form.colorVariantRows ?? []);
     if (!builtColors.ok) {
       setMsg(builtColors.error);
       return;
+    }
+    const mainImages = form.images
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    for (const u of mainImages) {
+      if (!isImageRef(u)) {
+        setMsg(
+          "Each main product media URL must be https/http or a site path starting with / (re-upload or fix pasted links).",
+        );
+        return;
+      }
+    }
+    for (const v of builtColors.variants) {
+      for (const u of v.images) {
+        if (!isImageRef(u)) {
+          setMsg(
+            `Colour “${v.label}”: each image URL must be https/http or a path starting with /.`,
+          );
+          return;
+        }
+      }
     }
     setCreating(true);
     try {
@@ -647,10 +676,7 @@ export function AdminProductsClient() {
           description: form.description,
           pricePaise,
           stock: Number(form.stock) || 0,
-          images: form.images
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
+          images: mainImages,
           tags: form.tags
             .split(",")
             .map((s) => s.trim())
@@ -714,7 +740,16 @@ export function AdminProductsClient() {
         className="space-y-3 rounded-2xl border border-sand-deep bg-white p-6 shadow-sm"
       >
         <h3 className="font-display text-lg text-ink">New product</h3>
-        {msg ? <p className="text-sm text-accent">{msg}</p> : null}
+        {msg ? (
+          <p
+            ref={formMsgRef}
+            role="status"
+            aria-live="polite"
+            className={`text-sm ${msg === "Product created" ? "text-accent" : "text-rose"}`}
+          >
+            {msg}
+          </p>
+        ) : null}
         <label className="block text-xs text-ink-muted">
           Subcategory
           <select
