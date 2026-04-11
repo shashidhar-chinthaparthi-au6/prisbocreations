@@ -6,6 +6,8 @@ import { getOrderById, updateOrderStatus } from "@/lib/services/orderService";
 
 const patchSchema = z.object({
   status: z.enum(["pending", "paid", "processing", "shipped", "cancelled"]),
+  /** Optional; when status is cancelled, stored on the order (defaults server-side if omitted). */
+  cancelReason: z.string().max(2000).optional(),
 });
 
 export async function GET(
@@ -30,8 +32,10 @@ export async function PATCH(
   try {
     await connectDb();
     const { id } = await ctx.params;
-    const { status } = patchSchema.parse(await req.json());
-    const order = await updateOrderStatus(id, status);
+    const body = patchSchema.parse(await req.json());
+    const order = await updateOrderStatus(id, body.status, {
+      cancelReason: body.cancelReason,
+    });
     if (!order) return jsonError("Not found", 404);
     return jsonOk(order);
   } catch (e) {

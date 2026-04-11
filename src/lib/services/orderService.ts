@@ -324,12 +324,35 @@ export async function getOrderById(orderId: string) {
 export async function updateOrderStatus(
   orderId: string,
   status: "pending" | "paid" | "processing" | "shipped" | "cancelled",
+  opts?: { cancelReason?: string },
 ) {
   const prev = await Order.findById(orderId).lean();
   if (!prev) return null;
+
   if (status === "cancelled" && prev.status !== "cancelled") {
     await cancelShiprocketForOrder(prev as ShiprocketOrderLean);
+    const shouldRestoreStock = prev.status === "paid" || prev.status === "processing";
+    if (shouldRestoreStock && prev.items?.length) {
+      await incrementInventoryForOrderItems(
+        prev.items.map((it) => ({
+          productId: it.productId as mongoose.Types.ObjectId,
+          quantity: it.quantity,
+          optionKey: it.optionKey,
+        })),
+      );
+    }
+    const reason = (opts?.cancelReason?.trim() || "Cancelled by admin").slice(0, 2000);
+    return Order.findByIdAndUpdate(
+      orderId,
+      {
+        status: "cancelled",
+        cancelReason: reason,
+        orderCancelledAt: new Date(),
+      },
+      { new: true },
+    ).lean();
   }
+
   return Order.findByIdAndUpdate(orderId, { status }, { new: true }).lean();
 }
 
