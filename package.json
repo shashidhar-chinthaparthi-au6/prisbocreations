@@ -31,6 +31,9 @@
     "react-easy-crop": "^5.5.7",
     "zod": "^3.23.8"
   },
+  "overrides": {
+    "jsdom": "26.1.0"
+  },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "@types/bcryptjs": "^2.4.6",
