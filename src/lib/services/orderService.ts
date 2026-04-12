@@ -10,6 +10,13 @@ import {
   syncShiprocketForOrder,
   type ShiprocketOrderLean,
 } from "@/lib/services/shiprocketSync";
+import {
+  notifyOrderCancelled,
+  notifyOrderPaid,
+  notifyOrderPlaced,
+  notifyOrderShipped,
+  type OrderNotifyPayload,
+} from "@/lib/notify/dispatch";
 import { isTrustedCustomerImageUrl } from "@/lib/customer-upload";
 import { resolveProductLine } from "@/lib/product-options";
 import { colorVariantsFromDoc } from "@/lib/product-color-variants";
@@ -294,6 +301,11 @@ export async function createOrderFromCart(input: {
     await syncShiprocketForOrder(order._id.toString());
   }
 
+  const plain = typeof (order as { toObject?: () => object }).toObject === "function"
+    ? (order as { toObject: () => object }).toObject()
+    : order;
+  void notifyOrderPlaced(plain as OrderNotifyPayload).catch(() => {});
+
   return order;
 }
 
@@ -343,7 +355,7 @@ export async function updateOrderStatus(
       );
     }
     const reason = (opts?.cancelReason?.trim() || "Cancelled by admin").slice(0, 2000);
-    return Order.findByIdAndUpdate(
+    const cancelledDoc = await Order.findByIdAndUpdate(
       orderId,
       {
         status: "cancelled",
@@ -352,6 +364,10 @@ export async function updateOrderStatus(
       },
       { new: true },
     ).lean();
+    if (cancelledDoc) {
+      void notifyOrderCancelled(cancelledDoc as OrderNotifyPayload, reason).catch(() => {});
+    }
+    return cancelledDoc;
   }
 
   const updated = await Order.findByIdAndUpdate(orderId, { status }, { new: true }).lean();
@@ -361,6 +377,9 @@ export async function updateOrderStatus(
   ) {
     await syncShiprocketForOrder(orderId);
   }
+  if (updated && status === "shipped" && prev.status !== "shipped") {
+    void notifyOrderShipped(updated as OrderNotifyPayload).catch(() => {});
+  }
   return updated;
 }
 
@@ -369,8 +388,13 @@ export async function attachRazorpayOrderId(orderId: string, razorpayOrderId: st
 }
 
 export async function markOrderPaid(orderId: string) {
+  const prev = await Order.findById(orderId).select("status").lean();
+  const wasPending = prev?.status === "pending";
   const doc = await Order.findByIdAndUpdate(orderId, { status: "paid" }, { new: true }).lean();
-  if (doc) await syncShiprocketForOrder(orderId);
+  if (doc) {
+    await syncShiprocketForOrder(orderId);
+    if (wasPending) void notifyOrderPaid(doc as OrderNotifyPayload).catch(() => {});
+  }
   return doc;
 }
 
@@ -473,6 +497,10 @@ export async function cancelOrderByOwner(input: {
         optionKey: it.optionKey,
       })),
     );
+  }
+
+  if (updated) {
+    void notifyOrderCancelled(updated as OrderNotifyPayload, reason).catch(() => {});
   }
 
   return updated;

@@ -22,6 +22,8 @@ const UserSchema = new Schema(
     phone: { type: String, trim: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     addresses: { type: [AddressSchema], default: [] },
+    passwordResetTokenHash: { type: String, select: false },
+    passwordResetExpires: { type: Date, select: false },
   },
   { timestamps: true }
 );

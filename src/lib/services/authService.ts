@@ -1,6 +1,10 @@
+import { createHash, randomBytes } from "crypto";
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { User, type UserDoc } from "@/lib/models/User";
 import { signAccessToken, type JwtPayload } from "@/lib/auth/jwt";
+import { appBaseUrl } from "@/lib/notify/config";
+import { notifyPasswordResetEmail } from "@/lib/notify/dispatch";
 
 export async function registerUser(input: {
   email: string;
@@ -52,4 +56,61 @@ export async function loginUser(input: {
 
 export async function getUserById(id: string) {
   return User.findById(id).lean();
+}
+
+function hashPasswordResetToken(token: string): string {
+  const secret = process.env.JWT_SECRET ?? "";
+  return createHash("sha256").update(`pwdreset:${secret}:${token}`).digest("hex");
+}
+
+/** Always resolves; does not reveal whether the email exists. */
+export async function requestPasswordReset(emailRaw: string): Promise<void> {
+  const email = emailRaw.trim().toLowerCase();
+  if (!email) return;
+  const user = await User.findOne({ email });
+  if (!user) return;
+
+  const token = randomBytes(32).toString("base64url");
+  const hash = hashPasswordResetToken(token);
+  const expires = new Date(Date.now() + 60 * 60 * 1000);
+  await User.findByIdAndUpdate(user._id, {
+    passwordResetTokenHash: hash,
+    passwordResetExpires: expires,
+  });
+
+  const link = `${appBaseUrl()}/reset-password?uid=${user._id.toString()}&token=${encodeURIComponent(token)}`;
+  await notifyPasswordResetEmail(user.email, link);
+}
+
+export async function resetPasswordWithToken(
+  uid: string,
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  if (newPassword.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+  if (!mongoose.Types.ObjectId.isValid(uid)) {
+    throw new Error("Invalid or expired reset link");
+  }
+
+  const user = await User.findById(uid)
+    .select("+passwordResetTokenHash +passwordResetExpires")
+    .exec();
+  if (
+    !user?.passwordResetTokenHash ||
+    !user.passwordResetExpires ||
+    user.passwordResetExpires.getTime() < Date.now()
+  ) {
+    throw new Error("Invalid or expired reset link");
+  }
+  if (user.passwordResetTokenHash !== hashPasswordResetToken(token)) {
+    throw new Error("Invalid or expired reset link");
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await User.findByIdAndUpdate(user._id, {
+    passwordHash,
+    $unset: { passwordResetTokenHash: 1, passwordResetExpires: 1 },
+  });
 }

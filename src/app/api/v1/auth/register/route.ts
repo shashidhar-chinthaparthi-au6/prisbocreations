@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDb } from "@/lib/db";
+import { notifyWelcomeEmail } from "@/lib/notify/dispatch";
 import { registerUser } from "@/lib/services/authService";
 import { setSessionCookie } from "@/lib/auth/session";
 import { jsonCreated, jsonError } from "@/lib/api/response";
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const input = bodySchema.parse(json);
     const { user, token } = await registerUser(input);
+    void notifyWelcomeEmail(user.email, user.name).catch(() => {});
     await setSessionCookie(token);
     return jsonCreated({
       user: {

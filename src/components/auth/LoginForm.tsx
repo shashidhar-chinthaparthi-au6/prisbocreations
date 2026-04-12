@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { Spinner } from "@/components/ui/Spinner";
@@ -47,7 +48,12 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
         />
       </label>
       <label className="block text-sm">
-        <span className="text-ink-muted">Password</span>
+        <span className="flex items-center justify-between gap-2 text-ink-muted">
+          <span>Password</span>
+          <Link href="/forgot-password" className="text-xs font-medium text-accent hover:underline">
+            Forgot password?
+          </Link>
+        </span>
         <input
           type="password"
           required
