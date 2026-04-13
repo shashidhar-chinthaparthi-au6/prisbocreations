@@ -2,7 +2,17 @@ import { Category } from "@/lib/models/Category";
 import { Subcategory } from "@/lib/models/Subcategory";
 import { Product } from "@/lib/models/Product";
 import { withNormalizedCatalogImages } from "@/lib/catalog-images";
+import type { ProductSuggestion } from "@/lib/product-suggestion";
+import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 import mongoose from "mongoose";
+
+export type { ProductSuggestion };
+
+/** Safe substring search: user input must not break RegExp construction. */
+function searchPattern(q: string): RegExp {
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(escaped, "i");
+}
 
 export async function listCategories() {
   const rows = await Category.find().sort({ sortOrder: 1, name: 1 }).lean();
@@ -30,14 +40,15 @@ export async function getSubcategoryByCategoryAndSlug(categorySlug: string, subS
   return doc ? withNormalizedCatalogImages(doc) : null;
 }
 
-/** Unique media URLs for subcategory cards: sub gallery, then products, then category fallbacks */
+/** Unique media URLs for subcategory cards: sub gallery, then that subcategory’s products only */
 export async function listPreviewImagesForSubcategory(
   subcategoryId: string,
   extras: {
     subcategoryImages?: string[];
-    categoryImages?: string[];
   } = {},
 ): Promise<string[]> {
+  if (!mongoose.isValidObjectId(subcategoryId)) return [];
+  const subOid = new mongoose.Types.ObjectId(subcategoryId);
   const seen = new Set<string>();
   const out: string[] = [];
   const push = (u: string | null | undefined) => {
@@ -47,7 +58,7 @@ export async function listPreviewImagesForSubcategory(
   };
   for (const u of extras.subcategoryImages ?? []) push(u);
   const products = await Product.find({
-    subcategoryId,
+    subcategoryId: subOid,
     isActive: true,
   })
     .select("images")
@@ -57,7 +68,6 @@ export async function listPreviewImagesForSubcategory(
   for (const p of products) {
     for (const img of p.images ?? []) push(img);
   }
-  for (const u of extras.categoryImages ?? []) push(u);
   return out;
 }
 
@@ -79,12 +89,61 @@ export async function listProducts(filters: {
     return [];
   }
 
-  if (filters.q?.trim()) {
-    const rx = new RegExp(filters.q.trim(), "i");
-    query.$or = [{ name: rx }, { description: rx }, { tags: rx }];
+  const qTrim = filters.q?.trim() ?? "";
+  if (qTrim) {
+    const qSafe = qTrim.slice(0, 200);
+    const rx = searchPattern(qSafe);
+    query.$or = [{ name: rx }, { description: rx }, { tags: rx }, { sku: rx }];
   }
 
   return Product.find(query).sort({ name: 1 }).lean();
+}
+
+/** Lightweight typeahead rows — same DB match as listProducts, capped for speed. */
+export async function listProductSuggestions(q: string, limit = 8): Promise<ProductSuggestion[]> {
+  const qTrim = q.trim().slice(0, 200);
+  if (!qTrim) return [];
+  const rx = searchPattern(qTrim);
+  const query = {
+    isActive: true,
+    $or: [{ name: rx }, { description: rx }, { tags: rx }, { sku: rx }],
+  };
+  const cap = Math.min(Math.max(limit, 1), 20);
+  const rows = await Product.find(query)
+    .select("name slug images sku pricePaise options")
+    .sort({ name: 1 })
+    .limit(cap)
+    .lean();
+  return rows.map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    thumb: p.images?.[0] ?? null,
+    sku: p.sku,
+    displayPricePaise: minOptionPricePaise(p),
+    hasPackOptions: productHasOptions(p),
+  }));
+}
+
+export async function listFeaturedProducts(limit = 12) {
+  return Product.find({ isActive: true, featured: true })
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .lean();
+}
+
+/** Newest active products for home “explore”; excludes IDs (e.g. featured) when possible. */
+export async function listExploreProductsForHome(limit: number, excludeIds: string[] = []) {
+  const cap = Math.min(Math.max(limit, 1), 48);
+  const oids = excludeIds
+    .filter((id) => mongoose.isValidObjectId(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  const query: Record<string, unknown> = { isActive: true };
+  if (oids.length > 0) {
+    query._id = { $nin: oids };
+  }
+  const rows = await Product.find(query).sort({ updatedAt: -1 }).limit(cap).lean();
+  if (rows.length > 0 || oids.length === 0) return rows;
+  return Product.find({ isActive: true }).sort({ updatedAt: -1 }).limit(cap).lean();
 }
 
 export async function getProductBySlug(slug: string) {
@@ -229,6 +288,7 @@ export async function adminCreateProduct(input: {
   stock: number;
   images: string[];
   tags?: string[];
+  featured?: boolean;
   isActive?: boolean;
   options?: AdminProductOptionInput[];
   colorVariants?: AdminProductColorVariantInput[];
@@ -272,6 +332,7 @@ export async function adminUpdateProduct(
     images: string[];
     tags: string[];
     isActive: boolean;
+    featured: boolean;
     options: AdminProductOptionInput[];
     colorVariants: AdminProductColorVariantInput[];
     allowCustomerCustomization: boolean;

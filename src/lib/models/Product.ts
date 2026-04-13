@@ -43,6 +43,8 @@ const ProductSchema = new Schema(
     colorVariants: { type: [ProductColorVariantSchema], default: [] },
     images: { type: [String], default: [] },
     tags: { type: [String], default: [] },
+    /** Shown on home “Featured” when true. */
+    featured: { type: Boolean, default: false, index: true },
     isActive: { type: Boolean, default: true },
     /** Buyer can upload an image + notes (e.g. personalisation). */
     allowCustomerCustomization: { type: Boolean, default: false },

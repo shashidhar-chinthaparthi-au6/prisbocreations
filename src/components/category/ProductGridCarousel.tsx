@@ -145,6 +145,7 @@ export function ProductGridCarousel({ images, productName, sizes }: Props) {
               src={src}
               alt={`${productName} — ${i + 1}`}
               fill
+              eager
               className="object-cover transition duration-500"
               sizes={sizes}
               videoControls={false}
@@ -159,7 +160,7 @@ export function ProductGridCarousel({ images, productName, sizes }: Props) {
             aria-label="Previous image"
             onClick={goPrev}
             onPointerDown={stopLink}
-            className="absolute left-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-ink/75 text-white shadow-md backdrop-blur-sm transition hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="absolute left-1 top-1/2 z-10 flex h-11 w-11 min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-ink/75 text-white shadow-md backdrop-blur-sm transition hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <ChevronLeft size={18} />
           </button>
@@ -168,7 +169,7 @@ export function ProductGridCarousel({ images, productName, sizes }: Props) {
             aria-label="Next image"
             onClick={goNext}
             onPointerDown={stopLink}
-            className="absolute right-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-ink/75 text-white shadow-md backdrop-blur-sm transition hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="absolute right-1 top-1/2 z-10 flex h-11 w-11 min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-ink/75 text-white shadow-md backdrop-blur-sm transition hover:bg-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <ChevronRight size={18} />
           </button>

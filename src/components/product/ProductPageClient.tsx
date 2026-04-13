@@ -6,8 +6,10 @@ import { ProductPurchaseClient } from "@/components/product/ProductPurchaseClien
 import {
   type ProductColorVariant,
   galleryImagesForColor,
+  listingPrimaryThumb,
 } from "@/lib/product-color-variants";
 import type { PurchaseProduct } from "@/components/product/ProductPurchaseClient";
+import { recordRecentlyViewed } from "@/lib/recently-viewed";
 
 type Props = {
   defaultImages: string[];
@@ -40,6 +42,22 @@ export function ProductPageClient({
     if (!colorVariants.length) return;
     setColorKey((k) => (colorVariants.some((c) => c.key === k) ? k : colorVariants[0].key));
   }, [colorVariants]);
+
+  useEffect(() => {
+    const thumb =
+      listingPrimaryThumb(defaultImages, colorVariants) ??
+      product.image ??
+      defaultImages[0] ??
+      "";
+    recordRecentlyViewed({
+      slug: product.slug,
+      name: product.name,
+      pricePaise: product.pricePaise,
+      image: thumb,
+    });
+    // Intentionally when navigating to another product (slug), not on every gallery tweak.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.slug]);
 
   const galleryImages = useMemo(
     () => galleryImagesForColor(defaultImages, colorVariants, colorKey),

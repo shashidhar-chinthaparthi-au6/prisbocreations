@@ -7,19 +7,22 @@ export async function SiteFooter() {
   const isAdmin = session?.role === "admin";
 
   return (
-    <footer className="mt-20 border-t border-sand-deep bg-white/60">
-      <div className="flex w-full flex-col gap-6 px-4 py-12 sm:px-6 lg:px-8 md:flex-row md:justify-between">
+    <footer className="mt-20 border-t border-sand-deep bg-white/60 pb-[max(3rem,env(safe-area-inset-bottom))]">
+      <div className="flex w-full flex-col gap-6 px-[max(1rem,env(safe-area-inset-left))] py-12 pr-[max(1rem,env(safe-area-inset-right))] sm:px-6 lg:px-8 md:flex-row md:justify-between">
         <div>
           <p className="font-display text-lg text-ink">Prisbo Creations</p>
           <p className="mt-2 max-w-sm text-sm text-ink-muted">
             Premium personalized gifts — paper, acrylic, stationery, home accents, and apparel.
           </p>
         </div>
-        <div className="flex gap-10 text-sm">
+        <div className="flex flex-wrap gap-10 text-sm">
           <div className="flex flex-col gap-2">
             <span className="font-semibold text-ink">{isAdmin ? "Store" : "Shop"}</span>
             <Link href="/categories" className="text-ink-muted hover:text-accent">
               {isAdmin ? "View storefront" : "Categories"}
+            </Link>
+            <Link href="/search" className="text-ink-muted hover:text-accent">
+              Search
             </Link>
             {isAdmin ? (
               <Link href="/admin/products" className="text-ink-muted hover:text-accent">
@@ -31,6 +34,23 @@ export async function SiteFooter() {
               </Link>
             )}
           </div>
+          {!isAdmin ? (
+            <div className="flex flex-col gap-2">
+              <span className="font-semibold text-ink">Help</span>
+              <Link href="/shipping" className="text-ink-muted hover:text-accent">
+                Shipping
+              </Link>
+              <Link href="/returns" className="text-ink-muted hover:text-accent">
+                Returns
+              </Link>
+              <Link href="/contact" className="text-ink-muted hover:text-accent">
+                Contact
+              </Link>
+              <Link href="/privacy" className="text-ink-muted hover:text-accent">
+                Privacy &amp; cookies
+              </Link>
+            </div>
+          ) : null}
           <div className="flex flex-col gap-2">
             <span className="font-semibold text-ink">Account</span>
             {session ? (

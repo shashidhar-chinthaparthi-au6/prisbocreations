@@ -18,6 +18,7 @@ Next.js 15 e-commerce app for **Prisbo Creations**: MongoDB catalog, JWT session
 2. Create `.env.local` from `.env.example`:
    - `MONGODB_URI` — SRV connection string (include `?retryWrites=true&w=majority` if needed).
    - `JWT_SECRET` — long random string (16+ chars).
+   - `SESSION_MAX_AGE_SECONDS` — optional; login cookie + JWT lifetime in seconds (default 7 days).
    - `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` — from Razorpay Dashboard (test mode for development).
    - `RAZORPAY_WEBHOOK_SECRET` — optional in dev; **required in production** for `/api/v1/payments/razorpay/webhook`.
    - `NEXT_PUBLIC_APP_URL` — e.g. `http://localhost:3000`
@@ -65,6 +66,7 @@ Base path: `/api/v1`
 | GET | `/categories/[slug]` | Public (single category) |
 | GET | `/categories/[slug]/subcategories` | Public |
 | GET | `/products?category=&subcategory=&q=` | Public; use **both** `category` and `subcategory` slugs to list a subcategory’s products |
+| GET | `/products/suggest?q=` | Public; typeahead (max 8 hits, same match rules as `q` on `/products`; UI requests after 2+ characters) |
 | GET | `/products/[slug]` | Public |
 | GET, POST | `/orders` | List: auth. Create: auth or guest + `guestEmail`; body `paymentMethod`: `online` (default) or `cod` |
 | GET | `/orders/[id]` | Auth: own order |

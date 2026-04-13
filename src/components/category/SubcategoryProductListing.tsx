@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatInrFromPaise } from "@/lib/format";
 import { ProductGridCarousel } from "@/components/category/ProductGridCarousel";
 import { QuickAddToCart } from "@/components/category/QuickAddToCart";
@@ -26,8 +26,11 @@ const VIEW_KEY = "prisbo_subcategory_view";
 
 type ViewMode = "list" | "grid";
 
+type SortMode = "name" | "price_asc" | "price_desc";
+
 export function SubcategoryProductListing({ products }: { products: ListingProduct[] }) {
   const [view, setView] = useState<ViewMode>("grid");
+  const [sort, setSort] = useState<SortMode>("name");
 
   useEffect(() => {
     try {
@@ -47,6 +50,20 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
     }
   }
 
+  const sortedProducts = useMemo(() => {
+    const list = [...products];
+    const priceOf = (p: ListingProduct) =>
+      productHasOptions(p) ? minOptionPricePaise(p) : p.pricePaise;
+    if (sort === "name") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === "price_asc") {
+      list.sort((a, b) => priceOf(a) - priceOf(b));
+    } else {
+      list.sort((a, b) => priceOf(b) - priceOf(a));
+    }
+    return list;
+  }, [products, sort]);
+
   if (!products.length) return null;
 
   return (
@@ -55,6 +72,19 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
         <p className="text-sm text-ink-muted">
           {products.length} product{products.length === 1 ? "" : "s"}
         </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-ink-muted">
+            <span className="sr-only sm:not-sr-only sm:inline">Sort</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortMode)}
+              className="min-h-11 rounded-full border border-sand-deep bg-white px-3 py-2 text-sm text-ink shadow-sm"
+            >
+              <option value="name">Name A–Z</option>
+              <option value="price_asc">Price: low to high</option>
+              <option value="price_desc">Price: high to low</option>
+            </select>
+          </label>
         <div
           className="inline-flex rounded-full border border-sand-deep bg-white p-1 text-sm shadow-sm"
           role="group"
@@ -63,7 +93,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
           <button
             type="button"
             onClick={() => setViewPersist("list")}
-            className={`rounded-full px-4 py-1.5 font-medium transition ${
+            className={`min-h-11 rounded-full px-4 py-2 font-medium transition ${
               view === "list"
                 ? "bg-ink text-white"
                 : "text-ink-muted hover:text-ink"
@@ -75,7 +105,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
           <button
             type="button"
             onClick={() => setViewPersist("grid")}
-            className={`rounded-full px-4 py-1.5 font-medium transition ${
+            className={`min-h-11 rounded-full px-4 py-2 font-medium transition ${
               view === "grid"
                 ? "bg-ink text-white"
                 : "text-ink-muted hover:text-ink"
@@ -84,6 +114,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
           >
             Grid
           </button>
+        </div>
         </div>
       </div>
 
@@ -103,7 +134,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => {
+                {sortedProducts.map((p) => {
                   const multi = productHasOptions(p);
                   const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
                   const thumb = p.carouselImages[0] ?? p.images[0];
@@ -175,8 +206,8 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => {
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {sortedProducts.map((p) => {
             const multi = productHasOptions(p);
             const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
             const gridImages =
@@ -184,26 +215,28 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
             return (
             <div
               key={p._id}
-              className="flex flex-col overflow-hidden rounded-2xl border border-sand-deep bg-white shadow-sm"
+              className="flex flex-col overflow-hidden rounded-xl border border-sand-deep bg-white shadow-sm sm:rounded-2xl"
             >
               <Link href={`/product/${p.slug}`} className="block">
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-sand-deep">
+                <div className="relative aspect-square w-full overflow-hidden bg-sand-deep sm:aspect-[4/3]">
                   <ProductGridCarousel
                     images={gridImages}
                     productName={p.name}
-                    sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
+                    sizes="(max-width:640px) 50vw, (max-width:1024px) 50vw, 33vw"
                   />
                 </div>
               </Link>
-              <div className="flex flex-1 flex-col p-4">
+              <div className="flex flex-1 flex-col p-3 sm:p-4">
                 <Link
                   href={`/product/${p.slug}`}
-                  className="font-medium text-ink hover:text-accent line-clamp-2"
+                  className="text-sm font-medium text-ink hover:text-accent line-clamp-2 sm:text-base"
                 >
                   {p.name}
                 </Link>
-                <p className="mt-1 font-mono text-xs text-ink-muted">{p.sku}</p>
-                <p className="mt-2 font-display text-lg font-semibold text-ink">
+                <p className="mt-0.5 hidden font-mono text-[10px] text-ink-muted sm:block sm:text-xs">
+                  {p.sku}
+                </p>
+                <p className="mt-1.5 font-display text-base font-semibold text-ink sm:mt-2 sm:text-lg">
                   {multi ? (
                     <span>
                       <span className="text-sm font-normal text-ink-muted">From </span>

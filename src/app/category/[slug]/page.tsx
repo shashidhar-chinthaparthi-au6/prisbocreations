@@ -26,7 +26,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     subcategories.map(async (s) => {
       const imageUrls = await listPreviewImagesForSubcategory(String(s._id), {
         subcategoryImages: s.images,
-        categoryImages: cat.images,
       });
       return { sub: s, imageUrls };
     }),

@@ -31,6 +31,7 @@ const patchSchema = z
     stock: z.number().int().min(0).optional(),
     images: zImageRefArray().optional(),
     tags: z.array(z.string()).optional(),
+    featured: z.boolean().optional(),
     isActive: z.boolean().optional(),
     options: z.array(productOptionSchema).max(24).optional(),
     colorVariants: z.array(colorVariantSchema).max(24).optional(),

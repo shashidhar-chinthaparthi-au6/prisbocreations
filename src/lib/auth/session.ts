@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import type { JwtPayload } from "./jwt";
 import { verifyAccessToken } from "./jwt";
+import { getSessionMaxAgeSeconds } from "./session-config";
 
 const COOKIE = "prisbo_session";
 
@@ -11,7 +12,7 @@ export async function setSessionCookie(token: string) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: getSessionMaxAgeSeconds(),
   });
 }
 

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connectDb } from "@/lib/db";
 import { getProductBreadcrumb } from "@/lib/services/catalogService";
 import { isHtmlContentEmpty, sanitizeProductDescription } from "@/lib/sanitize-html";
-import { colorVariantsFromDoc } from "@/lib/product-color-variants";
+import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import { ProductPageClient } from "@/components/product/ProductPageClient";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +74,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const colorVariants = colorVariantsFromDoc(p);
   const defaultImages = Array.isArray(p.images) ? p.images : [];
+  const primaryImage =
+    listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
 
   const pc = p as typeof p & {
     allowCustomerCustomization?: boolean;
@@ -133,7 +135,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         name: p.name,
         pricePaise: p.pricePaise,
         stock: p.stock,
-        image: defaultImages[0],
+        image: primaryImage,
         options: cartOptions?.length ? cartOptions : undefined,
         allowCustomerCustomization: Boolean(pc.allowCustomerCustomization),
         customizationInstructions:

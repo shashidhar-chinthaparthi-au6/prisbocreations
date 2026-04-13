@@ -9,6 +9,20 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      keyframes: {
+        "hero-marquee-l": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "hero-marquee-r": {
+          "0%": { transform: "translateX(-50%)" },
+          "100%": { transform: "translateX(0)" },
+        },
+      },
+      animation: {
+        "hero-marquee-l": "hero-marquee-l 55s linear infinite",
+        "hero-marquee-r": "hero-marquee-r 62s linear infinite",
+      },
       colors: {
         ink: { DEFAULT: "#0f172a", muted: "#475569" },
         sand: { DEFAULT: "#f8f5f0", deep: "#ebe4d8" },

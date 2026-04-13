@@ -158,6 +158,7 @@ type ProductRow = {
   pricePaise: number;
   stock: number;
   isActive: boolean;
+  featured?: boolean;
   images: string[];
   subcategoryId: string;
   description?: string;
@@ -176,6 +177,8 @@ type ProductRow = {
 type CategoryRow = { _id: string; name: string; slug: string };
 type SubRow = { _id: string; categoryId: string; name: string; slug: string };
 
+type ProductFormTab = "basics" | "variants" | "personal";
+
 type EditForm = {
   subcategoryId: string;
   name: string;
@@ -185,6 +188,7 @@ type EditForm = {
   images: string;
   tags: string;
   isActive: boolean;
+  featured: boolean;
   optionRows: OptionRowForm[];
   colorVariantRows: ColorVariantRowForm[];
   allowCustomerCustomization: boolean;
@@ -205,6 +209,7 @@ const emptyEdit: EditForm = {
   images: "",
   tags: "",
   isActive: true,
+  featured: false,
   optionRows: [],
   colorVariantRows: [],
   allowCustomerCustomization: false,
@@ -225,12 +230,12 @@ function PackOptionsEditor({
 }) {
   return (
     <div className="space-y-2 rounded-lg border border-sand-deep/70 bg-sand/25 p-3">
-      <p className="text-xs font-medium text-ink">Packs / variants (optional)</p>
+      <p className="text-xs font-medium text-ink">Size / pack / variant (optional)</p>
       <p className="text-xs text-ink-muted">
-        Leave empty for a single price. Keys: lowercase letters, numbers, hyphens only (e.g.{" "}
-        <span className="font-mono">pack-30</span>). Shoppers pick a pack on the product page; each
-        row has its own price, stock, and optional description (replaces the main description when
-        that pack is selected).
+        Use for sizes, pack quantities, or price tiers. Leave empty for a single price. Keys:
+        lowercase letters, numbers, hyphens (e.g. <span className="font-mono">pack-30</span>).
+        Shoppers pick a row on the product page; each has its own price, stock, and optional
+        description.
       </p>
       {rows.length === 0 ? (
         <p className="text-xs text-ink-muted">No pack rows — base price and stock above apply.</p>
@@ -373,8 +378,8 @@ function ColorVariantsEditor({
     <div className="space-y-2 rounded-lg border border-sand-deep/70 bg-sand/25 p-3">
       <p className="text-xs font-medium text-ink">Colours / finishes (optional)</p>
       <p className="text-xs text-ink-muted">
-        Order here is the order on the product page. Each colour can have its own gallery; if a
-        colour has no images, the main product images are used until you add some.
+        Gallery per colour on the storefront. Order here matches swatch order on the product page.
+        If a colour has no images, main product images are used until you add some.
       </p>
       {rows.length === 0 ? (
         <p className="text-xs text-ink-muted">No colour rows — only main images apply.</p>
@@ -481,6 +486,7 @@ export function AdminProductsClient() {
     tags: "",
     optionRows: [] as OptionRowForm[],
     colorVariantRows: [] as ColorVariantRowForm[],
+    featured: false,
     allowCustomerCustomization: false,
     customizationInstructions: "",
     customizationTextLabel: "Notes / text to print",
@@ -494,13 +500,23 @@ export function AdminProductsClient() {
   const [editMsg, setEditMsg] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [createTab, setCreateTab] = useState<ProductFormTab>("basics");
+  const [editTab, setEditTab] = useState<ProductFormTab>("basics");
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [filterSubcategoryId, setFilterSubcategoryId] = useState("");
   const formMsgRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     if (!msg) return;
     formMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [msg]);
+
+  useEffect(() => {
+    if (filterSubcategoryId) {
+      setForm((f) => ({ ...f, subcategoryId: filterSubcategoryId }));
+    }
+  }, [filterSubcategoryId]);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -528,8 +544,26 @@ export function AdminProductsClient() {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [categories, subcategories]);
 
+  const subOptionsFiltered = useMemo(() => {
+    if (!filterCategoryId) return subOptions;
+    return subOptions.filter((s) => s.categoryId === filterCategoryId);
+  }, [subOptions, filterCategoryId]);
+
+  const filteredProducts = useMemo(() => {
+    const list = products ?? [];
+    if (filterSubcategoryId) {
+      return list.filter((p) => p.subcategoryId === filterSubcategoryId);
+    }
+    if (filterCategoryId) {
+      const subIds = new Set(subOptionsFiltered.map((s) => s._id));
+      return list.filter((p) => subIds.has(p.subcategoryId));
+    }
+    return list;
+  }, [products, filterCategoryId, filterSubcategoryId, subOptionsFiltered]);
+
   function startEdit(p: ProductRow) {
     setEditingId(p._id);
+    setEditTab("basics");
     setEditMsg(null);
     setEditForm({
       subcategoryId: p.subcategoryId,
@@ -540,6 +574,7 @@ export function AdminProductsClient() {
       images: p.images.join(", "),
       tags: (p.tags ?? []).join(", "),
       isActive: p.isActive,
+      featured: Boolean(p.featured),
       optionRows: rowsFromOptions(p.options),
       colorVariantRows: rowsFromColorVariants(p.colorVariants),
       allowCustomerCustomization: Boolean(p.allowCustomerCustomization),
@@ -556,6 +591,7 @@ export function AdminProductsClient() {
     setEditingId(null);
     setEditForm(emptyEdit);
     setEditMsg(null);
+    setEditTab("basics");
   }
 
   async function saveEdit(e: React.FormEvent) {
@@ -601,6 +637,7 @@ export function AdminProductsClient() {
             .map((s) => s.trim())
             .filter(Boolean),
           isActive: editForm.isActive,
+          featured: editForm.featured,
           options: builtOpts.options,
           colorVariants: builtColors.variants,
           allowCustomerCustomization: editForm.allowCustomerCustomization,
@@ -682,6 +719,7 @@ export function AdminProductsClient() {
             .map((s) => s.trim())
             .filter(Boolean),
           isActive: true,
+          featured: form.featured,
           ...(builtOpts.options.length ? { options: builtOpts.options } : {}),
           ...(builtColors.variants.length ? { colorVariants: builtColors.variants } : {}),
           allowCustomerCustomization: form.allowCustomerCustomization,
@@ -704,6 +742,7 @@ export function AdminProductsClient() {
         tags: "",
         optionRows: [],
         colorVariantRows: [],
+        featured: false,
         allowCustomerCustomization: false,
         customizationInstructions: "",
         customizationTextLabel: "Notes / text to print",
@@ -750,167 +789,206 @@ export function AdminProductsClient() {
             {msg}
           </p>
         ) : null}
-        <label className="block text-xs text-ink-muted">
-          Subcategory
-          <select
-            required
-            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm text-ink"
-            value={form.subcategoryId}
-            onChange={(e) => setForm((f) => ({ ...f, subcategoryId: e.target.value }))}
-          >
-            <option value="">Select…</option>
-            {subOptions.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.label}
-              </option>
+        <div className="flex flex-wrap gap-2 border-b border-sand-deep pb-3" role="tablist">
+          {(
+            [
+              ["basics", "Basics"],
+              ["variants", "Variants"],
+              ["personal", "Personalisation"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={createTab === id}
+              onClick={() => setCreateTab(id)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                createTab === id ? "bg-ink text-white" : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {createTab === "basics" ? (
+          <>
+            <label className="block text-xs text-ink-muted">
+              Subcategory
+              <select
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm text-ink"
+                value={form.subcategoryId}
+                onChange={(e) => setForm((f) => ({ ...f, subcategoryId: e.target.value }))}
+              >
+                <option value="">Select…</option>
+                {subOptions.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-xs text-ink-muted">
+              Name
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </label>
+            <p className="text-xs text-ink-muted">
+              URL slug (auto):{" "}
+              <span className="font-mono text-ink">/product/{slugify(form.name)}</span>
+            </p>
+            <p className="text-xs text-ink-muted">
+              SKU is generated when you create the product (e.g.{" "}
+              <span className="font-mono">PRB-…</span>).
+            </p>
+            {(
+              [
+                ["priceRupees", "Price (INR)"],
+                ["stock", "Stock"],
+              ] as const
+            ).map(([k, label]) => (
+              <label key={k} className="block text-xs text-ink-muted">
+                {label}
+                <input
+                  className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                  value={form[k]}
+                  onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
+                />
+              </label>
             ))}
-          </select>
-        </label>
-        <label className="block text-xs text-ink-muted">
-          Name
-          <input
-            required
-            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          />
-        </label>
-        <p className="text-xs text-ink-muted">
-          URL slug (auto):{" "}
-          <span className="font-mono text-ink">/product/{slugify(form.name)}</span>
-        </p>
-        <p className="text-xs text-ink-muted">
-          SKU is generated when you create the product (e.g. <span className="font-mono">PRB-…</span>).
-        </p>
-        {(
-          [
-            ["priceRupees", "Price (INR)"],
-            ["stock", "Stock"],
-          ] as const
-        ).map(([k, label]) => (
-          <label key={k} className="block text-xs text-ink-muted">
-            {label}
-            <input
-              required={k !== "stock"}
-              className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-              value={form[k]}
-              onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
-            />
-          </label>
-        ))}
-        <div className="block text-xs text-ink-muted">
-          <span className="mb-1 block">Description</span>
-          <AdminRichTextEditor
-            id="admin-product-description-new"
-            value={form.description}
-            onChange={(description) => setForm((f) => ({ ...f, description }))}
-          />
-        </div>
-        <AdminMultiImageField
-          label="Product media — images or video (MP4, WebM, MOV); images can be cropped before upload"
-          value={form.images}
-          onChange={(images) => setForm((f) => ({ ...f, images }))}
-        />
-        <label className="block text-xs text-ink-muted">
-          Tags (comma-separated)
-          <input
-            className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
-            value={form.tags}
-            onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-          />
-        </label>
-        <div className="space-y-2 rounded-lg border border-sand-deep/80 bg-sand/20 p-3">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={form.allowCustomerCustomization}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, allowCustomerCustomization: e.target.checked }))
-              }
-              className="rounded border-sand-deep accent-accent"
-            />
-            Let buyers upload a reference image and/or notes (personalisation)
-          </label>
-          {form.allowCustomerCustomization ? (
-            <div className="space-y-2 border-t border-sand-deep/60 pt-2">
-              <label className="block text-xs text-ink-muted">
-                Instructions for buyers
-                <textarea
-                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                  rows={3}
-                  placeholder="e.g. Upload a clear photo; max one name, 12 characters."
-                  value={form.customizationInstructions}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customizationInstructions: e.target.value }))
-                  }
-                />
-              </label>
-              <label className="block text-xs text-ink-muted">
-                Text field label
-                <input
-                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                  value={form.customizationTextLabel}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customizationTextLabel: e.target.value }))
-                  }
-                />
-              </label>
-              <label className="block text-xs text-ink-muted">
-                Text field placeholder
-                <input
-                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                  value={form.customizationTextPlaceholder}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customizationTextPlaceholder: e.target.value }))
-                  }
-                />
-              </label>
-              <label className="block text-xs text-ink-muted">
-                Max characters (notes)
-                <input
-                  type="number"
-                  min={1}
-                  max={2000}
-                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                  value={form.customizationTextMaxLength}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customizationTextMaxLength: e.target.value }))
-                  }
-                />
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
-                <input
-                  type="checkbox"
-                  checked={form.customizationImageRequired}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customizationImageRequired: e.target.checked }))
-                  }
-                  className="rounded border-sand-deep accent-accent"
-                />
-                Reference image required
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
-                <input
-                  type="checkbox"
-                  checked={form.customizationTextRequired}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customizationTextRequired: e.target.checked }))
-                  }
-                  className="rounded border-sand-deep accent-accent"
-                />
-                Text required
-              </label>
+            <div className="block text-xs text-ink-muted">
+              <span className="mb-1 block">Description</span>
+              <AdminRichTextEditor
+                id="admin-product-description-new"
+                value={form.description}
+                onChange={(description) => setForm((f) => ({ ...f, description }))}
+              />
             </div>
-          ) : null}
-        </div>
-        <PackOptionsEditor
-          rows={form.optionRows}
-          onChange={(optionRows) => setForm((f) => ({ ...f, optionRows }))}
-        />
-        <ColorVariantsEditor
-          rows={form.colorVariantRows}
-          onChange={(colorVariantRows) => setForm((f) => ({ ...f, colorVariantRows }))}
-        />
+            <AdminMultiImageField
+              label="Product media — images or video (MP4, WebM, MOV); images can be cropped before upload"
+              value={form.images}
+              onChange={(images) => setForm((f) => ({ ...f, images }))}
+            />
+            <label className="block text-xs text-ink-muted">
+              Tags (comma-separated)
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                value={form.tags}
+                onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+              />
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={form.featured}
+                onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
+                className="rounded border-sand-deep accent-accent"
+              />
+              Featured on home page
+            </label>
+          </>
+        ) : null}
+        {createTab === "variants" ? (
+          <>
+            <PackOptionsEditor
+              rows={form.optionRows}
+              onChange={(optionRows) => setForm((f) => ({ ...f, optionRows }))}
+            />
+            <ColorVariantsEditor
+              rows={form.colorVariantRows}
+              onChange={(colorVariantRows) => setForm((f) => ({ ...f, colorVariantRows }))}
+            />
+          </>
+        ) : null}
+        {createTab === "personal" ? (
+          <div className="space-y-2 rounded-lg border border-sand-deep/80 bg-sand/20 p-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={form.allowCustomerCustomization}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, allowCustomerCustomization: e.target.checked }))
+                }
+                className="rounded border-sand-deep accent-accent"
+              />
+              Let buyers upload a reference image and/or notes (personalisation)
+            </label>
+            {form.allowCustomerCustomization ? (
+              <div className="space-y-2 border-t border-sand-deep/60 pt-2">
+                <label className="block text-xs text-ink-muted">
+                  Instructions for buyers
+                  <textarea
+                    className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                    rows={3}
+                    placeholder="e.g. Upload a clear photo; max one name, 12 characters."
+                    value={form.customizationInstructions}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, customizationInstructions: e.target.value }))
+                    }
+                  />
+                </label>
+                <label className="block text-xs text-ink-muted">
+                  Text field label
+                  <input
+                    className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                    value={form.customizationTextLabel}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, customizationTextLabel: e.target.value }))
+                    }
+                  />
+                </label>
+                <label className="block text-xs text-ink-muted">
+                  Text field placeholder
+                  <input
+                    className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                    value={form.customizationTextPlaceholder}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, customizationTextPlaceholder: e.target.value }))
+                    }
+                  />
+                </label>
+                <label className="block text-xs text-ink-muted">
+                  Max characters (notes)
+                  <input
+                    type="number"
+                    min={1}
+                    max={2000}
+                    className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                    value={form.customizationTextMaxLength}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, customizationTextMaxLength: e.target.value }))
+                    }
+                  />
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+                  <input
+                    type="checkbox"
+                    checked={form.customizationImageRequired}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, customizationImageRequired: e.target.checked }))
+                    }
+                    className="rounded border-sand-deep accent-accent"
+                  />
+                  Reference image required
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+                  <input
+                    type="checkbox"
+                    checked={form.customizationTextRequired}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, customizationTextRequired: e.target.checked }))
+                    }
+                    className="rounded border-sand-deep accent-accent"
+                  />
+                  Text required
+                </label>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <button
           type="submit"
           disabled={creating}
@@ -927,7 +1005,44 @@ export function AdminProductsClient() {
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-2xl border border-sand-deep bg-white shadow-sm">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-end gap-3 rounded-xl border border-sand-deep bg-white p-4 shadow-sm">
+          <label className="block text-xs text-ink-muted">
+            Filter by category
+            <select
+              className="mt-1 block w-full min-w-[10rem] rounded border border-sand-deep px-2 py-2 text-sm"
+              value={filterCategoryId}
+              onChange={(e) => {
+                setFilterCategoryId(e.target.value);
+                setFilterSubcategoryId("");
+              }}
+            >
+              <option value="">All categories</option>
+              {(categories ?? []).map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs text-ink-muted">
+            Subcategory
+            <select
+              className="mt-1 block w-full min-w-[12rem] rounded border border-sand-deep px-2 py-2 text-sm"
+              value={filterSubcategoryId}
+              onChange={(e) => setFilterSubcategoryId(e.target.value)}
+              disabled={!filterCategoryId}
+            >
+              <option value="">All in category</option>
+              {subOptionsFiltered.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="overflow-x-auto rounded-2xl border border-sand-deep bg-white shadow-sm">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-sand-deep bg-sand/50 text-xs uppercase text-ink-muted">
             <tr>
@@ -949,12 +1064,17 @@ export function AdminProductsClient() {
                 </td>
               </tr>
             ) : null}
-            {products?.flatMap((p) => {
+            {filteredProducts.flatMap((p) => {
               const row = (
                 <tr key={p._id} className="border-b border-sand-deep/80">
                   <td className="px-4 py-3">
                     <span className={p.isActive ? "text-ink" : "text-ink-muted line-through"}>
                       {p.name}
+                      {p.featured ? (
+                        <span className="ml-2 rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink">
+                          Featured
+                        </span>
+                      ) : null}
                       {p.allowCustomerCustomization ? (
                         <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent">
                           Custom
@@ -1020,206 +1140,254 @@ export function AdminProductsClient() {
                     <form onSubmit={saveEdit} className="space-y-3">
                       <p className="text-xs font-medium text-ink">Edit product</p>
                       {editMsg ? <p className="text-sm text-rose">{editMsg}</p> : null}
-                      <label className="block text-xs text-ink-muted">
-                        Subcategory
-                        <select
-                          required
-                          className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm text-ink"
-                          value={editForm.subcategoryId}
-                          onChange={(e) =>
-                            setEditForm((f) => ({ ...f, subcategoryId: e.target.value }))
-                          }
-                        >
-                          {subOptions.map((s) => (
-                            <option key={s._id} value={s._id}>
-                              {s.label}
-                            </option>
+                      <div className="flex flex-wrap gap-2 border-b border-sand-deep pb-3" role="tablist">
+                        {(
+                          [
+                            ["basics", "Basics"],
+                            ["variants", "Variants"],
+                            ["personal", "Personalisation"],
+                          ] as const
+                        ).map(([id, label]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            role="tab"
+                            aria-selected={editTab === id}
+                            onClick={() => setEditTab(id)}
+                            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                              editTab === id ? "bg-ink text-white" : "text-ink-muted hover:text-ink"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {editTab === "basics" ? (
+                        <>
+                          <label className="block text-xs text-ink-muted">
+                            Subcategory
+                            <select
+                              className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm text-ink"
+                              value={editForm.subcategoryId}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, subcategoryId: e.target.value }))
+                              }
+                            >
+                              {subOptions.map((s) => (
+                                <option key={s._id} value={s._id}>
+                                  {s.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block text-xs text-ink-muted">
+                            Name
+                            <input
+                              className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                              value={editForm.name}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, name: e.target.value }))
+                              }
+                            />
+                          </label>
+                          <p className="text-xs text-ink-muted">
+                            URL slug (auto):{" "}
+                            <span className="font-mono text-ink">
+                              /product/{slugify(editForm.name)}
+                            </span>
+                          </p>
+                          <p className="text-xs text-ink-muted">
+                            SKU (does not change):{" "}
+                            <span className="font-mono text-ink">{p.sku}</span>
+                          </p>
+                          {(
+                            [
+                              ["priceRupees", "Price (INR)"],
+                              ["stock", "Stock"],
+                            ] as const
+                          ).map(([k, label]) => (
+                            <label key={k} className="block text-xs text-ink-muted">
+                              {label}
+                              <input
+                                className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                                value={editForm[k]}
+                                onChange={(e) =>
+                                  setEditForm((f) => ({ ...f, [k]: e.target.value }))
+                                }
+                              />
+                            </label>
                           ))}
-                        </select>
-                      </label>
-                      <label className="block text-xs text-ink-muted">
-                        Name
-                        <input
-                          required
-                          className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                          value={editForm.name}
-                          onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                        />
-                      </label>
-                      <p className="text-xs text-ink-muted">
-                        URL slug (auto):{" "}
-                        <span className="font-mono text-ink">/product/{slugify(editForm.name)}</span>
-                      </p>
-                      <p className="text-xs text-ink-muted">
-                        SKU (does not change):{" "}
-                        <span className="font-mono text-ink">{p.sku}</span>
-                      </p>
-                      {(
-                        [
-                          ["priceRupees", "Price (INR)"],
-                          ["stock", "Stock"],
-                        ] as const
-                      ).map(([k, label]) => (
-                        <label key={k} className="block text-xs text-ink-muted">
-                          {label}
-                          <input
-                            required={k !== "stock"}
-                            className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                            value={editForm[k]}
-                            onChange={(e) =>
-                              setEditForm((f) => ({ ...f, [k]: e.target.value }))
-                            }
-                          />
-                        </label>
-                      ))}
-                      <div className="block text-xs text-ink-muted">
-                        <span className="mb-1 block">Description</span>
-                        <AdminRichTextEditor
-                          id="admin-product-description-edit"
-                          value={editForm.description}
-                          onChange={(description) =>
-                            setEditForm((f) => ({ ...f, description }))
-                          }
-                        />
-                      </div>
-                      <AdminMultiImageField
-                        label="Product media"
-                        value={editForm.images}
-                        onChange={(images) => setEditForm((f) => ({ ...f, images }))}
-                      />
-                      <label className="block text-xs text-ink-muted">
-                        Tags (comma-separated)
-                        <input
-                          className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                          value={editForm.tags}
-                          onChange={(e) => setEditForm((f) => ({ ...f, tags: e.target.value }))}
-                        />
-                      </label>
-                      <div className="space-y-2 rounded-lg border border-sand-deep/80 bg-sand/20 p-3">
-                        <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
-                          <input
-                            type="checkbox"
-                            checked={editForm.allowCustomerCustomization}
-                            onChange={(e) =>
-                              setEditForm((f) => ({
-                                ...f,
-                                allowCustomerCustomization: e.target.checked,
-                              }))
-                            }
-                            className="rounded border-sand-deep accent-accent"
-                          />
-                          Let buyers upload a reference image and/or notes (personalisation)
-                        </label>
-                        {editForm.allowCustomerCustomization ? (
-                          <div className="space-y-2 border-t border-sand-deep/60 pt-2">
-                            <label className="block text-xs text-ink-muted">
-                              Instructions for buyers
-                              <textarea
-                                className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                                rows={3}
-                                value={editForm.customizationInstructions}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({
-                                    ...f,
-                                    customizationInstructions: e.target.value,
-                                  }))
-                                }
-                              />
-                            </label>
-                            <label className="block text-xs text-ink-muted">
-                              Text field label
-                              <input
-                                className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                                value={editForm.customizationTextLabel}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({
-                                    ...f,
-                                    customizationTextLabel: e.target.value,
-                                  }))
-                                }
-                              />
-                            </label>
-                            <label className="block text-xs text-ink-muted">
-                              Text field placeholder
-                              <input
-                                className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                                value={editForm.customizationTextPlaceholder}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({
-                                    ...f,
-                                    customizationTextPlaceholder: e.target.value,
-                                  }))
-                                }
-                              />
-                            </label>
-                            <label className="block text-xs text-ink-muted">
-                              Max characters (notes)
-                              <input
-                                type="number"
-                                min={1}
-                                max={2000}
-                                className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
-                                value={editForm.customizationTextMaxLength}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({
-                                    ...f,
-                                    customizationTextMaxLength: e.target.value,
-                                  }))
-                                }
-                              />
-                            </label>
-                            <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
-                              <input
-                                type="checkbox"
-                                checked={editForm.customizationImageRequired}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({
-                                    ...f,
-                                    customizationImageRequired: e.target.checked,
-                                  }))
-                                }
-                                className="rounded border-sand-deep accent-accent"
-                              />
-                              Reference image required
-                            </label>
-                            <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
-                              <input
-                                type="checkbox"
-                                checked={editForm.customizationTextRequired}
-                                onChange={(e) =>
-                                  setEditForm((f) => ({
-                                    ...f,
-                                    customizationTextRequired: e.target.checked,
-                                  }))
-                                }
-                                className="rounded border-sand-deep accent-accent"
-                              />
-                              Text required
-                            </label>
+                          <div className="block text-xs text-ink-muted">
+                            <span className="mb-1 block">Description</span>
+                            <AdminRichTextEditor
+                              id="admin-product-description-edit"
+                              value={editForm.description}
+                              onChange={(description) =>
+                                setEditForm((f) => ({ ...f, description }))
+                              }
+                            />
                           </div>
-                        ) : null}
-                      </div>
-                      <PackOptionsEditor
-                        rows={editForm.optionRows}
-                        onChange={(optionRows) => setEditForm((f) => ({ ...f, optionRows }))}
-                      />
-                      <ColorVariantsEditor
-                        rows={editForm.colorVariantRows}
-                        onChange={(colorVariantRows) =>
-                          setEditForm((f) => ({ ...f, colorVariantRows }))
-                        }
-                      />
-                      <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
-                        <input
-                          type="checkbox"
-                          checked={editForm.isActive}
-                          onChange={(e) =>
-                            setEditForm((f) => ({ ...f, isActive: e.target.checked }))
-                          }
-                          className="rounded border-sand-deep accent-accent"
-                        />
-                        Active (visible on storefront)
-                      </label>
+                          <AdminMultiImageField
+                            label="Product media"
+                            value={editForm.images}
+                            onChange={(images) => setEditForm((f) => ({ ...f, images }))}
+                          />
+                          <label className="block text-xs text-ink-muted">
+                            Tags (comma-separated)
+                            <input
+                              className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                              value={editForm.tags}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, tags: e.target.value }))
+                              }
+                            />
+                          </label>
+                          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+                            <input
+                              type="checkbox"
+                              checked={editForm.featured}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, featured: e.target.checked }))
+                              }
+                              className="rounded border-sand-deep accent-accent"
+                            />
+                            Featured on home page
+                          </label>
+                          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+                            <input
+                              type="checkbox"
+                              checked={editForm.isActive}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, isActive: e.target.checked }))
+                              }
+                              className="rounded border-sand-deep accent-accent"
+                            />
+                            Active (visible on storefront)
+                          </label>
+                        </>
+                      ) : null}
+                      {editTab === "variants" ? (
+                        <>
+                          <PackOptionsEditor
+                            rows={editForm.optionRows}
+                            onChange={(optionRows) =>
+                              setEditForm((f) => ({ ...f, optionRows }))
+                            }
+                          />
+                          <ColorVariantsEditor
+                            rows={editForm.colorVariantRows}
+                            onChange={(colorVariantRows) =>
+                              setEditForm((f) => ({ ...f, colorVariantRows }))
+                            }
+                          />
+                        </>
+                      ) : null}
+                      {editTab === "personal" ? (
+                        <div className="space-y-2 rounded-lg border border-sand-deep/80 bg-sand/20 p-3">
+                          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+                            <input
+                              type="checkbox"
+                              checked={editForm.allowCustomerCustomization}
+                              onChange={(e) =>
+                                setEditForm((f) => ({
+                                  ...f,
+                                  allowCustomerCustomization: e.target.checked,
+                                }))
+                              }
+                              className="rounded border-sand-deep accent-accent"
+                            />
+                            Let buyers upload a reference image and/or notes (personalisation)
+                          </label>
+                          {editForm.allowCustomerCustomization ? (
+                            <div className="space-y-2 border-t border-sand-deep/60 pt-2">
+                              <label className="block text-xs text-ink-muted">
+                                Instructions for buyers
+                                <textarea
+                                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                                  rows={3}
+                                  value={editForm.customizationInstructions}
+                                  onChange={(e) =>
+                                    setEditForm((f) => ({
+                                      ...f,
+                                      customizationInstructions: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="block text-xs text-ink-muted">
+                                Text field label
+                                <input
+                                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                                  value={editForm.customizationTextLabel}
+                                  onChange={(e) =>
+                                    setEditForm((f) => ({
+                                      ...f,
+                                      customizationTextLabel: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="block text-xs text-ink-muted">
+                                Text field placeholder
+                                <input
+                                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                                  value={editForm.customizationTextPlaceholder}
+                                  onChange={(e) =>
+                                    setEditForm((f) => ({
+                                      ...f,
+                                      customizationTextPlaceholder: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="block text-xs text-ink-muted">
+                                Max characters (notes)
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={2000}
+                                  className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                                  value={editForm.customizationTextMaxLength}
+                                  onChange={(e) =>
+                                    setEditForm((f) => ({
+                                      ...f,
+                                      customizationTextMaxLength: e.target.value,
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+                                <input
+                                  type="checkbox"
+                                  checked={editForm.customizationImageRequired}
+                                  onChange={(e) =>
+                                    setEditForm((f) => ({
+                                      ...f,
+                                      customizationImageRequired: e.target.checked,
+                                    }))
+                                  }
+                                  className="rounded border-sand-deep accent-accent"
+                                />
+                                Reference image required
+                              </label>
+                              <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+                                <input
+                                  type="checkbox"
+                                  checked={editForm.customizationTextRequired}
+                                  onChange={(e) =>
+                                    setEditForm((f) => ({
+                                      ...f,
+                                      customizationTextRequired: e.target.checked,
+                                    }))
+                                  }
+                                  className="rounded border-sand-deep accent-accent"
+                                />
+                                Text required
+                              </label>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                       <div className="flex flex-wrap gap-2 pt-1">
                         <button
                           type="submit"
@@ -1251,6 +1419,7 @@ export function AdminProductsClient() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

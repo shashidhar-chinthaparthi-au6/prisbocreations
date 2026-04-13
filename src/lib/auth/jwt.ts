@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { getSessionMaxAgeSeconds } from "./session-config";
 
 export type JwtPayload = {
   sub: string;
@@ -10,7 +11,7 @@ export function signAccessToken(payload: JwtPayload, secret: string): string {
   return jwt.sign(
     { sub: payload.sub, email: payload.email, role: payload.role },
     secret,
-    { expiresIn: "7d" }
+    { expiresIn: getSessionMaxAgeSeconds() },
   );
 }
 

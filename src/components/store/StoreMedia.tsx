@@ -16,6 +16,8 @@ type Props = {
   fill?: boolean;
   sizes?: string;
   priority?: boolean;
+  /** Load immediately — avoids wrong/stale frames in horizontal carousels (native lazy + scroll). */
+  eager?: boolean;
   /** For video URLs: show native controls (e.g. off for tiny cart/list thumbs). Default true. */
   videoControls?: boolean;
   /** Image decoded / video first frame ready */
@@ -31,10 +33,12 @@ export function StoreMedia({
   fill,
   sizes,
   priority,
+  eager = false,
   videoControls = true,
   onMediaReady,
   onMediaError,
 }: Props) {
+  const loadNow = priority || eager;
   if (isVideoUrl(src)) {
     if (fill) {
       return (
@@ -75,7 +79,7 @@ export function StoreMedia({
           alt={alt}
           className={`absolute inset-0 h-full w-full object-cover ${className ?? ""}`}
           sizes={sizes}
-          loading={priority ? "eager" : "lazy"}
+          loading={loadNow ? "eager" : "lazy"}
           decoding="async"
           onLoad={onMediaReady}
           onError={onMediaError}
@@ -91,7 +95,7 @@ export function StoreMedia({
         height={800}
         className={className ?? "object-cover"}
         sizes={sizes}
-        loading="lazy"
+        loading={loadNow ? "eager" : "lazy"}
         decoding="async"
         onLoad={onMediaReady}
         onError={onMediaError}
@@ -107,7 +111,7 @@ export function StoreMedia({
         fill
         className={className ?? "object-cover"}
         sizes={sizes}
-        priority={priority}
+        priority={loadNow}
         onLoad={onMediaReady}
         onError={onMediaError}
       />
@@ -122,6 +126,7 @@ export function StoreMedia({
       height={800}
       className={className ?? "object-cover"}
       sizes={sizes}
+      priority={loadNow}
       onLoad={onMediaReady}
       onError={onMediaError}
     />

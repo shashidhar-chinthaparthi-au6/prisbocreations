@@ -27,13 +27,20 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
       <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
         <Providers>
           <SiteHeader />
-          <main className="min-h-[60vh] w-full px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+          <main className="min-h-[60vh] w-full px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
+            {children}
+          </main>
           <SiteFooter />
         </Providers>
       </body>

@@ -32,6 +32,7 @@ const createSchema = z
     stock: z.number().int().min(0),
     images: zImageRefArray(),
     tags: z.array(z.string()).optional(),
+    featured: z.boolean().optional(),
     isActive: z.boolean().optional(),
     options: z.array(productOptionSchema).max(24).optional(),
     colorVariants: z.array(colorVariantSchema).max(24).optional(),
