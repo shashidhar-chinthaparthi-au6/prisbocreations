@@ -8,7 +8,9 @@ import {
 } from "@/lib/services/catalogService";
 import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
+import { HomeExploreProducts } from "@/components/store/HomeExploreProducts";
 import { HomeProductCard } from "@/components/store/HomeProductCard";
+import { productToExploreCardDTO } from "@/lib/home-explore-dto";
 import { RecentlyViewedHome } from "@/components/store/RecentlyViewedHome";
 import { HeroBrowseBackdrop } from "@/components/store/HeroBrowseBackdrop";
 
@@ -30,10 +32,11 @@ export default async function HomePage() {
 
   await connectDb();
   const [categories, featured] = await Promise.all([listCategories(), listFeaturedProducts(12)]);
-  const explore = await listExploreProductsForHome(
+  const { rows: exploreRows, mode: exploreFeedMode } = await listExploreProductsForHome(
     18,
     featured.map((p) => String(p._id)),
   );
+  const exploreInitial = exploreRows.map((p) => productToExploreCardDTO(p));
 
   const heroBackdropUrls = dedupeImageUrls([
     ...categories.map((c) => c.images?.[0]),
@@ -41,55 +44,55 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="space-y-16">
-      <section className="relative overflow-hidden rounded-3xl px-8 py-16 text-white shadow-[0_25px_60px_-15px_rgba(159,18,57,0.35),0_12px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/20 md:px-14 md:py-20">
+    <div className="space-y-10 md:space-y-12">
+      <section className="relative overflow-hidden rounded-2xl px-5 py-8 text-white shadow-[0_25px_60px_-15px_rgba(159,18,57,0.35),0_12px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/20 sm:px-7 sm:py-9 md:rounded-3xl md:px-10 md:py-10">
         {heroBackdropUrls.length > 0 ? <HeroBrowseBackdrop urls={heroBackdropUrls} /> : null}
         {/* Deep jewel base + warm colour wash (lets photos stay lively on the right) */}
         <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-3xl bg-gradient-to-br from-rose-950/88 via-ink/78 to-amber-950/72"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl bg-gradient-to-br from-rose-950/88 via-ink/78 to-amber-950/72 md:rounded-3xl"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-3xl bg-gradient-to-tr from-accent/30 via-transparent to-rose-light/35"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl bg-gradient-to-tr from-accent/30 via-transparent to-rose-light/35 md:rounded-3xl"
           aria-hidden
         />
         {/* Readability for copy — fades out so the marquee stays colourful */}
         <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-3xl bg-gradient-to-r from-black/70 from-0% via-black/28 via-[48%] to-transparent to-100%"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl bg-gradient-to-r from-black/70 from-0% via-black/28 via-[48%] to-transparent to-100% md:rounded-3xl"
           aria-hidden
         />
         <div
-          className="relative z-10 max-w-2xl space-y-6 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_3px_rgba(0,0,0,0.75)]"
+          className="relative z-10 max-w-xl space-y-3 sm:max-w-2xl sm:space-y-4 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_3px_rgba(0,0,0,0.75)]"
         >
-          <p className="text-sm font-medium uppercase tracking-[0.22em] text-amber-100/95">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-100/95 sm:text-sm sm:tracking-[0.22em]">
             Prisbo Creations
           </p>
-          <h1 className="font-display text-4xl leading-tight text-white md:text-5xl">
+          <h1 className="font-display text-2xl leading-snug text-white sm:text-3xl sm:leading-tight md:text-4xl">
             Personalized pieces that feel unmistakably premium.
           </h1>
-          <p className="text-lg leading-relaxed text-sand/95">
+          <p className="max-w-xl text-sm leading-relaxed text-sand/95 sm:text-base">
             From acrylic keepsakes to packaging that elevates your brand — every order is produced
             with care and crisp detail.
           </p>
-          <div className="flex flex-wrap gap-3 [text-shadow:none]">
+          <div className="flex flex-wrap gap-2 pt-1 [text-shadow:none] sm:gap-3">
             <Link
               href="/categories"
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-accent to-accent-light px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(180,83,9,0.45)] ring-2 ring-white/25 transition hover:brightness-110"
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-accent to-accent-light px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(180,83,9,0.45)] ring-2 ring-white/25 transition hover:brightness-110 sm:min-h-11 sm:px-6 sm:py-3"
             >
               Browse categories
             </Link>
             {!session ? (
               <Link
                 href="/register"
-                className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-amber-100/70 bg-white/12 px-6 py-3 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-white hover:bg-white/20"
+                className="inline-flex min-h-10 items-center justify-center rounded-full border-2 border-amber-100/70 bg-white/12 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-white hover:bg-white/20 sm:min-h-11 sm:px-6 sm:py-3"
               >
                 Create account
               </Link>
             ) : null}
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-12 -top-16 z-[2] h-80 w-80 rounded-full bg-gradient-to-br from-accent/50 via-amber-300/35 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-8 z-[2] h-72 w-72 rounded-full bg-gradient-to-tr from-rose-light/45 via-rose/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -right-10 -top-12 z-[2] h-56 w-56 rounded-full bg-gradient-to-br from-accent/50 via-amber-300/35 to-transparent blur-3xl sm:h-64 sm:w-64" />
+        <div className="pointer-events-none absolute -bottom-14 -left-6 z-[2] h-52 w-52 rounded-full bg-gradient-to-tr from-rose-light/45 via-rose/30 to-transparent blur-3xl sm:h-60 sm:w-60" />
       </section>
 
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6">
@@ -141,7 +144,7 @@ export default async function HomePage() {
                 View all
               </Link>
             </div>
-            {explore.length === 0 ? (
+            {exploreInitial.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-sand-deep bg-white/60 p-8 text-center text-ink-muted sm:p-10">
                 <p className="font-medium text-ink">No products to show yet.</p>
                 <p className="mt-2 text-sm">
@@ -157,30 +160,7 @@ export default async function HomePage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-4">
-                {explore.map((p) => {
-                  const colorVariants = colorVariantsFromDoc(p);
-                  const defaultImages = Array.isArray(p.images) ? p.images : [];
-                  const thumb =
-                    listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
-                  const multi = productHasOptions(p);
-                  const price = multi ? minOptionPricePaise(p) : p.pricePaise;
-                  return (
-                    <HomeProductCard
-                      key={String(p._id)}
-                      variant="explore"
-                      slug={p.slug}
-                      name={p.name}
-                      productId={String(p._id)}
-                      listPricePaise={price}
-                      stock={p.stock}
-                      imageUrl={thumb}
-                      multi={multi}
-                      hasColorVariants={colorVariants.length > 0}
-                    />
-                  );
-                })}
-              </div>
+              <HomeExploreProducts initial={exploreInitial} exploreFeedMode={exploreFeedMode} />
             )}
           </section>
         </div>

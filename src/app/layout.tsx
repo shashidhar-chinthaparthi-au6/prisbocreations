@@ -35,13 +35,21 @@ export const viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
-      <body className="min-h-screen font-sans antialiased" suppressHydrationWarning>
+      <body
+        className="font-sans antialiased"
+        suppressHydrationWarning
+      >
         <Providers>
-          <SiteHeader />
-          <main className="min-h-[60vh] w-full px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
-            {children}
-          </main>
-          <SiteFooter />
+          <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
+            <SiteHeader />
+            <main
+              id="site-main-scroll"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-8"
+            >
+              {children}
+            </main>
+            <SiteFooter />
+          </div>
         </Providers>
       </body>
     </html>

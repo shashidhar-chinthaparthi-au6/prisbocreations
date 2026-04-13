@@ -10,7 +10,7 @@ export async function SiteHeader() {
   const isAdmin = session?.role === "admin";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-sand-deep/60 bg-sand/90 backdrop-blur-md pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-50 shrink-0 border-b border-sand-deep/60 bg-sand/90 backdrop-blur-md pt-[env(safe-area-inset-top)]">
       <div className="flex w-full items-center gap-2 px-[max(1rem,env(safe-area-inset-left))] py-3 pr-[max(1rem,env(safe-area-inset-right))] sm:gap-3 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] lg:px-8">
         <div className="flex shrink-0 items-baseline gap-2">
           <Link

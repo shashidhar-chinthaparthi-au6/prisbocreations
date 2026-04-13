@@ -5,8 +5,10 @@ import { withNormalizedCatalogImages } from "@/lib/catalog-images";
 import type { ProductSuggestion } from "@/lib/product-suggestion";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 import mongoose from "mongoose";
+import type { ExploreFeedMode } from "@/lib/explore-feed-mode";
 
 export type { ProductSuggestion };
+export type { ExploreFeedMode };
 
 /** Safe substring search: user input must not break RegExp construction. */
 function searchPattern(q: string): RegExp {
@@ -131,19 +133,60 @@ export async function listFeaturedProducts(limit = 12) {
     .lean();
 }
 
-/** Newest active products for home “explore”; excludes IDs (e.g. featured) when possible. */
-export async function listExploreProductsForHome(limit: number, excludeIds: string[] = []) {
-  const cap = Math.min(Math.max(limit, 1), 48);
-  const oids = excludeIds
-    .filter((id) => mongoose.isValidObjectId(id))
-    .map((id) => new mongoose.Types.ObjectId(id));
-  const query: Record<string, unknown> = { isActive: true };
-  if (oids.length > 0) {
-    query._id = { $nin: oids };
+async function distinctFeaturedProductIds(): Promise<mongoose.Types.ObjectId[]> {
+  const raw = await Product.find({ isActive: true, featured: true }).distinct("_id");
+  const out: mongoose.Types.ObjectId[] = [];
+  for (const id of raw ?? []) {
+    if (id instanceof mongoose.Types.ObjectId) out.push(id);
+    else if (mongoose.isValidObjectId(id)) out.push(new mongoose.Types.ObjectId(String(id)));
   }
-  const rows = await Product.find(query).sort({ updatedAt: -1 }).limit(cap).lean();
-  if (rows.length > 0 || oids.length === 0) return rows;
-  return Product.find({ isActive: true }).sort({ updatedAt: -1 }).limit(cap).lean();
+  return out;
+}
+
+/** Newest active products for home “explore”; excludes featured when any exist; else all active (fallback). */
+export async function listExploreProductsForHome(
+  limit: number,
+  _excludeIds: string[] = [],
+) {
+  const cap = Math.min(Math.max(limit, 1), 48);
+  const featuredIds = await distinctFeaturedProductIds();
+  const query: Record<string, unknown> = { isActive: true };
+  if (featuredIds.length > 0) {
+    query._id = { $nin: featuredIds };
+  }
+  let rows = await Product.find(query).sort({ updatedAt: -1, _id: -1 }).limit(cap).lean();
+  let mode: ExploreFeedMode = "non-featured";
+  if (rows.length === 0) {
+    rows = await Product.find({ isActive: true })
+      .sort({ updatedAt: -1, _id: -1 })
+      .limit(cap)
+      .lean();
+    mode = "all-active";
+  }
+  return { rows, mode };
+}
+
+/** Paginated explore feed; use the same `mode` returned from {@link listExploreProductsForHome}. */
+export async function listExploreProductsPaged(
+  limit: number,
+  skip: number,
+  mode: ExploreFeedMode,
+) {
+  const lim = Math.min(Math.max(limit, 1), 48);
+  const sk = Math.max(0, Math.floor(skip));
+  if (mode === "all-active") {
+    return Product.find({ isActive: true })
+      .sort({ updatedAt: -1, _id: -1 })
+      .skip(sk)
+      .limit(lim)
+      .lean();
+  }
+  const featuredIds = await distinctFeaturedProductIds();
+  const query: Record<string, unknown> = { isActive: true };
+  if (featuredIds.length > 0) {
+    query._id = { $nin: featuredIds };
+  }
+  return Product.find(query).sort({ updatedAt: -1, _id: -1 }).skip(sk).limit(lim).lean();
 }
 
 export async function getProductBySlug(slug: string) {

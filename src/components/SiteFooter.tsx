@@ -7,16 +7,14 @@ export async function SiteFooter() {
   const isAdmin = session?.role === "admin";
 
   return (
-    <footer className="mt-20 border-t border-sand-deep bg-white/60 pb-[max(3rem,env(safe-area-inset-bottom))]">
-      <div className="flex w-full flex-col gap-6 px-[max(1rem,env(safe-area-inset-left))] py-12 pr-[max(1rem,env(safe-area-inset-right))] sm:px-6 lg:px-8 md:flex-row md:justify-between">
-        <div>
-          <p className="font-display text-lg text-ink">Prisbo Creations</p>
-          <p className="mt-2 max-w-sm text-sm text-ink-muted">
-            Premium personalized gifts — paper, acrylic, stationery, home accents, and apparel.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-10 text-sm">
-          <div className="flex flex-col gap-2">
+    <footer
+      data-site-footer
+      className="relative z-10 shrink-0 border-t border-sand-deep bg-white/60 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+    >
+      <div className="flex w-full flex-col gap-3 px-[max(1rem,env(safe-area-inset-left))] py-3 pr-[max(1rem,env(safe-area-inset-right))] sm:px-6 sm:py-3.5 lg:px-8 md:flex-row md:items-start md:justify-between md:gap-4">
+        <p className="shrink-0 font-display text-sm font-semibold text-ink">Prisbo Creations</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs sm:gap-x-8">
+          <div className="flex min-w-[5.5rem] flex-col gap-1">
             <span className="font-semibold text-ink">{isAdmin ? "Store" : "Shop"}</span>
             <Link href="/categories" className="text-ink-muted hover:text-accent">
               {isAdmin ? "View storefront" : "Categories"}
@@ -35,7 +33,7 @@ export async function SiteFooter() {
             )}
           </div>
           {!isAdmin ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex min-w-[5.5rem] flex-col gap-1">
               <span className="font-semibold text-ink">Help</span>
               <Link href="/shipping" className="text-ink-muted hover:text-accent">
                 Shipping
@@ -51,7 +49,7 @@ export async function SiteFooter() {
               </Link>
             </div>
           ) : null}
-          <div className="flex flex-col gap-2">
+          <div className="flex min-w-[5.5rem] flex-col gap-1">
             <span className="font-semibold text-ink">Account</span>
             {session ? (
               <>
@@ -77,7 +75,7 @@ export async function SiteFooter() {
           </div>
         </div>
       </div>
-      <div className="border-t border-sand-deep py-4 text-center text-xs text-ink-muted">
+      <div className="border-t border-sand-deep/80 py-1.5 text-center text-[10px] leading-tight text-ink-muted sm:text-xs">
         © {new Date().getFullYear()} Prisbo Creations
       </div>
     </footer>
