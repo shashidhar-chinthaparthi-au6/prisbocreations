@@ -77,7 +77,7 @@ export async function SiteHeader() {
                 href="/categories"
                 className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
               >
-                Shop
+                Categories
               </Link>
               <Link
                 href="/track"
@@ -111,9 +111,9 @@ export async function SiteHeader() {
                   </Link>
                   <Link
                     href="/register"
-                    className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full bg-ink px-3 py-2 text-white hover:bg-ink/90 sm:px-4"
+                    className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
                   >
-                    Join
+                    Register
                   </Link>
                 </>
               )}
