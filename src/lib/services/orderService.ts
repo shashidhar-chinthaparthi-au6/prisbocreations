@@ -327,7 +327,28 @@ export async function getOrderForGuest(orderId: string, guestEmail: string) {
 }
 
 export async function listOrdersAdmin() {
-  return Order.find().sort({ createdAt: -1 }).limit(200).lean();
+  const orders = await Order.find().sort({ createdAt: -1 }).limit(200).lean();
+  const userIds = [
+    ...new Set(
+      orders
+        .map((o) => o.userId)
+        .filter((id): id is mongoose.Types.ObjectId => Boolean(id))
+        .map((id) => id.toString()),
+    ),
+  ];
+  const users =
+    userIds.length > 0
+      ? await User.find({ _id: { $in: userIds } }).select("email").lean()
+      : [];
+  const emailByUserId = new Map(users.map((u) => [String(u._id), String(u.email ?? "")]));
+
+  return orders.map((o) => {
+    const customerEmail =
+      o.guestEmail?.trim() ||
+      (o.userId ? emailByUserId.get(String(o.userId)) : undefined) ||
+      undefined;
+    return { ...o, customerEmail };
+  });
 }
 
 export async function getOrderById(orderId: string) {

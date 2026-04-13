@@ -5,33 +5,56 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { formatInrFromPaise } from "@/lib/format";
 import { Spinner } from "@/components/ui/Spinner";
-
-type OrderRow = {
-  _id: string;
-  invoiceNumber?: string;
-  status: string;
-  totalPaise: number;
-  createdAt: string;
-  userId?: string;
-  guestEmail?: string;
-  paymentMethod?: string;
-  shiprocket?: {
-    awb?: string;
-    courierName?: string;
-    freightChargeRupees?: number;
-    totalShippingRupees?: number;
-    status?: string;
-    trackingUrl?: string;
-    lastError?: string;
-  } | null;
-};
+import { AdminOrderDetailSheet } from "@/components/admin/AdminOrderDetailSheet";
+import type { AdminOrderFull } from "@/components/admin/admin-order-types";
 
 const statuses = ["pending", "paid", "processing", "shipped", "cancelled"] as const;
 const statusesWithoutCancelled = statuses.filter((s) => s !== "cancelled");
 
+function formatPlaced(iso?: string | Date | null) {
+  if (!iso) return "—";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" });
+}
+
+function asAdminOrder(raw: unknown): AdminOrderFull {
+  const o = raw as Record<string, unknown>;
+  const shipping = o.shipping as AdminOrderFull["shipping"];
+  const items = Array.isArray(o.items) ? (o.items as AdminOrderFull["items"]) : [];
+  return {
+    _id: String(o._id ?? ""),
+    invoiceNumber: typeof o.invoiceNumber === "string" ? o.invoiceNumber : undefined,
+    status: String(o.status ?? ""),
+    totalPaise: Number(o.totalPaise) || 0,
+    subtotalPaise: Number(o.subtotalPaise) || 0,
+    shippingPaise: typeof o.shippingPaise === "number" ? o.shippingPaise : 0,
+    currency: typeof o.currency === "string" ? o.currency : "INR",
+    createdAt: o.createdAt ? String(o.createdAt) : undefined,
+    updatedAt: o.updatedAt ? String(o.updatedAt) : undefined,
+    userId: o.userId ? String(o.userId) : undefined,
+    guestEmail: typeof o.guestEmail === "string" ? o.guestEmail : undefined,
+    customerEmail: typeof o.customerEmail === "string" ? o.customerEmail : undefined,
+    paymentMethod: typeof o.paymentMethod === "string" ? o.paymentMethod : undefined,
+    razorpayOrderId: typeof o.razorpayOrderId === "string" ? o.razorpayOrderId : undefined,
+    notes: typeof o.notes === "string" ? o.notes : undefined,
+    cancelReason: typeof o.cancelReason === "string" ? o.cancelReason : undefined,
+    orderCancelledAt: o.orderCancelledAt as string | Date | undefined,
+    shiprocketCourierId:
+      typeof o.shiprocketCourierId === "number" ? o.shiprocketCourierId : undefined,
+    shipping,
+    items,
+    shiprocket:
+      o.shiprocket && typeof o.shiprocket === "object"
+        ? (o.shiprocket as Record<string, unknown>)
+        : null,
+  };
+}
+
 export function AdminOrdersClient() {
   const qc = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [detailOrder, setDetailOrder] = useState<AdminOrderFull | null>(null);
   const [cancelModal, setCancelModal] = useState<{
     id: string;
     label: string;
@@ -41,7 +64,10 @@ export function AdminOrdersClient() {
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
-    queryFn: () => apiFetch<OrderRow[]>("/api/v1/admin/orders"),
+    queryFn: async () => {
+      const raw = await apiFetch<unknown[]>("/api/v1/admin/orders");
+      return raw.map(asAdminOrder);
+    },
   });
 
   async function setStatus(id: string, status: (typeof statuses)[number]) {
@@ -73,6 +99,7 @@ export function AdminOrdersClient() {
       });
       setCancelModal(null);
       setCancelReason("Cancelled by admin");
+      setDetailOrder(null);
       await qc.invalidateQueries({ queryKey: ["admin-orders"] });
     } catch (e) {
       setCancelErr(e instanceof Error ? e.message : "Cancel failed");
@@ -82,132 +109,156 @@ export function AdminOrdersClient() {
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-sand-deep bg-white shadow-sm">
-      <table className="min-w-full text-left text-sm">
-        <thead className="border-b border-sand-deep bg-sand/50 text-xs uppercase text-ink-muted">
-          <tr>
-            <th className="px-4 py-3">Order</th>
-            <th className="px-4 py-3">User</th>
-            <th className="px-4 py-3">Total</th>
-            <th className="px-4 py-3">Pay</th>
-            <th className="px-4 py-3">Shipment</th>
-            <th className="px-4 py-3">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {isLoading ? (
+    <>
+      <div className="overflow-x-auto rounded-2xl border border-sand-deep bg-white shadow-sm">
+        <table className="min-w-full text-left text-sm">
+          <thead className="border-b border-sand-deep bg-sand/50 text-xs uppercase text-ink-muted">
             <tr>
-              <td colSpan={6} className="px-4 py-6">
-                <span className="inline-flex items-center gap-2 text-ink-muted">
-                  <Spinner size="sm" />
-                  Loading…
-                </span>
-              </td>
+              <th className="px-4 py-3">Invoice / ref</th>
+              <th className="px-4 py-3">Placed</th>
+              <th className="px-4 py-3">Customer</th>
+              <th className="px-4 py-3">Items</th>
+              <th className="px-4 py-3">Total</th>
+              <th className="px-4 py-3">Pay</th>
+              <th className="px-4 py-3">Shipment</th>
+              <th className="px-4 py-3">Status</th>
             </tr>
-          ) : null}
-          {orders?.map((o) => (
-            <tr key={o._id} className="border-b border-sand-deep/80">
-              <td className="px-4 py-3 font-mono text-xs">
-                <div>{o._id}</div>
-                {o.invoiceNumber ? (
-                  <div className="mt-0.5 text-[10px] font-semibold text-ink-muted">{o.invoiceNumber}</div>
-                ) : null}
-              </td>
-              <td className="px-4 py-3 text-xs">
-                {o.userId ? (
-                  <span className="font-mono">{o.userId}</span>
-                ) : (
-                  <span className="text-ink-muted">Guest · {o.guestEmail ?? "—"}</span>
-                )}
-              </td>
-              <td className="px-4 py-3">{formatInrFromPaise(o.totalPaise)}</td>
-              <td className="px-4 py-3 text-xs capitalize text-ink-muted">
-                {o.paymentMethod === "cod" ? "COD" : "Online"}
-              </td>
-              <td className="px-4 py-3 text-xs text-ink-muted">
-                {o.shiprocket?.awb || o.shiprocket?.courierName || o.shiprocket?.status ? (
-                  <div className="max-w-[200px] space-y-1">
-                    {o.shiprocket.courierName ? (
-                      <p className="truncate text-ink">{o.shiprocket.courierName}</p>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-6">
+                  <span className="inline-flex items-center gap-2 text-ink-muted">
+                    <Spinner size="sm" />
+                    Loading…
+                  </span>
+                </td>
+              </tr>
+            ) : null}
+            {orders?.map((o) => (
+              <tr key={o._id} className="border-b border-sand-deep/80">
+                <td className="px-4 py-3 font-mono text-xs">
+                  <button
+                    type="button"
+                    className="text-left hover:text-accent"
+                    onClick={() => setDetailOrder(o)}
+                  >
+                    {o.invoiceNumber ? (
+                      <span className="block font-semibold text-ink">{o.invoiceNumber}</span>
                     ) : null}
-                    {o.shiprocket.awb ? (
-                      <p className="font-mono text-[10px] text-ink">{o.shiprocket.awb}</p>
-                    ) : (
-                      <p className="capitalize">{o.shiprocket.status ?? "—"}</p>
-                    )}
-                    {typeof o.shiprocket.totalShippingRupees === "number" ? (
-                      <p>
-                        Ship:{" "}
-                        {formatInrFromPaise(Math.round(o.shiprocket.totalShippingRupees * 100))}
-                      </p>
-                    ) : typeof o.shiprocket.freightChargeRupees === "number" ? (
-                      <p>
-                        Freight:{" "}
-                        {formatInrFromPaise(Math.round(o.shiprocket.freightChargeRupees * 100))}
-                      </p>
-                    ) : null}
-                    {o.shiprocket.trackingUrl ? (
-                      <a
-                        href={o.shiprocket.trackingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-accent hover:underline"
-                      >
-                        Track
-                      </a>
-                    ) : null}
-                    {o.shiprocket.lastError ? (
-                      <p className="text-[10px] text-rose">{o.shiprocket.lastError.slice(0, 80)}</p>
-                    ) : null}
-                  </div>
-                ) : (
-                  "—"
-                )}
-              </td>
-              <td className="px-4 py-3">
-                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2">
-                  {updatingId === o._id ? <Spinner size="sm" className="text-ink-muted" /> : null}
-                  {o.status === "cancelled" ? (
-                    <span className="text-xs font-medium capitalize text-ink-muted">Cancelled</span>
+                    <span className="mt-0.5 block text-[10px] text-ink-muted">{o._id}</span>
+                    <span className="mt-1 block text-[10px] font-medium text-accent">
+                      View invoice details →
+                    </span>
+                  </button>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-xs text-ink-muted">
+                  {formatPlaced(o.createdAt)}
+                </td>
+                <td className="max-w-[200px] px-4 py-3 text-xs">
+                  {o.customerEmail ? (
+                    <span className="break-all text-ink">{o.customerEmail}</span>
                   ) : (
-                    <>
-                      <select
-                        disabled={updatingId === o._id || Boolean(cancelModal)}
-                        className="rounded border border-sand-deep px-2 py-1 text-xs disabled:opacity-60"
-                        value={o.status}
-                        onChange={(e) =>
-                          setStatus(o._id, e.target.value as (typeof statuses)[number])
-                        }
-                      >
-                        {statusesWithoutCancelled.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        disabled={updatingId === o._id || Boolean(cancelModal)}
-                        className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-900 hover:bg-rose-100 disabled:opacity-50"
-                        onClick={() => {
-                          setCancelErr(null);
-                          setCancelReason("Cancelled by admin");
-                          setCancelModal({
-                            id: o._id,
-                            label: o.invoiceNumber ? `${o.invoiceNumber} · ${o._id}` : o._id,
-                          });
-                        }}
-                      >
-                        Cancel order…
-                      </button>
-                    </>
+                    <span className="text-ink-muted">—</span>
                   )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  {o.userId ? (
+                    <span className="mt-1 block truncate font-mono text-[10px] text-ink-muted">
+                      User {o.userId}
+                    </span>
+                  ) : (
+                    <span className="mt-1 block text-[10px] text-ink-muted">Guest</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs tabular-nums text-ink-muted">
+                  {o.items?.length ?? 0}
+                </td>
+                <td className="px-4 py-3">{formatInrFromPaise(o.totalPaise)}</td>
+                <td className="px-4 py-3 text-xs capitalize text-ink-muted">
+                  {o.paymentMethod === "cod" ? "COD" : "Online"}
+                </td>
+                <td className="px-4 py-3 text-xs text-ink-muted">
+                  {o.shiprocket &&
+                  typeof o.shiprocket === "object" &&
+                  (o.shiprocket as { awb?: string }).awb ? (
+                    <div className="max-w-[200px] space-y-1">
+                      {(o.shiprocket as { courierName?: string }).courierName ? (
+                        <p className="truncate text-ink">
+                          {(o.shiprocket as { courierName: string }).courierName}
+                        </p>
+                      ) : null}
+                      <p className="font-mono text-[10px] text-ink">
+                        {(o.shiprocket as { awb: string }).awb}
+                      </p>
+                      {(o.shiprocket as { trackingUrl?: string }).trackingUrl ? (
+                        <a
+                          href={(o.shiprocket as { trackingUrl: string }).trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent hover:underline"
+                        >
+                          Track
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : (o.shiprocket as { status?: string } | null)?.status ? (
+                    <span className="capitalize">
+                      {(o.shiprocket as { status: string }).status}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2">
+                    {updatingId === o._id ? <Spinner size="sm" className="text-ink-muted" /> : null}
+                    {o.status === "cancelled" ? (
+                      <span className="text-xs font-medium capitalize text-ink-muted">
+                        Cancelled
+                      </span>
+                    ) : (
+                      <>
+                        <select
+                          disabled={updatingId === o._id || Boolean(cancelModal)}
+                          className="rounded border border-sand-deep px-2 py-1 text-xs disabled:opacity-60"
+                          value={o.status}
+                          onChange={(e) =>
+                            setStatus(o._id, e.target.value as (typeof statuses)[number])
+                          }
+                        >
+                          {statusesWithoutCancelled.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={updatingId === o._id || Boolean(cancelModal)}
+                          className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-900 hover:bg-rose-100 disabled:opacity-50"
+                          onClick={() => {
+                            setCancelErr(null);
+                            setCancelReason("Cancelled by admin");
+                            setCancelModal({
+                              id: o._id,
+                              label: o.invoiceNumber ? `${o.invoiceNumber} · ${o._id}` : o._id,
+                            });
+                          }}
+                        >
+                          Cancel…
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {detailOrder ? (
+        <AdminOrderDetailSheet order={detailOrder} onClose={() => setDetailOrder(null)} />
+      ) : null}
 
       {cancelModal ? (
         <div
@@ -265,6 +316,6 @@ export function AdminOrdersClient() {
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
