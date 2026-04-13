@@ -1,14 +1,14 @@
 import Link from "next/link";
+import { getSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import {
   listCategories,
   listExploreProductsForHome,
   listFeaturedProducts,
 } from "@/lib/services/catalogService";
-import { formatInrFromPaise } from "@/lib/format";
 import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
-import { StoreMedia } from "@/components/store/StoreMedia";
+import { HomeProductCard } from "@/components/store/HomeProductCard";
 import { RecentlyViewedHome } from "@/components/store/RecentlyViewedHome";
 import { HeroBrowseBackdrop } from "@/components/store/HeroBrowseBackdrop";
 
@@ -25,6 +25,9 @@ function dedupeImageUrls(urls: (string | undefined | null)[]): string[] {
 }
 
 export default async function HomePage() {
+  const secret = process.env.JWT_SECRET;
+  const session = secret ? await getSession(secret) : null;
+
   await connectDb();
   const [categories, featured] = await Promise.all([listCategories(), listFeaturedProducts(12)]);
   const explore = await listExploreProductsForHome(
@@ -75,12 +78,14 @@ export default async function HomePage() {
             >
               Browse categories
             </Link>
-            <Link
-              href="/register"
-              className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-amber-100/70 bg-white/12 px-6 py-3 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-white hover:bg-white/20"
-            >
-              Create account
-            </Link>
+            {!session ? (
+              <Link
+                href="/register"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border-2 border-amber-100/70 bg-white/12 px-6 py-3 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-white hover:bg-white/20"
+              >
+                Create account
+              </Link>
+            ) : null}
           </div>
         </div>
         <div className="pointer-events-none absolute -right-12 -top-16 z-[2] h-80 w-80 rounded-full bg-gradient-to-br from-accent/50 via-amber-300/35 to-transparent blur-3xl" />
@@ -99,46 +104,25 @@ export default async function HomePage() {
               </div>
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 md:gap-2 md:overflow-visible md:pb-0 lg:grid-cols-6">
                 {featured.map((p) => {
-                  const thumb = p.images?.[0];
+                  const colorVariants = colorVariantsFromDoc(p);
+                  const defaultImages = Array.isArray(p.images) ? p.images : [];
+                  const thumb =
+                    listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
                   const multi = productHasOptions(p);
                   const price = multi ? minOptionPricePaise(p) : p.pricePaise;
                   return (
-                    <Link
+                    <HomeProductCard
                       key={String(p._id)}
-                      href={`/product/${p.slug}`}
-                      className="group w-[32vw] max-w-[7.25rem] shrink-0 overflow-hidden rounded-lg border border-sand-deep bg-white shadow-sm transition hover:border-accent sm:w-28 md:max-w-none"
-                    >
-                      <div className="relative aspect-square w-full bg-sand-deep">
-                        {thumb ? (
-                          <StoreMedia
-                            src={thumb}
-                            alt={p.name}
-                            fill
-                            className="object-cover transition duration-300 group-hover:scale-[1.02]"
-                            sizes="(max-width:768px) 32vw, 116px"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-[10px] text-ink-muted">
-                            No image
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-1.5">
-                        <p className="line-clamp-2 text-[11px] font-medium leading-tight text-ink group-hover:text-accent">
-                          {p.name}
-                        </p>
-                        <p className="mt-0.5 font-display text-[11px] font-semibold tabular-nums text-ink">
-                          {multi ? (
-                            <>
-                              <span className="font-normal text-ink-muted">From </span>
-                              {formatInrFromPaise(price)}
-                            </>
-                          ) : (
-                            formatInrFromPaise(price)
-                          )}
-                        </p>
-                      </div>
-                    </Link>
+                      variant="featured"
+                      slug={p.slug}
+                      name={p.name}
+                      productId={String(p._id)}
+                      listPricePaise={price}
+                      stock={p.stock}
+                      imageUrl={thumb}
+                      multi={multi}
+                      hasColorVariants={colorVariants.length > 0}
+                    />
                   );
                 })}
               </div>
@@ -182,45 +166,18 @@ export default async function HomePage() {
                   const multi = productHasOptions(p);
                   const price = multi ? minOptionPricePaise(p) : p.pricePaise;
                   return (
-                    <Link
+                    <HomeProductCard
                       key={String(p._id)}
-                      href={`/product/${p.slug}`}
-                      className="group overflow-hidden rounded-lg border border-sand-deep bg-white shadow-sm transition hover:border-accent hover:shadow-md"
-                    >
-                      <div className="relative aspect-square w-full overflow-hidden bg-sand-deep">
-                        {thumb ? (
-                          <StoreMedia
-                            src={thumb}
-                            alt={p.name}
-                            fill
-                            className="object-cover transition duration-300 group-hover:scale-[1.03]"
-                            sizes="(max-width:640px) 45vw, (max-width:1024px) 30vw, 22vw"
-                          />
-                        ) : (
-                          <div
-                            className="flex h-full w-full items-center justify-center text-[10px] text-ink-muted"
-                            aria-hidden
-                          >
-                            No image
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-0.5 p-2 sm:p-2.5">
-                        <h3 className="line-clamp-2 font-display text-xs font-medium leading-snug text-ink group-hover:text-accent sm:text-sm">
-                          {p.name}
-                        </h3>
-                        <p className="font-display text-[11px] font-semibold tabular-nums text-ink sm:text-xs">
-                          {multi ? (
-                            <>
-                              <span className="font-normal text-ink-muted">From </span>
-                              {formatInrFromPaise(price)}
-                            </>
-                          ) : (
-                            formatInrFromPaise(price)
-                          )}
-                        </p>
-                      </div>
-                    </Link>
+                      variant="explore"
+                      slug={p.slug}
+                      name={p.name}
+                      productId={String(p._id)}
+                      listPricePaise={price}
+                      stock={p.stock}
+                      imageUrl={thumb}
+                      multi={multi}
+                      hasColorVariants={colorVariants.length > 0}
+                    />
                   );
                 })}
               </div>

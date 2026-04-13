@@ -215,9 +215,9 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
             return (
             <div
               key={p._id}
-              className="flex flex-col overflow-hidden rounded-xl border border-sand-deep bg-white shadow-sm sm:rounded-2xl"
+              className="flex h-full flex-col overflow-hidden rounded-xl border border-sand-deep bg-white shadow-sm sm:rounded-2xl"
             >
-              <Link href={`/product/${p.slug}`} className="block">
+              <Link href={`/product/${p.slug}`} className="block shrink-0">
                 <div className="relative aspect-square w-full overflow-hidden bg-sand-deep sm:aspect-[4/3]">
                   <ProductGridCarousel
                     images={gridImages}
@@ -226,7 +226,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                   />
                 </div>
               </Link>
-              <div className="flex flex-1 flex-col p-3 sm:p-4">
+              <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
                 <Link
                   href={`/product/${p.slug}`}
                   className="text-sm font-medium text-ink hover:text-accent line-clamp-2 sm:text-base"
@@ -236,25 +236,26 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                 <p className="mt-0.5 hidden font-mono text-[10px] text-ink-muted sm:block sm:text-xs">
                   {p.sku}
                 </p>
-                <p className="mt-1.5 font-display text-base font-semibold text-ink sm:mt-2 sm:text-lg">
-                  {multi ? (
-                    <span>
-                      <span className="text-sm font-normal text-ink-muted">From </span>
-                      {formatInrFromPaise(listPrice)}
-                    </span>
-                  ) : (
-                    formatInrFromPaise(listPrice)
-                  )}
-                </p>
-                <p className="text-xs text-ink-muted">
+                <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-xs leading-snug text-ink-muted">
                   {multi
                     ? "Multiple packs — open product to choose"
                     : p.hasColorVariants
                       ? "Colours — open product to choose"
                       : `Stock: ${p.stock}`}
                 </p>
-                <div className="mt-3 border-t border-sand-deep pt-3">
+                <div className="mt-auto flex min-h-[2.75rem] items-center justify-between gap-2 border-t border-sand-deep pt-3">
+                  <p className="min-w-0 shrink font-display text-base font-semibold tabular-nums text-ink sm:text-lg">
+                    {multi ? (
+                      <span>
+                        <span className="text-sm font-normal text-ink-muted sm:text-base">From </span>
+                        {formatInrFromPaise(listPrice)}
+                      </span>
+                    ) : (
+                      formatInrFromPaise(listPrice)
+                    )}
+                  </p>
                   <QuickAddToCart
+                    inline
                     stock={multi ? 1 : p.stock}
                     requiresOptionChoice={multi || Boolean(p.hasColorVariants)}
                     product={{

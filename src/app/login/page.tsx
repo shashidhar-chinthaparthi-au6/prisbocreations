@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { getSession } from "@/lib/auth/session";
 
 export const metadata = { title: "Login" };
 
@@ -9,6 +10,9 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; reset?: string; reason?: string }>;
 }) {
   const sp = await searchParams;
+  const secret = process.env.JWT_SECRET;
+  const session = secret ? await getSession(secret) : null;
+
   return (
     <div className="mx-auto max-w-md space-y-6 rounded-2xl border border-sand-deep bg-white p-8 shadow-sm">
       <div>
@@ -26,12 +30,14 @@ export default async function LoginPage({
         </p>
       ) : null}
       <LoginForm nextPath={sp.next ?? "/account"} />
-      <p className="text-center text-sm text-ink-muted">
-        New here?{" "}
-        <Link href="/register" className="text-accent hover:underline">
-          Create an account
-        </Link>
-      </p>
+      {!session ? (
+        <p className="text-center text-sm text-ink-muted">
+          New here?{" "}
+          <Link href="/register" className="text-accent hover:underline">
+            Create an account
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }
