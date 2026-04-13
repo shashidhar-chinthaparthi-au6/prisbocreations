@@ -87,157 +87,149 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute -bottom-20 -left-8 z-[2] h-72 w-72 rounded-full bg-gradient-to-tr from-rose-light/45 via-rose/30 to-transparent blur-3xl" />
       </section>
 
-      <div
-        className={
-          featured.length > 0
-            ? "flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-5"
-            : "flex flex-col"
-        }
-      >
-        {featured.length > 0 ? (
-          <section className="min-w-0 flex-1 space-y-4">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6">
+        <div className="min-w-0 flex-1 space-y-10">
+          {featured.length > 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-end justify-between gap-4">
+                <h2 className="font-display text-xl text-ink md:text-2xl">Featured</h2>
+                <Link href="/search" className="text-sm font-medium text-accent hover:underline">
+                  Search all
+                </Link>
+              </div>
+              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 md:gap-2 md:overflow-visible md:pb-0 lg:grid-cols-6">
+                {featured.map((p) => {
+                  const thumb = p.images?.[0];
+                  const multi = productHasOptions(p);
+                  const price = multi ? minOptionPricePaise(p) : p.pricePaise;
+                  return (
+                    <Link
+                      key={String(p._id)}
+                      href={`/product/${p.slug}`}
+                      className="group w-[32vw] max-w-[7.25rem] shrink-0 overflow-hidden rounded-lg border border-sand-deep bg-white shadow-sm transition hover:border-accent sm:w-28 md:max-w-none"
+                    >
+                      <div className="relative aspect-square w-full bg-sand-deep">
+                        {thumb ? (
+                          <StoreMedia
+                            src={thumb}
+                            alt={p.name}
+                            fill
+                            className="object-cover transition duration-300 group-hover:scale-[1.02]"
+                            sizes="(max-width:768px) 32vw, 116px"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-[10px] text-ink-muted">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-1.5">
+                        <p className="line-clamp-2 text-[11px] font-medium leading-tight text-ink group-hover:text-accent">
+                          {p.name}
+                        </p>
+                        <p className="mt-0.5 font-display text-[11px] font-semibold tabular-nums text-ink">
+                          {multi ? (
+                            <>
+                              <span className="font-normal text-ink-muted">From </span>
+                              {formatInrFromPaise(price)}
+                            </>
+                          ) : (
+                            formatInrFromPaise(price)
+                          )}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="space-y-4">
             <div className="flex items-end justify-between gap-4">
-              <h2 className="font-display text-2xl text-ink md:text-3xl">Featured</h2>
-              <Link href="/search" className="text-sm font-medium text-accent hover:underline">
-                Search all
+              <div>
+                <h2 className="font-display text-xl text-ink md:text-2xl">Products</h2>
+                <p className="mt-1 text-xs text-ink-muted sm:text-sm">
+                  What is in the catalog right now.
+                </p>
+              </div>
+              <Link href="/categories" className="text-sm font-medium text-accent hover:underline">
+                View all
               </Link>
             </div>
-            <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-4 md:gap-4 md:overflow-visible md:pb-0 lg:grid-cols-6">
-              {featured.map((p) => {
-                const thumb = p.images?.[0];
-                const multi = productHasOptions(p);
-                const price = multi ? minOptionPricePaise(p) : p.pricePaise;
-                return (
-                  <Link
-                    key={String(p._id)}
-                    href={`/product/${p.slug}`}
-                    className="group w-[42vw] shrink-0 overflow-hidden rounded-xl border border-sand-deep bg-white shadow-sm transition hover:border-accent sm:w-40 md:w-auto"
-                  >
-                    <div className="relative aspect-square w-full bg-sand-deep">
-                      {thumb ? (
-                        <StoreMedia
-                          src={thumb}
-                          alt={p.name}
-                          fill
-                          className="object-cover transition duration-300 group-hover:scale-[1.02]"
-                          sizes="(max-width:768px) 42vw, 160px"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-ink-muted">
-                          No image
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2.5">
-                      <p className="line-clamp-2 text-xs font-medium text-ink group-hover:text-accent md:text-sm">
-                        {p.name}
-                      </p>
-                      <p className="mt-1 font-display text-sm font-semibold text-ink">
-                        {multi ? (
-                          <>
-                            <span className="text-xs font-normal text-ink-muted">From </span>
-                            {formatInrFromPaise(price)}
-                          </>
+            {explore.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-sand-deep bg-white/60 p-8 text-center text-ink-muted sm:p-10">
+                <p className="font-medium text-ink">No products to show yet.</p>
+                <p className="mt-2 text-sm">
+                  Add products in{" "}
+                  <Link href="/admin/products" className="font-medium text-accent hover:underline">
+                    Admin → Products
+                  </Link>{" "}
+                  or open{" "}
+                  <Link href="/categories" className="font-medium text-accent hover:underline">
+                    categories
+                  </Link>{" "}
+                  when they are available.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-4">
+                {explore.map((p) => {
+                  const colorVariants = colorVariantsFromDoc(p);
+                  const defaultImages = Array.isArray(p.images) ? p.images : [];
+                  const thumb =
+                    listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
+                  const multi = productHasOptions(p);
+                  const price = multi ? minOptionPricePaise(p) : p.pricePaise;
+                  return (
+                    <Link
+                      key={String(p._id)}
+                      href={`/product/${p.slug}`}
+                      className="group overflow-hidden rounded-lg border border-sand-deep bg-white shadow-sm transition hover:border-accent hover:shadow-md"
+                    >
+                      <div className="relative aspect-square w-full overflow-hidden bg-sand-deep">
+                        {thumb ? (
+                          <StoreMedia
+                            src={thumb}
+                            alt={p.name}
+                            fill
+                            className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                            sizes="(max-width:640px) 45vw, (max-width:1024px) 30vw, 22vw"
+                          />
                         ) : (
-                          formatInrFromPaise(price)
+                          <div
+                            className="flex h-full w-full items-center justify-center text-[10px] text-ink-muted"
+                            aria-hidden
+                          >
+                            No image
+                          </div>
                         )}
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
-        <div
-          className={
-            featured.length > 0
-              ? "shrink-0 lg:w-[12.5rem] xl:w-[13.25rem] border-sand-deep/70 lg:border-l lg:pl-4 xl:pl-5"
-              : undefined
-          }
-        >
-          <RecentlyViewedHome sidebar={featured.length > 0} />
-        </div>
-      </div>
-
-      <section className="space-y-6">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-2xl text-ink md:text-3xl">Products</h2>
-            <p className="mt-1 text-sm text-ink-muted">What is in the catalog right now.</p>
-          </div>
-          <Link href="/categories" className="text-sm font-medium text-accent hover:underline">
-            View all
-          </Link>
-        </div>
-        {explore.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-sand-deep bg-white/60 p-10 text-center text-ink-muted">
-            <p className="font-medium text-ink">No products to show yet.</p>
-            <p className="mt-2 text-sm">
-              Add products in{" "}
-              <Link href="/admin/products" className="font-medium text-accent hover:underline">
-                Admin → Products
-              </Link>{" "}
-              or open{" "}
-              <Link href="/categories" className="font-medium text-accent hover:underline">
-                categories
-              </Link>{" "}
-              when they’re available.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            {explore.map((p) => {
-              const colorVariants = colorVariantsFromDoc(p);
-              const defaultImages = Array.isArray(p.images) ? p.images : [];
-              const thumb =
-                listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
-              const multi = productHasOptions(p);
-              const price = multi ? minOptionPricePaise(p) : p.pricePaise;
-              return (
-                <Link
-                  key={String(p._id)}
-                  href={`/product/${p.slug}`}
-                  className="group overflow-hidden rounded-2xl border border-sand-deep bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-sand-deep sm:aspect-square">
-                    {thumb ? (
-                      <StoreMedia
-                        src={thumb}
-                        alt={p.name}
-                        fill
-                        className="object-cover transition duration-500 group-hover:scale-105"
-                        sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div
-                        className="flex h-full w-full items-center justify-center text-sm text-ink-muted"
-                        aria-hidden
-                      >
-                        No image
                       </div>
-                    )}
-                  </div>
-                  <div className="space-y-1 p-4 sm:p-5">
-                    <h3 className="font-display text-lg text-ink group-hover:text-accent">{p.name}</h3>
-                    <p className="font-display text-base font-semibold text-ink">
-                      {multi ? (
-                        <>
-                          <span className="text-xs font-normal text-ink-muted">From </span>
-                          {formatInrFromPaise(price)}
-                        </>
-                      ) : (
-                        formatInrFromPaise(price)
-                      )}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                      <div className="space-y-0.5 p-2 sm:p-2.5">
+                        <h3 className="line-clamp-2 font-display text-xs font-medium leading-snug text-ink group-hover:text-accent sm:text-sm">
+                          {p.name}
+                        </h3>
+                        <p className="font-display text-[11px] font-semibold tabular-nums text-ink sm:text-xs">
+                          {multi ? (
+                            <>
+                              <span className="font-normal text-ink-muted">From </span>
+                              {formatInrFromPaise(price)}
+                            </>
+                          ) : (
+                            formatInrFromPaise(price)
+                          )}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <RecentlyViewedHome sidebar />
+      </div>
     </div>
   );
 }
