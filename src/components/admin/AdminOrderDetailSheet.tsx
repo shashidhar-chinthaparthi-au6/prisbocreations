@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { formatInrFromPaise } from "@/lib/format";
-import type { AdminOrderFull } from "@/components/admin/admin-order-types";
+import type { AdminOrderFull } from "@/lib/admin-order-types";
+import type { AdminPrintKind } from "@/components/admin/AdminOrderPrintOverlay";
 
 type Props = {
   order: AdminOrderFull;
   onClose: () => void;
+  onRequestPrint: (kind: AdminPrintKind) => void;
 };
 
 function formatWhen(iso?: string | Date | null) {
@@ -19,7 +21,7 @@ function formatWhen(iso?: string | Date | null) {
   });
 }
 
-export function AdminOrderDetailSheet({ order, onClose }: Props) {
+export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props) {
   const inv = order.invoiceNumber;
   const ship = order.shipping;
   const pm = order.paymentMethod ?? "online";
@@ -42,7 +44,7 @@ export function AdminOrderDetailSheet({ order, onClose }: Props) {
         onClick={onClose}
       />
       <div className="relative z-[1] flex max-h-[min(92dvh,900px)] w-full max-w-3xl flex-col rounded-t-2xl border border-sand-deep bg-white shadow-xl sm:rounded-2xl">
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-sand-deep px-4 py-4 sm:px-6">
+        <div className="flex shrink-0 flex-col gap-3 border-b border-sand-deep px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
           <div className="min-w-0">
             <h2 id="admin-order-detail-title" className="font-display text-lg text-ink sm:text-xl">
               Order details
@@ -58,13 +60,29 @@ export function AdminOrderDetailSheet({ order, onClose }: Props) {
               ) : null}
             </p>
           </div>
-          <button
-            type="button"
-            className="shrink-0 rounded-full border border-sand-deep px-3 py-1.5 text-sm text-ink-muted hover:border-ink hover:text-ink"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="rounded-full border border-sand-deep bg-white px-3 py-1.5 text-sm font-medium text-ink hover:border-accent"
+              onClick={() => onRequestPrint("invoice")}
+            >
+              Print invoice
+            </button>
+            <button
+              type="button"
+              className="rounded-full border border-sand-deep bg-white px-3 py-1.5 text-sm font-medium text-ink hover:border-accent"
+              onClick={() => onRequestPrint("label")}
+            >
+              Print posting label
+            </button>
+            <button
+              type="button"
+              className="rounded-full border border-sand-deep px-3 py-1.5 text-sm text-ink-muted hover:border-ink hover:text-ink"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 sm:py-5">

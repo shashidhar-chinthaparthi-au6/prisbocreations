@@ -1,4 +1,4 @@
-/** Admin orders list/detail — matches API payload after {@link listOrdersAdmin} enrichment. */
+/** Admin orders list/detail — matches API payload after listOrdersAdmin enrichment. */
 
 export type AdminOrderItem = {
   productId?: string;

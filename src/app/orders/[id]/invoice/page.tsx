@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
+import { getSellerAddress } from "@/lib/seller-address";
 import { PrintInvoiceButton } from "@/components/orders/PrintInvoiceButton";
 
 export const metadata = { title: "Invoice" };
@@ -38,6 +39,7 @@ export default async function OrderInvoicePage({
   const ship = (order as { shippingPaise?: number }).shippingPaise ?? 0;
   const pm = (order as { paymentMethod?: string }).paymentMethod ?? "online";
   const created = order.createdAt ? new Date(order.createdAt).toLocaleString("en-IN") : "—";
+  const seller = getSellerAddress();
 
   return (
     <div className="space-y-6 print:max-w-none">
@@ -55,6 +57,20 @@ export default async function OrderInvoicePage({
               Prisbo <span className="text-accent">Creations</span>
             </p>
             <p className="mt-1 text-sm text-ink-muted">Tax invoice / Bill of supply</p>
+            <div className="mt-4 text-xs leading-relaxed text-ink-muted">
+              <p className="font-semibold uppercase tracking-wide text-ink">Sold by</p>
+              <p className="mt-1 text-ink">
+                {seller.legalName}
+                <br />
+                {seller.line1}
+                <br />
+                {seller.line2}
+                <br />
+                {seller.city}, {seller.state} {seller.postalCode}, {seller.country}
+                <br />
+                Phone: {seller.phone}
+              </p>
+            </div>
           </div>
           <div className="text-right text-sm">
             <p className="font-mono text-ink">{inv ?? "—"}</p>

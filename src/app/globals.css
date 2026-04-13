@@ -119,3 +119,23 @@ body {
 .product-description :where(a):hover {
   color: #d97706;
 }
+
+/* Admin order print: isolate to html.admin-order-print-active (set from AdminOrderDetailSheet) */
+@media print {
+  html.admin-order-print-active body * {
+    visibility: hidden;
+  }
+  html.admin-order-print-active .admin-print-root,
+  html.admin-order-print-active .admin-print-root * {
+    visibility: visible;
+  }
+  html.admin-order-print-active .admin-print-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    background: white;
+  }
+}

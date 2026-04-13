@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { formatInrFromPaise } from "@/lib/format";
 import { Spinner } from "@/components/ui/Spinner";
 import { AdminOrderDetailSheet } from "@/components/admin/AdminOrderDetailSheet";
-import type { AdminOrderFull } from "@/components/admin/admin-order-types";
+import { AdminOrderPrintRunner } from "@/components/admin/AdminOrderPrintRunner";
+import type { AdminPrintKind } from "@/components/admin/AdminOrderPrintOverlay";
+import type { AdminOrderFull } from "@/lib/admin-order-types";
 
 const statuses = ["pending", "paid", "processing", "shipped", "cancelled"] as const;
 const statusesWithoutCancelled = statuses.filter((s) => s !== "cancelled");
@@ -55,6 +57,11 @@ export function AdminOrdersClient() {
   const qc = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [detailOrder, setDetailOrder] = useState<AdminOrderFull | null>(null);
+  const [printJob, setPrintJob] = useState<{
+    order: AdminOrderFull;
+    kind: AdminPrintKind;
+  } | null>(null);
+  const dismissPrint = useCallback(() => setPrintJob(null), []);
   const [cancelModal, setCancelModal] = useState<{
     id: string;
     label: string;
@@ -110,6 +117,13 @@ export function AdminOrdersClient() {
 
   return (
     <>
+      {printJob ? (
+        <AdminOrderPrintRunner
+          order={printJob.order}
+          kind={printJob.kind}
+          onDismiss={dismissPrint}
+        />
+      ) : null}
       <div className="overflow-x-auto rounded-2xl border border-sand-deep bg-white shadow-sm">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-sand-deep bg-sand/50 text-xs uppercase text-ink-muted">
@@ -257,7 +271,11 @@ export function AdminOrdersClient() {
       </div>
 
       {detailOrder ? (
-        <AdminOrderDetailSheet order={detailOrder} onClose={() => setDetailOrder(null)} />
+        <AdminOrderDetailSheet
+          order={detailOrder}
+          onClose={() => setDetailOrder(null)}
+          onRequestPrint={(kind) => setPrintJob({ order: detailOrder, kind })}
+        />
       ) : null}
 
       {cancelModal ? (
