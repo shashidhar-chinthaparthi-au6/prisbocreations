@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { formatInrFromPaise } from "@/lib/format";
+import { apiFetch } from "@/lib/api/fetch-client";
 import type { AdminOrderFull } from "@/lib/admin-order-types";
 import type { AdminPrintKind } from "@/components/admin/AdminOrderPrintOverlay";
 
@@ -29,6 +31,24 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
   const scans = Array.isArray(sr?.webhookScans)
     ? (sr!.webhookScans as Array<{ date?: string; activity?: string; location?: string }>)
     : [];
+  const shipmentId =
+    sr && typeof sr.shipmentId === "number" && sr.shipmentId > 0 ? sr.shipmentId : null;
+  const [shiprocketLabelBusy, setShiprocketLabelBusy] = useState(false);
+
+  async function openShiprocketLabelPdf() {
+    if (!shipmentId) return;
+    setShiprocketLabelBusy(true);
+    try {
+      const { url } = await apiFetch<{ url: string }>(
+        `/api/v1/admin/orders/${order._id}/shiprocket-label`,
+      );
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not open Shiprocket label");
+    } finally {
+      setShiprocketLabelBusy(false);
+    }
+  }
 
   return (
     <div
@@ -281,12 +301,24 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
               </section>
             ) : null}
 
-            {sr && (sr.awb || sr.courierName || sr.status || sr.trackingUrl || sr.lastError) ? (
+            {sr &&
+            (sr.awb ||
+              sr.courierName ||
+              sr.status ||
+              sr.trackingUrl ||
+              sr.lastError ||
+              shipmentId) ? (
               <section className="rounded-xl border border-sand-deep bg-white p-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                   Shiprocket / tracking
                 </h3>
                 <dl className="mt-3 space-y-2 text-sm">
+                  {shipmentId ? (
+                    <div>
+                      <dt className="text-ink-muted">Shipment id</dt>
+                      <dd className="font-mono text-xs text-ink">{shipmentId}</dd>
+                    </div>
+                  ) : null}
                   {sr.courierName ? (
                     <div>
                       <dt className="text-ink-muted">Courier</dt>
@@ -327,6 +359,20 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
                       >
                         Open tracking URL
                       </a>
+                    </div>
+                  ) : null}
+                  {shipmentId ? (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        disabled={shiprocketLabelBusy}
+                        className="text-left text-sm font-medium text-accent hover:underline disabled:opacity-50"
+                        onClick={() => void openShiprocketLabelPdf()}
+                      >
+                        {shiprocketLabelBusy
+                          ? "Opening Shiprocket label…"
+                          : "Open Shiprocket shipping label (PDF)"}
+                      </button>
                     </div>
                   ) : null}
                   {sr.lastError ? (

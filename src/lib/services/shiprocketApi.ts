@@ -242,6 +242,57 @@ export async function shiprocketGeneratePickup(shipmentIds: number[]): Promise<R
   });
 }
 
+function collectLabelLayers(body: Record<string, unknown>): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  const push = (x: unknown) => {
+    if (x && typeof x === "object" && !Array.isArray(x)) out.push(x as Record<string, unknown>);
+  };
+  push(body);
+  push(body.data);
+  push(body.response);
+  const resp = body.response;
+  if (resp && typeof resp === "object" && !Array.isArray(resp)) {
+    push((resp as Record<string, unknown>).data);
+  }
+  const data = body.data;
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    push((data as Record<string, unknown>).response);
+  }
+  return out;
+}
+
+/** PDF URL from POST /v1/external/courier/generate/label (field names vary by API version). */
+export function parseShiprocketLabelPdfUrl(body: Record<string, unknown>): string | null {
+  const keys = ["label_url", "labelUrl", "pdf_url", "pdfUrl", "url"];
+  for (const data of collectLabelLayers(body)) {
+    for (const k of keys) {
+      const v = data[k];
+      if (typeof v === "string" && /^https?:\/\//i.test(v.trim())) return v.trim();
+    }
+  }
+  const data = body.data;
+  if (Array.isArray(data)) {
+    for (const row of data) {
+      if (!row || typeof row !== "object") continue;
+      const r = row as Record<string, unknown>;
+      for (const k of keys) {
+        const v = r[k];
+        if (typeof v === "string" && /^https?:\/\//i.test(v.trim())) return v.trim();
+      }
+    }
+  }
+  return null;
+}
+
+export async function shiprocketGenerateLabel(shipmentIds: number[]): Promise<Record<string, unknown>> {
+  const ids = shipmentIds.filter((n) => Number.isFinite(n) && n > 0);
+  if (!ids.length) throw new Error("No shipment ids");
+  return srFetch("/v1/external/courier/generate/label", {
+    method: "POST",
+    body: JSON.stringify({ shipment_id: ids }),
+  });
+}
+
 /** Cancel by Shiprocket order ids (numeric), not Mongo _id */
 export async function shiprocketCancelOrders(shiprocketOrderIds: number[]): Promise<Record<string, unknown>> {
   if (!shiprocketOrderIds.length) return {};
