@@ -89,6 +89,29 @@ export function publicUrlToCustomerUploadKey(url: string, cfg: S3Config): string
   return null;
 }
 
+/**
+ * Recover S3 object key from a full HTTPS URL when `publicBaseUrl` does not match the stored URL
+ * (e.g. CloudFront vs direct S3 hostname). Only allows known customer-upload prefixes.
+ */
+export function extractCustomerProfileUploadKey(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    const path = u.pathname.replace(/^\//, "").split("?")[0] ?? "";
+    if (path.includes("..") || path.includes("//")) return null;
+    if (path.startsWith("uploads/customer-uploads/")) return path;
+    if (path.startsWith("customer-uploads/")) return path;
+    /** Path-style endpoints: `…/bucket/uploads/customer-uploads/…` */
+    const nested = path.indexOf("uploads/customer-uploads/");
+    if (nested !== -1) return path.slice(nested);
+    const legacy = path.indexOf("customer-uploads/");
+    if (legacy !== -1) return path.slice(legacy);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function deleteObjectByKey(cfg: S3Config, key: string): Promise<void> {
   const s3 = client(cfg);
   await s3.send(

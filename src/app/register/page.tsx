@@ -1,22 +1,21 @@
-import Link from "next/link";
-import { RegisterForm } from "@/components/auth/RegisterForm";
+import { Suspense } from "react";
+import { AuthPageShell, AuthPageShellFallback } from "@/components/auth/AuthPageShell";
 
 export const metadata = { title: "Register" };
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const sp = await searchParams;
   return (
-    <div className="mx-auto max-w-md space-y-6 rounded-2xl border border-sand-deep bg-white p-8 shadow-sm">
-      <div>
-        <h1 className="font-display text-2xl text-ink">Join Prisbo</h1>
-        <p className="mt-1 text-sm text-ink-muted">Create an account to save addresses and orders.</p>
-      </div>
-      <RegisterForm />
-      <p className="text-center text-sm text-ink-muted">
-        Already have an account?{" "}
-        <Link href="/login" className="text-accent hover:underline">
-          Login
-        </Link>
-      </p>
-    </div>
+    <Suspense fallback={<AuthPageShellFallback />}>
+      <AuthPageShell
+        mode="register"
+        nextPath={sp.next?.trim() || "/account"}
+        initialTab="register"
+      />
+    </Suspense>
   );
 }

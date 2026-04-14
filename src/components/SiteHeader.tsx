@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { HeaderCart } from "@/components/HeaderCart";
+import { HeaderProfile } from "@/components/account/HeaderProfile";
 import { HeaderSearch, HeaderSearchFallback } from "@/components/store/HeaderSearch";
 
 export async function SiteHeader() {
@@ -67,9 +68,7 @@ export async function SiteHeader() {
               <Link href="/categories" className="shrink-0 hover:text-accent">
                 Storefront
               </Link>
-              <Link href="/account" className="shrink-0 hover:text-accent">
-                Account
-              </Link>
+              <HeaderProfile />
             </>
           ) : (
             <>
@@ -94,28 +93,15 @@ export async function SiteHeader() {
                   >
                     Orders
                   </Link>
-                  <Link
-                    href="/account"
-                    className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
-                  >
-                    Account
-                  </Link>
+                  <HeaderProfile />
                 </>
               ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
-                  >
-                    Register
-                  </Link>
-                </>
+                <Link
+                  href="/login"
+                  className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
+                >
+                  Login
+                </Link>
               )}
               <HeaderCart />
             </>

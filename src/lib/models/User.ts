@@ -21,6 +21,8 @@ const UserSchema = new Schema(
     name: { type: String, required: true, trim: true },
     phone: { type: String, trim: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    /** Public HTTPS URL (e.g. S3) for header / profile. */
+    profileImageUrl: { type: String, trim: true },
     addresses: { type: [AddressSchema], default: [] },
     passwordResetTokenHash: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
@@ -30,5 +32,11 @@ const UserSchema = new Schema(
 
 export type UserDoc = InferSchemaType<typeof UserSchema> & { _id: mongoose.Types.ObjectId };
 
-export const User: Model<UserDoc> =
-  mongoose.models.User || mongoose.model<UserDoc>("User", UserSchema);
+/** Next.js dev HMR can keep a stale compiled model without newer schema paths; re-register so updates like `profileImageUrl` are not stripped by strict mode. */
+const USER_MODEL = "User";
+if (mongoose.models[USER_MODEL]) {
+  delete mongoose.models[USER_MODEL];
+}
+Reflect.deleteProperty(mongoose.connection.models as Record<string, unknown>, USER_MODEL);
+
+export const User: Model<UserDoc> = mongoose.model<UserDoc>(USER_MODEL, UserSchema);

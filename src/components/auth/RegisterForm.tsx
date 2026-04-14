@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { Spinner } from "@/components/ui/Spinner";
 
-export function RegisterForm() {
+export function RegisterForm({ nextPath = "/account" }: { nextPath?: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,7 +23,12 @@ export function RegisterForm() {
         method: "POST",
         body: JSON.stringify({ name, email, password, phone: phone || undefined }),
       });
-      router.push("/account");
+      const raw = nextPath.trim() || "/account";
+      const dest =
+        raw.startsWith("/") && !raw.startsWith("//") && !raw.includes(":")
+          ? raw
+          : "/account";
+      router.push(dest);
       router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Registration failed");
