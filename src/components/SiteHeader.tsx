@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { HeaderCart } from "@/components/HeaderCart";
 import { HeaderProfile } from "@/components/account/HeaderProfile";
 import { HeaderSearch, HeaderSearchFallback } from "@/components/store/HeaderSearch";
+import { StoreCategoryStrip } from "@/components/store/StoreCategoryStrip";
 
 export async function SiteHeader() {
   const secret = process.env.JWT_SECRET;
@@ -11,12 +12,12 @@ export async function SiteHeader() {
   const isAdmin = session?.role === "admin";
 
   return (
-    <header className="sticky top-0 z-50 shrink-0 border-b border-sand-deep/60 bg-sand/90 backdrop-blur-md pt-[env(safe-area-inset-top)]">
-      <div className="flex w-full items-center gap-2 px-[max(1rem,env(safe-area-inset-left))] py-3 pr-[max(1rem,env(safe-area-inset-right))] sm:gap-3 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] lg:px-8">
+    <header className="sticky top-0 z-50 shrink-0 border-b border-slate-200 bg-white pt-[env(safe-area-inset-top)] shadow-[0_1px_2px_rgba(15,23,42,0.06)]">
+      <div className="flex w-full items-center gap-2 px-[max(0.75rem,env(safe-area-inset-left))] py-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] sm:gap-3 sm:py-3 sm:pl-[max(1rem,env(safe-area-inset-left))] sm:pr-[max(1rem,env(safe-area-inset-right))] lg:px-8">
         <div className="flex shrink-0 items-baseline gap-2">
           <Link
             href={isAdmin ? "/admin" : "/"}
-            className="font-display text-lg font-bold tracking-tight text-ink md:text-2xl lg:text-3xl"
+            className="font-display text-base font-bold tracking-tight text-slate-900 sm:text-lg md:text-2xl"
           >
             Prisbo <span className="text-accent">Creations</span>
           </Link>
@@ -41,7 +42,7 @@ export async function SiteHeader() {
           className={
             isAdmin
               ? "flex min-h-[2.75rem] min-w-0 max-w-[65vw] flex-1 items-center justify-end gap-x-2 overflow-x-auto text-sm font-medium text-ink-muted [-ms-overflow-style:none] [scrollbar-width:none] sm:max-w-none sm:gap-x-3 md:gap-x-4 [&::-webkit-scrollbar]:hidden"
-              : "flex shrink-0 items-center gap-x-1 text-sm font-medium text-ink-muted sm:gap-x-2 md:gap-x-3"
+              : "flex shrink-0 items-center gap-x-0.5 text-xs font-medium text-slate-600 sm:gap-x-1 sm:text-sm"
           }
           aria-label="Main"
         >
@@ -74,13 +75,13 @@ export async function SiteHeader() {
             <>
               <Link
                 href="/categories"
-                className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
+                className="inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-md px-2 py-1.5 hover:bg-slate-50 hover:text-slate-900 sm:min-h-11 sm:px-2.5"
               >
                 Categories
               </Link>
               <Link
                 href="/track"
-                className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
+                className="inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-md px-2 py-1.5 hover:bg-slate-50 hover:text-slate-900 sm:min-h-11 sm:px-2.5"
               >
                 <span className="hidden sm:inline">Track order</span>
                 <span className="sm:hidden">Track</span>
@@ -89,7 +90,7 @@ export async function SiteHeader() {
                 <>
                   <Link
                     href="/orders"
-                    className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
+                    className="inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-md px-2 py-1.5 hover:bg-slate-50 hover:text-slate-900 sm:min-h-11 sm:px-2.5"
                   >
                     Orders
                   </Link>
@@ -98,7 +99,7 @@ export async function SiteHeader() {
               ) : (
                 <Link
                   href="/login"
-                  className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 hover:text-accent sm:px-1.5"
+                  className="inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-md px-2 py-1.5 font-semibold text-slate-800 hover:bg-slate-50 sm:min-h-11 sm:px-2.5"
                 >
                   Login
                 </Link>
@@ -108,6 +109,18 @@ export async function SiteHeader() {
           )}
         </nav>
       </div>
+      {!isAdmin ? (
+        <Suspense
+          fallback={
+            <div
+              className="h-10 border-t border-slate-100 bg-slate-50/90"
+              aria-hidden
+            />
+          }
+        >
+          <StoreCategoryStrip />
+        </Suspense>
+      ) : null}
     </header>
   );
 }

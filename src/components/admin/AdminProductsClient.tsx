@@ -156,6 +156,7 @@ type ProductRow = {
   slug: string;
   sku: string;
   pricePaise: number;
+  compareAtPaise?: number;
   stock: number;
   isActive: boolean;
   featured?: boolean;
@@ -184,6 +185,8 @@ type EditForm = {
   name: string;
   description: string;
   priceRupees: string;
+  /** “Was” price for sale strikethrough (INR); empty = remove compare-at. */
+  compareAtRupees: string;
   stock: string;
   images: string;
   tags: string;
@@ -205,6 +208,7 @@ const emptyEdit: EditForm = {
   name: "",
   description: "",
   priceRupees: "",
+  compareAtRupees: "",
   stock: "0",
   images: "",
   tags: "",
@@ -481,6 +485,7 @@ export function AdminProductsClient() {
     name: "",
     description: "",
     priceRupees: "",
+    compareAtRupees: "",
     stock: "50",
     images: "",
     tags: "",
@@ -570,6 +575,10 @@ export function AdminProductsClient() {
       name: p.name,
       description: p.description ?? "",
       priceRupees: (p.pricePaise / 100).toFixed(2),
+      compareAtRupees:
+        typeof p.compareAtPaise === "number" && p.compareAtPaise > 0
+          ? (p.compareAtPaise / 100).toFixed(2)
+          : "",
       stock: String(p.stock),
       images: p.images.join(", "),
       tags: (p.tags ?? []).join(", "),
@@ -602,6 +611,22 @@ export function AdminProductsClient() {
     if (!editForm.subcategoryId || !pricePaise || pricePaise <= 0) {
       setEditMsg("Subcategory and a valid price are required.");
       return;
+    }
+    const capRaw = editForm.compareAtRupees.trim();
+    let compareAtPaise: number | null;
+    if (capRaw === "") {
+      compareAtPaise = null;
+    } else {
+      const cap = Math.round(Number(capRaw) * 100);
+      if (!Number.isFinite(cap) || cap <= 0) {
+        setEditMsg("Compare-at price is invalid.");
+        return;
+      }
+      if (cap <= pricePaise) {
+        setEditMsg("Compare-at (was price) must be greater than the selling price.");
+        return;
+      }
+      compareAtPaise = cap;
     }
     if (isHtmlContentEmpty(editForm.description)) {
       setEditMsg("Description is required.");
@@ -648,6 +673,7 @@ export function AdminProductsClient() {
             Math.min(2000, Math.max(1, Number(editForm.customizationTextMaxLength) || 500)),
           customizationImageRequired: editForm.customizationImageRequired,
           customizationTextRequired: editForm.customizationTextRequired,
+          compareAtPaise,
         }),
       });
       await qc.invalidateQueries({ queryKey: ["admin-products"] });
@@ -666,6 +692,20 @@ export function AdminProductsClient() {
     if (!form.subcategoryId || !Number.isFinite(pricePaise) || pricePaise <= 0) {
       setMsg("Subcategory and a valid price are required.");
       return;
+    }
+    const capRawCreate = form.compareAtRupees.trim();
+    let compareAtCreate: number | undefined;
+    if (capRawCreate) {
+      const cap = Math.round(Number(capRawCreate) * 100);
+      if (!Number.isFinite(cap) || cap <= 0) {
+        setMsg("Compare-at price is invalid.");
+        return;
+      }
+      if (cap <= pricePaise) {
+        setMsg("Compare-at (was price) must be greater than the selling price.");
+        return;
+      }
+      compareAtCreate = cap;
     }
     if (isHtmlContentEmpty(form.description)) {
       setMsg("Description is required");
@@ -730,6 +770,7 @@ export function AdminProductsClient() {
             Math.min(2000, Math.max(1, Number(form.customizationTextMaxLength) || 500)),
           customizationImageRequired: form.customizationImageRequired,
           customizationTextRequired: form.customizationTextRequired,
+          ...(typeof compareAtCreate === "number" ? { compareAtPaise: compareAtCreate } : {}),
         }),
       });
       setForm({
@@ -737,6 +778,7 @@ export function AdminProductsClient() {
         name: "",
         description: "",
         priceRupees: "",
+        compareAtRupees: "",
         stock: "50",
         images: "",
         tags: "",
@@ -859,6 +901,18 @@ export function AdminProductsClient() {
                 />
               </label>
             ))}
+            <label className="block text-xs text-ink-muted">
+              Compare-at / &ldquo;was&rdquo; price (INR, optional)
+              <input
+                className="mt-1 w-full rounded border border-sand-deep px-2 py-2 text-sm"
+                value={form.compareAtRupees}
+                onChange={(e) => setForm((f) => ({ ...f, compareAtRupees: e.target.value }))}
+                placeholder="Must be higher than selling price — e.g. 1999.00"
+              />
+            </label>
+            <p className="text-[11px] text-ink-muted">
+              Shown crossed out on listings when set. Leave empty if not on sale.
+            </p>
             <div className="block text-xs text-ink-muted">
               <span className="mb-1 block">Description</span>
               <AdminRichTextEditor
@@ -1217,6 +1271,20 @@ export function AdminProductsClient() {
                               />
                             </label>
                           ))}
+                          <label className="block text-xs text-ink-muted">
+                            Compare-at / &ldquo;was&rdquo; price (INR, optional)
+                            <input
+                              className="mt-1 w-full rounded border border-sand-deep bg-white px-2 py-2 text-sm"
+                              value={editForm.compareAtRupees}
+                              onChange={(e) =>
+                                setEditForm((f) => ({ ...f, compareAtRupees: e.target.value }))
+                              }
+                              placeholder="Empty = remove sale strikethrough"
+                            />
+                          </label>
+                          <p className="text-[11px] text-ink-muted">
+                            Must exceed selling price when set. Clear the field and save to remove.
+                          </p>
                           <div className="block text-xs text-ink-muted">
                             <span className="mb-1 block">Description</span>
                             <AdminRichTextEditor

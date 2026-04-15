@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/components/cart/CartProvider";
 import { uploadCustomerImageToS3 } from "@/lib/api/customer-upload-client";
 import { MAX_CUSTOMER_IMAGE_BYTES } from "@/lib/media-upload";
 import { formatInrFromPaise } from "@/lib/format";
+import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
 import { Spinner } from "@/components/ui/Spinner";
 import { isHtmlContentEmpty } from "@/lib/html-content-empty";
 
@@ -39,11 +41,23 @@ export type PurchaseProduct = {
   customizationTextRequired?: boolean;
 };
 
+const FONT_OPTIONS = [
+  { value: "sans", label: "Modern sans" },
+  { value: "serif", label: "Classic serif" },
+  { value: "script", label: "Script style" },
+] as const;
+
 function parseQty(raw: string): number | null {
   const t = raw.trim();
   if (t === "") return null;
   const n = Math.floor(Number(t));
   return Number.isFinite(n) ? n : null;
+}
+
+function deliveryHintForPincode(pin: string): string | null {
+  const p = pin.replace(/\D/g, "");
+  if (p.length !== 6) return null;
+  return "Orders usually leave our studio in 1–2 business days. After dispatch, most metros arrive in roughly 4–6 business days; other pincodes can take a little longer. You’ll get tracking by email.";
 }
 
 export function ProductPurchaseClient({
@@ -66,6 +80,7 @@ export function ProductPurchaseClient({
   /** Hero image for cart row when colour changes visible gallery. */
   cartThumbnailUrl?: string;
 }) {
+  const router = useRouter();
   const { add } = useCart();
   const colors = useMemo(() => colorVariants ?? [], [colorVariants]);
   const options = useMemo(() => product.options ?? [], [product.options]);
@@ -84,11 +99,17 @@ export function ProductPurchaseClient({
   const textPlaceholder = product.customizationTextPlaceholder?.trim() ?? "";
 
   const [customerNotes, setCustomerNotes] = useState("");
+  const [fontKey, setFontKey] = useState<(typeof FONT_OPTIONS)[number]["value"]>("sans");
   const [customerImageUrl, setCustomerImageUrl] = useState("");
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const [customErr, setCustomErr] = useState<string | null>(null);
+
+  const [deliveryPin, setDeliveryPin] = useState("");
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
+  const [giftWrap, setGiftWrap] = useState(false);
 
   useEffect(() => {
     if (!options.length) return;
@@ -144,16 +165,29 @@ export function ProductPurchaseClient({
     qtyHint = `Only ${maxStock} available for this option.`;
   }
 
+  const notesForSubmit = useMemo(() => {
+    const base = customerNotes.trim();
+    if (!customize) return base;
+    const label = FONT_OPTIONS.find((f) => f.value === fontKey)?.label ?? fontKey;
+    const line = `Type style: ${label}`;
+    if (!base) return line;
+    return `${base}\n— ${line} —`;
+  }, [customize, customerNotes, fontKey]);
+
   function customizationMessage(): string | null {
     if (!customize) return null;
     const img = customerImageUrl.trim();
-    const notes = customerNotes.trim();
-    if (notes.length > maxNotes) {
+    const notes = notesForSubmit;
+    const userPart = customerNotes.trim();
+    if (userPart.length > maxNotes) {
       return `Notes are too long (max ${maxNotes} characters).`;
     }
+    if (notes.length > maxNotes + 120) {
+      return `Combined text is too long — shorten your message slightly.`;
+    }
     if (imgReq && !img) return "Please upload a reference image.";
-    if (txtReq && !notes) return "Please enter the requested text.";
-    if (!imgReq && !txtReq && !img && !notes) {
+    if (txtReq && !userPart) return "Please enter the requested text.";
+    if (!imgReq && !txtReq && !img && !userPart) {
       return "Add an image and/or notes for this personalised product.";
     }
     return null;
@@ -188,6 +222,72 @@ export function ProductPurchaseClient({
     if (filePreview) URL.revokeObjectURL(filePreview);
     setFilePreview(null);
   }
+
+  const deliveryHint = useMemo(() => deliveryHintForPincode(deliveryPin), [deliveryPin]);
+
+  const buildPayload = useCallback(() => {
+    const colorLabel =
+      colors.length && selectedColorKey
+        ? colors.find((c) => c.key === selectedColorKey)?.label
+        : undefined;
+    return {
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      pricePaise: unitPricePaise,
+      image: cartThumbnailUrl ?? product.image,
+      optionKey: selected?.key,
+      optionLabel: selected?.label,
+      ...(colors.length && selectedColorKey ? { colorKey: selectedColorKey, colorLabel } : {}),
+      quantity: qtyNum!,
+      ...(customize
+        ? {
+            customerImageUrl: customerImageUrl.trim() || undefined,
+            customerNotes: notesForSubmit.trim() || undefined,
+          }
+        : {}),
+      ...(isGift && giftMessage.trim() ? { giftMessage: giftMessage.trim() } : {}),
+      ...(giftWrap ? { giftWrap: true as const } : {}),
+    };
+  }, [
+    colors,
+    selectedColorKey,
+    product,
+    unitPricePaise,
+    cartThumbnailUrl,
+    selected?.key,
+    selected?.label,
+    customize,
+    customerImageUrl,
+    notesForSubmit,
+    isGift,
+    giftMessage,
+    giftWrap,
+    qtyNum,
+  ]);
+
+  function tryAddToCart(opts: { openDrawer: boolean; buyNow?: boolean }) {
+    if (options.length > 0 && !selected) return;
+    if (qtyInvalid || qtyNum === null) return;
+    if (customize) {
+      const msg = customizationMessage();
+      if (msg) {
+        setCustomErr(msg);
+        return;
+      }
+      setCustomErr(null);
+    }
+    add(buildPayload(), { openDrawer: opts.openDrawer });
+    if (opts.buyNow) {
+      router.push("/checkout");
+      return;
+    }
+    setCartMsg("Added to your cart");
+    setTimeout(() => setCartMsg(null), 2200);
+  }
+
+  const stepShell =
+    "rounded-2xl border border-accent/25 bg-gradient-to-b from-white to-sand/40 p-4 shadow-sm ring-1 ring-sand-deep/60";
 
   return (
     <>
@@ -264,10 +364,206 @@ export function ProductPurchaseClient({
         </fieldset>
       ) : null}
 
+      {customize ? (
+        <div className="mt-8 space-y-5">
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="font-display text-lg text-ink">Make it yours</h2>
+            <span className="text-xs font-medium uppercase tracking-wide text-accent">Step 1–3</span>
+          </div>
+          <ol className="space-y-4">
+            <li className={stepShell}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step 1</p>
+              <h3 className="mt-1 text-sm font-semibold text-ink">Upload your photo</h3>
+              {product.customizationInstructions?.trim() ? (
+                <p className="mt-1 text-xs text-ink-muted whitespace-pre-wrap">
+                  {product.customizationInstructions.trim()}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-ink-muted">
+                  Clear, well-lit photos print best. You can crop on your phone before uploading.
+                </p>
+              )}
+              <div className="mt-3 space-y-2">
+                <label className="block text-xs font-medium text-ink-muted">
+                  Reference image{imgReq ? " (required)" : " (optional)"}
+                </label>
+                <p className="text-[11px] text-ink-muted">
+                  JPEG, PNG, WebP, or GIF — up to {Math.round(MAX_CUSTOMER_IMAGE_BYTES / (1024 * 1024))}{" "}
+                  MB.
+                </p>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                  disabled={uploadBusy}
+                  className="block w-full text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+                  onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
+                />
+                {uploadBusy ? (
+                  <p className="inline-flex items-center gap-2 text-xs text-ink-muted">
+                    <Spinner size="sm" />
+                    Uploading…
+                  </p>
+                ) : null}
+                {uploadErr ? (
+                  <p className="text-xs text-rose" role="alert">
+                    {uploadErr}
+                  </p>
+                ) : null}
+                {(customerImageUrl || filePreview) && (
+                  <div className="relative mt-2 inline-block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={customerImageUrl || filePreview || ""}
+                      alt="Your upload preview"
+                      className="max-h-48 max-w-full rounded-lg border border-sand-deep object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearImage}
+                      className="mt-2 text-xs text-rose hover:underline"
+                    >
+                      Remove image
+                    </button>
+                  </div>
+                )}
+              </div>
+            </li>
+            <li className={stepShell}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step 2</p>
+              <h3 className="mt-1 text-sm font-semibold text-ink">Name &amp; text to print</h3>
+              <label className="mt-3 block text-xs font-medium text-ink-muted">
+                {textLabel}
+                {txtReq ? "" : " (optional)"}
+                <textarea
+                  value={customerNotes}
+                  maxLength={maxNotes}
+                  placeholder={textPlaceholder}
+                  rows={3}
+                  onChange={(e) => setCustomerNotes(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm text-ink"
+                />
+              </label>
+              <p className="mt-1 text-xs text-ink-muted">
+                {customerNotes.length}/{maxNotes} characters
+              </p>
+            </li>
+            <li className={stepShell}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step 3</p>
+              <h3 className="mt-1 text-sm font-semibold text-ink">Choose font style</h3>
+              <p className="mt-1 text-xs text-ink-muted">
+                We&apos;ll match this as closely as the product allows.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {FONT_OPTIONS.map((f) => (
+                  <label
+                    key={f.value}
+                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium sm:text-sm ${
+                      fontKey === f.value
+                        ? "border-accent bg-sand/50 text-ink"
+                        : "border-sand-deep text-ink-muted hover:border-sand-deep/80"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="font-pref"
+                      value={f.value}
+                      checked={fontKey === f.value}
+                      onChange={() => setFontKey(f.value)}
+                      className="sr-only"
+                    />
+                    {f.label}
+                  </label>
+                ))}
+              </div>
+            </li>
+          </ol>
+        </div>
+      ) : null}
+
+      <div className="mt-8 rounded-2xl border border-sand-deep bg-white/80 p-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-ink">Check delivery timing</h2>
+        <p className="mt-1 text-xs text-ink-muted">
+          Enter your delivery pincode for a quick estimate (final date depends on courier updates).
+        </p>
+        <label className="mt-3 block text-xs font-medium text-ink-muted">
+          Pincode
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={8}
+            value={deliveryPin}
+            onChange={(e) => setDeliveryPin(e.target.value)}
+            placeholder="e.g. 560001"
+            className="mt-1 w-full max-w-[12rem] rounded-lg border border-sand-deep bg-white px-3 py-2 font-mono text-sm text-ink"
+          />
+        </label>
+        {deliveryHint ? (
+          <p className="mt-3 rounded-lg bg-sand/60 px-3 py-2 text-xs leading-relaxed text-ink-muted">
+            {deliveryHint}
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-ink-muted">Use the 6-digit pincode you&apos;ll ship to.</p>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-sand-deep bg-sand/25 p-4">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={isGift}
+            onChange={(e) => {
+              setIsGift(e.target.checked);
+              if (!e.target.checked) {
+                setGiftMessage("");
+                setGiftWrap(false);
+              }
+            }}
+            className="mt-1 accent-accent"
+          />
+          <span>
+            <span className="text-sm font-medium text-ink">This order is a gift</span>
+            <span className="mt-0.5 block text-xs text-ink-muted">
+              Add a message for the packing slip. Optional gift wrap adds{" "}
+              {formatInrFromPaise(GIFT_WRAP_PAISE)} per item.
+            </span>
+          </span>
+        </label>
+        {isGift ? (
+          <div className="mt-4 space-y-3 border-t border-sand-deep/80 pt-4">
+            <label className="block text-xs font-medium text-ink-muted">
+              Gift message (printed for your recipient)
+              <textarea
+                value={giftMessage}
+                onChange={(e) => setGiftMessage(e.target.value)}
+                maxLength={500}
+                rows={2}
+                placeholder="e.g. Happy anniversary, Ammu & Kiran — with love"
+                className="mt-1 w-full rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm text-ink"
+              />
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-sand-deep bg-white px-3 py-2">
+              <input
+                type="checkbox"
+                checked={giftWrap}
+                onChange={(e) => setGiftWrap(e.target.checked)}
+                className="mt-1 accent-accent"
+              />
+              <span className="text-sm text-ink">
+                <span className="font-medium">Premium gift wrapping</span>
+                <span className="ml-1 text-emerald-800">+{formatInrFromPaise(GIFT_WRAP_PAISE)}</span>
+                <span className="mt-0.5 block text-xs text-ink-muted">
+                  Kraft paper, ribbon, and a handwritten tag where possible.
+                </span>
+              </span>
+            </label>
+          </div>
+        ) : null}
+      </div>
+
       <div
         key={options.length > 0 ? `${selectedKey}-desc` : "product-desc"}
         suppressHydrationWarning
-        className="product-description prose prose-slate mt-6 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
+        className="product-description prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
         dangerouslySetInnerHTML={{ __html: displayDescriptionHtml }}
       />
       {tags.length > 0 ? (
@@ -283,82 +579,7 @@ export function ProductPurchaseClient({
         </div>
       ) : null}
 
-      {customize ? (
-        <div className="mt-8 space-y-3 rounded-2xl border border-sand-deep bg-sand/30 p-4">
-          <h2 className="text-sm font-semibold text-ink">Your personalisation</h2>
-          {product.customizationInstructions?.trim() ? (
-            <p className="text-sm text-ink-muted whitespace-pre-wrap">
-              {product.customizationInstructions.trim()}
-            </p>
-          ) : (
-            <p className="text-sm text-ink-muted">
-              Upload a reference image if needed, and add any text we should use (e.g. name to
-              print).
-            </p>
-          )}
-          <div className="space-y-2">
-              <label className="block text-xs font-medium text-ink-muted">
-                Reference image{imgReq ? " (required)" : " (optional)"}
-              </label>
-              <p className="text-[11px] text-ink-muted">
-                JPEG, PNG, WebP, or GIF — up to{" "}
-                {Math.round(MAX_CUSTOMER_IMAGE_BYTES / (1024 * 1024))} MB.
-              </p>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
-                disabled={uploadBusy}
-                className="block w-full text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
-                onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
-              />
-              {uploadBusy ? (
-                <p className="inline-flex items-center gap-2 text-xs text-ink-muted">
-                  <Spinner size="sm" />
-                  Uploading…
-                </p>
-              ) : null}
-              {uploadErr ? (
-                <p className="text-xs text-rose" role="alert">
-                  {uploadErr}
-                </p>
-              ) : null}
-              {(customerImageUrl || filePreview) && (
-                <div className="relative mt-2 inline-block">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={customerImageUrl || filePreview || ""}
-                    alt="Your upload preview"
-                    className="max-h-48 max-w-full rounded-lg border border-sand-deep object-contain"
-                  />
-                  <button
-                    type="button"
-                    onClick={clearImage}
-                    className="mt-2 text-xs text-rose hover:underline"
-                  >
-                    Remove image
-                  </button>
-                </div>
-              )}
-          </div>
-          <label className="block text-xs font-medium text-ink-muted">
-            {textLabel}
-            {txtReq ? "" : " (optional)"}
-            <textarea
-              value={customerNotes}
-              maxLength={maxNotes}
-              placeholder={textPlaceholder}
-              rows={3}
-              onChange={(e) => setCustomerNotes(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm text-ink"
-            />
-          </label>
-          <p className="text-xs text-ink-muted">
-            {customerNotes.length}/{maxNotes} characters
-          </p>
-        </div>
-      ) : null}
-
-      <div className="mt-8 space-y-3">
+      <div className="mt-8 hidden space-y-3 md:block">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <label className="text-sm text-ink-muted" htmlFor="product-qty">
             Qty
@@ -379,58 +600,92 @@ export function ProductPurchaseClient({
             {qtyHint}
           </p>
         ) : null}
-
         {customErr ? (
           <p className="text-sm text-rose" role="alert">
             {customErr}
           </p>
         ) : null}
-
-        <button
-          type="button"
-          disabled={maxStock < 1 || qtyInvalid || uploadBusy}
-          onClick={() => {
-            if (options.length > 0 && !selected) return;
-            if (qtyInvalid || qtyNum === null) return;
-            if (customize) {
-              const msg = customizationMessage();
-              if (msg) {
-                setCustomErr(msg);
-                return;
-              }
-              setCustomErr(null);
-            }
-            const colorLabel =
-              colors.length && selectedColorKey
-                ? colors.find((c) => c.key === selectedColorKey)?.label
-                : undefined;
-            add({
-              productId: product.id,
-              slug: product.slug,
-              name: product.name,
-              pricePaise: unitPricePaise,
-              image: cartThumbnailUrl ?? product.image,
-              optionKey: selected?.key,
-              optionLabel: selected?.label,
-              ...(colors.length && selectedColorKey
-                ? { colorKey: selectedColorKey, colorLabel }
-                : {}),
-              quantity: qtyNum,
-              ...(customize
-                ? {
-                    customerImageUrl: customerImageUrl.trim() || undefined,
-                    customerNotes: customerNotes.trim() || undefined,
-                  }
-                : {}),
-            });
-            setCartMsg("Added to cart");
-            setTimeout(() => setCartMsg(null), 2000);
-          }}
-          className="w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
-        >
-          Add to cart
-        </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <button
+            type="button"
+            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+            onClick={() => tryAddToCart({ openDrawer: true })}
+            className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Add to cart
+          </button>
+          <button
+            type="button"
+            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+            onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
+            className="rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Buy now
+          </button>
+        </div>
         {cartMsg ? <p className="text-sm text-accent">{cartMsg}</p> : null}
+      </div>
+
+      <div className="mt-4 space-y-3 md:hidden">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-ink-muted" htmlFor="product-qty-mobile">
+            Qty
+          </label>
+          <input
+            id="product-qty-mobile"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={qtyStr}
+            onChange={(e) => setQtyStr(e.target.value)}
+            className="w-24 rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm"
+          />
+        </div>
+        {qtyHint ? (
+          <p className="text-sm text-rose" role="alert">
+            {qtyHint}
+          </p>
+        ) : null}
+        {customErr ? (
+          <p className="text-sm text-rose" role="alert">
+            {customErr}
+          </p>
+        ) : null}
+      </div>
+
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-sand-deep bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(15,23,42,0.12)] backdrop-blur-md md:hidden"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex max-w-lg items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-ink-muted">{product.name}</p>
+            <p className="font-display text-lg font-semibold text-ink">
+              {formatInrFromPaise(unitPricePaise)}
+              {giftWrap ? (
+                <span className="ml-1 text-xs font-normal text-ink-muted">
+                  + wrap {formatInrFromPaise(GIFT_WRAP_PAISE * (qtyNum ?? 1))}
+                </span>
+              ) : null}
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+            onClick={() => tryAddToCart({ openDrawer: true })}
+            className="shrink-0 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:opacity-50"
+          >
+            Add to cart
+          </button>
+          <button
+            type="button"
+            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+            onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
+            className="shrink-0 rounded-full border-2 border-accent bg-white px-4 py-3 text-sm font-semibold text-accent disabled:opacity-50"
+          >
+            Buy now
+          </button>
+        </div>
       </div>
     </>
   );

@@ -79,10 +79,10 @@ export function SiteFooterClient({ isAdmin, loggedIn }: Props) {
   return (
     <footer
       data-site-footer
-      className="relative z-10 shrink-0 border-t border-sand-deep bg-white/60 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      className="relative z-10 shrink-0 border-t border-slate-200 bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))]"
     >
       {/* Collapsed by default on all breakpoints (same as former mobile behavior) */}
-      <details className="group border-sand-deep/40 [&_summary::-webkit-details-marker]:hidden">
+      <details className="group border-slate-100 [&_summary::-webkit-details-marker]:hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-[max(1rem,env(safe-area-inset-left))] py-3 pr-[max(1rem,env(safe-area-inset-right))] sm:px-6 sm:py-3.5 lg:px-8">
           <span className="font-display text-sm font-semibold text-ink">Prisbo Creations</span>
           <span className="flex shrink-0 items-center gap-1.5 text-xs text-ink-muted">
@@ -100,12 +100,12 @@ export function SiteFooterClient({ isAdmin, loggedIn }: Props) {
             </svg>
           </span>
         </summary>
-        <div className="border-t border-sand-deep/40 px-[max(1rem,env(safe-area-inset-left))] pb-3 pt-3 pr-[max(1rem,env(safe-area-inset-right))] sm:px-6 lg:px-8">
+        <div className="border-t border-slate-100 px-[max(1rem,env(safe-area-inset-left))] pb-3 pt-3 pr-[max(1rem,env(safe-area-inset-right))] sm:px-6 lg:px-8">
           <FooterNav isAdmin={isAdmin} loggedIn={loggedIn} />
         </div>
       </details>
 
-      <div className="border-t border-sand-deep/80 py-1.5 text-center text-[10px] leading-tight text-ink-muted sm:text-xs">
+      <div className="border-t border-slate-100 py-1.5 text-center text-[10px] leading-tight text-slate-500 sm:text-xs">
         © {year} Prisbo Creations
       </div>
     </footer>

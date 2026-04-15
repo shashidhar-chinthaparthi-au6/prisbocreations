@@ -18,6 +18,8 @@ import {
   type OrderNotifyPayload,
 } from "@/lib/notify/dispatch";
 import { isTrustedCustomerImageUrl } from "@/lib/customer-upload";
+import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
+import { qualifiesForFreeShipping } from "@/lib/free-shipping";
 import { resolveProductLine } from "@/lib/product-options";
 import { colorVariantsFromDoc } from "@/lib/product-color-variants";
 
@@ -29,6 +31,8 @@ export type OrderCartLineInput = {
   colorKey?: string;
   customerImageUrl?: string;
   customerNotes?: string;
+  giftWrap?: boolean;
+  giftMessage?: string;
 };
 
 export type ShippingInput = {
@@ -209,6 +213,8 @@ export async function createOrderFromCart(input: {
     colorLabel?: string;
     customerImageUrl?: string;
     customerNotes?: string;
+    giftWrapPaise?: number;
+    giftMessage?: string;
   }> = [];
 
   for (const line of input.lines) {
@@ -234,6 +240,13 @@ export async function createOrderFromCart(input: {
     const pRec = p as unknown as Record<string, unknown>;
     const cust = validateLineCustomization(pRec, line);
 
+    const giftMsg = (line.giftMessage ?? "").trim();
+    if (giftMsg.length > 500) {
+      throw new Error(`Gift message is too long for ${p.name}`);
+    }
+    const giftWrap = Boolean(line.giftWrap);
+    const giftWrapPaise = giftWrap ? GIFT_WRAP_PAISE : 0;
+
     const colorLabel =
       colorKeyRaw && colors.length
         ? colors.find((c) => c.key === colorKeyRaw)?.label
@@ -251,6 +264,7 @@ export async function createOrderFromCart(input: {
     }
 
     subtotalPaise += resolved.unitPricePaise * line.quantity;
+    subtotalPaise += giftWrapPaise * line.quantity;
     items.push({
       productId: p._id,
       name: displayName,
@@ -263,17 +277,22 @@ export async function createOrderFromCart(input: {
       optionLabel: resolved.optionLabel,
       ...(colorKeyRaw ? { colorKey: colorKeyRaw, colorLabel } : {}),
       ...cust,
+      ...(giftWrapPaise > 0 ? { giftWrapPaise } : {}),
+      ...(giftMsg ? { giftMessage: giftMsg } : {}),
     });
   }
 
   const paymentMethod = input.paymentMethod ?? "online";
   const status = paymentMethod === "cod" ? "processing" : "pending";
 
-  const shippingPaise = await shippingPaiseForCheckout({
+  let shippingPaise = await shippingPaiseForCheckout({
     shiprocketCourierId: input.shiprocketCourierId,
     shipping: input.shipping,
     paymentMethod,
   });
+  if (qualifiesForFreeShipping(subtotalPaise)) {
+    shippingPaise = 0;
+  }
   const totalPaise = subtotalPaise + shippingPaise;
   const invoiceNumber = await allocateInvoiceNumber();
 

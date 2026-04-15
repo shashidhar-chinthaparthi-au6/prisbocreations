@@ -1,10 +1,17 @@
-/** Stable fingerprint for cart merge when custom image/notes differ. */
-function customizationFingerprint(imageUrl?: string, notes?: string): string {
+/** Stable fingerprint for cart merge when custom image/notes / gift differ. */
+function customizationFingerprint(
+  imageUrl?: string,
+  notes?: string,
+  giftWrap?: boolean,
+  giftMessage?: string,
+): string {
   const a = (imageUrl ?? "").trim();
   const b = (notes ?? "").trim();
-  if (!a && !b) return "";
+  const g = giftWrap ? "1" : "0";
+  const m = (giftMessage ?? "").trim();
+  if (!a && !b && g === "0" && !m) return "";
   let h = 5381;
-  const s = `${a}\n${b}`;
+  const s = `${a}\n${b}\n${g}\n${m}`;
   for (let i = 0; i < s.length; i++) {
     h = (h * 33) ^ s.charCodeAt(i);
   }
@@ -22,6 +29,8 @@ export function cartLineId(
     colorKey?: string;
     customerImageUrl?: string;
     customerNotes?: string;
+    giftWrap?: boolean;
+    giftMessage?: string;
   },
 ): string {
   const opt = optionKey?.trim() ?? "";
@@ -34,6 +43,8 @@ export function cartLineId(
   const fp = customizationFingerprint(
     customization?.customerImageUrl,
     customization?.customerNotes,
+    customization?.giftWrap,
+    customization?.giftMessage,
   );
   return fp ? `${base}::${fp}` : base;
 }

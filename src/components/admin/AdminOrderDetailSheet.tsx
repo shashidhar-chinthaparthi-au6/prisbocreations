@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatInrFromPaise } from "@/lib/format";
+import { orderLineTotalPaise } from "@/lib/order-line-total";
 import { apiFetch } from "@/lib/api/fetch-client";
 import type { AdminOrderFull } from "@/lib/admin-order-types";
 import type { AdminPrintKind } from "@/components/admin/AdminOrderPrintOverlay";
@@ -213,6 +214,17 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
                       <p className="mt-1 text-xs text-ink-muted">
                         Qty {it.quantity} × {formatInrFromPaise(it.unitPricePaise)}
                       </p>
+                      {typeof it.giftWrapPaise === "number" && it.giftWrapPaise > 0 ? (
+                        <p className="mt-2 text-xs font-medium text-accent">
+                          Gift wrap {formatInrFromPaise(it.giftWrapPaise)} / unit × {it.quantity} ={" "}
+                          {formatInrFromPaise(it.giftWrapPaise * it.quantity)}
+                        </p>
+                      ) : null}
+                      {it.giftMessage?.trim() ? (
+                        <p className="mt-2 whitespace-pre-wrap rounded-md bg-emerald-50/80 px-2 py-1.5 text-xs text-ink-muted">
+                          <span className="font-medium text-ink">Gift message:</span> {it.giftMessage}
+                        </p>
+                      ) : null}
                       {it.customerNotes?.trim() ? (
                         <p className="mt-2 whitespace-pre-wrap rounded-md bg-sand/50 px-2 py-1.5 text-xs text-ink-muted">
                           <span className="font-medium text-ink">Buyer notes:</span>{" "}
@@ -252,7 +264,7 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
                       </div>
                     </div>
                     <div className="shrink-0 text-right text-sm font-medium text-ink">
-                      {formatInrFromPaise(it.unitPricePaise * it.quantity)}
+                      {formatInrFromPaise(orderLineTotalPaise(it))}
                     </div>
                   </li>
                 ))}

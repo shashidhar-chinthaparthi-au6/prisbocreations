@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api/fetch-client";
@@ -31,6 +31,135 @@ type LookupOrder = {
   createdAt?: string;
   shiprocket?: LookupShiprocket | null;
 };
+
+const WA_OPTIN_KEY = "prisbo_whatsapp_updates_optin";
+
+function OrderStatusVisual({ status }: { status: string }) {
+  const normalized = status.toLowerCase();
+  const cancelled = normalized === "cancelled";
+  const steps = [
+    { key: "placed", label: "Placed" },
+    { key: "paid", label: "Paid" },
+    { key: "making", label: "Making" },
+    { key: "shipped", label: "Shipped" },
+  ] as const;
+  const idx = cancelled
+    ? -1
+    : normalized === "shipped"
+      ? 3
+      : normalized === "processing"
+        ? 2
+        : normalized === "paid"
+          ? 1
+          : 0;
+
+  return (
+    <div className="mt-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Order progress</h3>
+      <ol className="mt-3 flex flex-wrap gap-2">
+        {steps.map((s, i) => {
+          const done = !cancelled && i < idx;
+          const current = !cancelled && i === idx;
+          return (
+            <li
+              key={s.key}
+              className={`flex min-w-0 flex-1 basis-[45%] items-center gap-2 rounded-xl border px-3 py-2 text-xs sm:basis-0 sm:text-sm ${
+                cancelled
+                  ? "border-sand-deep bg-sand/30 text-ink-muted"
+                  : done
+                    ? "border-emerald-200 bg-emerald-50/80 text-emerald-950"
+                    : current
+                      ? "border-accent bg-accent/10 font-semibold text-ink"
+                      : "border-sand-deep bg-white text-ink-muted"
+              }`}
+            >
+              <span
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                  cancelled
+                    ? "bg-sand-deep text-ink-muted"
+                    : done
+                      ? "bg-emerald-600 text-white"
+                      : current
+                        ? "bg-accent text-white"
+                        : "bg-sand-deep text-ink-muted"
+                }`}
+              >
+                {cancelled ? "—" : done ? "✓" : i + 1}
+              </span>
+              <span className="min-w-0 truncate">{s.label}</span>
+            </li>
+          );
+        })}
+      </ol>
+      {cancelled ? (
+        <p className="mt-2 text-xs text-rose">This order was cancelled.</p>
+      ) : null}
+    </div>
+  );
+}
+
+function WhatsAppUpdatesRow({ invoiceLabel }: { invoiceLabel: string }) {
+  const [on, setOn] = useState(false);
+  const wa = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_E164?.replace(/\D/g, "") ?? "";
+
+  useEffect(() => {
+    try {
+      setOn(localStorage.getItem(WA_OPTIN_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  function toggle(next: boolean) {
+    setOn(next);
+    try {
+      localStorage.setItem(WA_OPTIN_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const href =
+    wa && on
+      ? `https://wa.me/${wa}?text=${encodeURIComponent(
+          `Hi Prisbo — I'd like WhatsApp updates for my order (${invoiceLabel}).`,
+        )}`
+      : "";
+
+  return (
+    <div className="mt-4 rounded-xl border border-emerald-200/80 bg-emerald-50/40 px-4 py-3">
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => toggle(e.target.checked)}
+          className="mt-1 accent-accent"
+        />
+        <span>
+          <span className="text-sm font-medium text-ink">Get updates on WhatsApp</span>
+          <span className="mt-0.5 block text-xs text-ink-muted">
+            Popular in India for delivery day-of reminders. We&apos;ll never spam you.
+          </span>
+        </span>
+      </label>
+      {on && wa ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+        >
+          Open WhatsApp chat
+        </a>
+      ) : on && !wa ? (
+        <p className="mt-2 text-xs text-ink-muted">
+          WhatsApp number not configured yet — ask support to enable{" "}
+          <code className="rounded bg-white/80 px-1">NEXT_PUBLIC_SUPPORT_WHATSAPP_E164</code>.
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 function TrackDeliverySummary({ order }: { order: LookupOrder }) {
   const sr = order.shiprocket;
@@ -219,7 +348,7 @@ export function TrackOrderForm() {
               Looking up…
             </>
           ) : (
-            "Find order"
+            "Track my gift"
           )}
         </button>
       </form>
@@ -243,6 +372,10 @@ export function TrackOrderForm() {
               <dd className="font-medium text-ink">{formatInrFromPaise(found.totalPaise)}</dd>
             </div>
           </dl>
+          <OrderStatusVisual status={found.status} />
+          <WhatsAppUpdatesRow
+            invoiceLabel={found.invoiceNumber?.trim() || found._id}
+          />
           <TrackDeliverySummary order={found} />
           <div className="flex flex-wrap gap-3 pt-2">
             <button

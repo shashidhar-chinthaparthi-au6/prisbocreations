@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 
@@ -15,6 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       </Suspense>
       <CartProvider>
         {children}
+        <CartDrawer />
         <ScrollToTopButton />
       </CartProvider>
     </QueryClientProvider>

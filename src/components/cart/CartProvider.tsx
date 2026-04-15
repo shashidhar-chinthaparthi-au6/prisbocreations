@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { cartLineId as buildCartLineId } from "@/lib/cart-line-id";
+import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
 
 export type CartLine = {
   id: string;
@@ -17,21 +18,32 @@ export type CartLine = {
   colorLabel?: string;
   customerImageUrl?: string;
   customerNotes?: string;
+  giftWrap?: boolean;
+  giftMessage?: string;
 };
+
+type AddLineInput = Omit<CartLine, "id" | "quantity"> & { quantity?: number };
 
 type CartContextValue = {
   lines: CartLine[];
-  add: (line: Omit<CartLine, "id" | "quantity"> & { quantity?: number }) => void;
+  add: (line: AddLineInput, opts?: { openDrawer?: boolean }) => void;
   setQty: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
   clear: () => void;
   count: number;
   subtotalPaise: number;
+  drawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
+  openCartDrawer: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
 const STORAGE = "prisbo_cart_v2";
+
+function lineGiftExtraPaise(l: CartLine): number {
+  return l.giftWrap ? GIFT_WRAP_PAISE * l.quantity : 0;
+}
 
 function migrateFromV1(raw: unknown): CartLine[] {
   if (!Array.isArray(raw)) return [];
@@ -56,6 +68,11 @@ function migrateFromV1(raw: unknown): CartLine[] {
         typeof l.customerNotes === "string" && l.customerNotes.trim()
           ? l.customerNotes.trim()
           : undefined;
+      const giftWrap = Boolean(l.giftWrap);
+      const giftMessage =
+        typeof l.giftMessage === "string" && l.giftMessage.trim()
+          ? l.giftMessage.trim()
+          : undefined;
       const id =
         typeof l.id === "string" && l.id.length > 0
           ? l.id
@@ -63,6 +80,8 @@ function migrateFromV1(raw: unknown): CartLine[] {
               colorKey,
               customerImageUrl,
               customerNotes,
+              giftWrap,
+              giftMessage,
             });
       return {
         id,
@@ -78,6 +97,7 @@ function migrateFromV1(raw: unknown): CartLine[] {
         colorLabel,
         customerImageUrl,
         customerNotes,
+        ...(giftWrap ? { giftWrap: true as const, ...(giftMessage ? { giftMessage } : {}) } : {}),
       };
     })
     .filter((l) => l.slug && l.name);
@@ -103,6 +123,7 @@ function load(): CartLine[] {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     setLines(load());
@@ -113,17 +134,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [lines]);
 
   const value = useMemo<CartContextValue>(() => {
-    const subtotalPaise = lines.reduce((s, l) => s + l.pricePaise * l.quantity, 0);
+    const subtotalPaise =
+      lines.reduce((s, l) => s + l.pricePaise * l.quantity, 0) +
+      lines.reduce((s, l) => s + lineGiftExtraPaise(l), 0);
     const count = lines.reduce((s, l) => s + l.quantity, 0);
     return {
       lines,
       count,
       subtotalPaise,
-      add: (line) => {
+      drawerOpen,
+      setDrawerOpen,
+      openCartDrawer: () => setDrawerOpen(true),
+      add: (line, opts) => {
         const id = buildCartLineId(line.productId, line.optionKey, {
           colorKey: line.colorKey,
           customerImageUrl: line.customerImageUrl,
           customerNotes: line.customerNotes,
+          giftWrap: line.giftWrap,
+          giftMessage: line.giftMessage,
         });
         const qty = line.quantity ?? 1;
         setLines((prev) => {
@@ -145,6 +173,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 colorLabel: line.colorLabel,
                 customerImageUrl: line.customerImageUrl,
                 customerNotes: line.customerNotes,
+                giftWrap: line.giftWrap,
+                giftMessage: line.giftMessage?.trim() || undefined,
               },
             ];
           }
@@ -152,6 +182,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           next[i] = { ...next[i], quantity: next[i].quantity + qty };
           return next;
         });
+        if (opts?.openDrawer) setDrawerOpen(true);
       },
       setQty: (lineId, quantity) => {
         setLines((prev) =>
@@ -163,7 +194,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       remove: (lineId) => setLines((prev) => prev.filter((l) => l.id !== lineId)),
       clear: () => setLines([]),
     };
-  }, [lines]);
+  }, [lines, drawerOpen]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

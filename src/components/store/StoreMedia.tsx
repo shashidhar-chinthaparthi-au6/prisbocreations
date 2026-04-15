@@ -16,6 +16,8 @@ type Props = {
   fill?: boolean;
   sizes?: string;
   priority?: boolean;
+  /** Hint for browser fetch scheduling (list thumbnails → low). */
+  fetchPriority?: "high" | "low" | "auto";
   /** Load immediately — avoids wrong/stale frames in horizontal carousels (native lazy + scroll). */
   eager?: boolean;
   /** For video URLs: show native controls (e.g. off for tiny cart/list thumbs). Default true. */
@@ -33,12 +35,14 @@ export function StoreMedia({
   fill,
   sizes,
   priority,
+  fetchPriority,
   eager = false,
   videoControls = true,
   onMediaReady,
   onMediaError,
 }: Props) {
   const loadNow = priority || eager;
+  const imgFetchPriority = fetchPriority ?? (loadNow ? "high" : "low");
   if (isVideoUrl(src)) {
     if (fill) {
       return (
@@ -81,6 +85,7 @@ export function StoreMedia({
           sizes={sizes}
           loading={loadNow ? "eager" : "lazy"}
           decoding="async"
+          fetchPriority={imgFetchPriority}
           onLoad={onMediaReady}
           onError={onMediaError}
         />
@@ -97,6 +102,7 @@ export function StoreMedia({
         sizes={sizes}
         loading={loadNow ? "eager" : "lazy"}
         decoding="async"
+        fetchPriority={imgFetchPriority}
         onLoad={onMediaReady}
         onError={onMediaError}
       />
@@ -112,6 +118,7 @@ export function StoreMedia({
         className={className ?? "object-cover"}
         sizes={sizes}
         priority={loadNow}
+        fetchPriority={imgFetchPriority}
         onLoad={onMediaReady}
         onError={onMediaError}
       />
@@ -127,6 +134,7 @@ export function StoreMedia({
       className={className ?? "object-cover"}
       sizes={sizes}
       priority={loadNow}
+      fetchPriority={imgFetchPriority}
       onLoad={onMediaReady}
       onError={onMediaError}
     />

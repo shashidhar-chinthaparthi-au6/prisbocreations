@@ -35,14 +35,17 @@ export function QuickAddToCart({
     e.preventDefault();
     e.stopPropagation();
     if (requiresOptionChoice) return;
-    add({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      pricePaise: product.pricePaise,
-      image: product.image,
-      quantity: 1,
-    });
+    add(
+      {
+        productId: product.id,
+        slug: product.slug,
+        name: product.name,
+        pricePaise: product.pricePaise,
+        image: product.image,
+        quantity: 1,
+      },
+      { openDrawer: true },
+    );
   }
 
   function onDec(e: React.MouseEvent) {

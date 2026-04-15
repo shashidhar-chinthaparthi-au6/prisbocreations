@@ -6,13 +6,18 @@ import {
   listExploreProductsForHome,
   listFeaturedProducts,
 } from "@/lib/services/catalogService";
-import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 import { HomeExploreProducts } from "@/components/store/HomeExploreProducts";
 import { HomeProductCard } from "@/components/store/HomeProductCard";
-import { productToExploreCardDTO } from "@/lib/home-explore-dto";
+import { productToExploreCardDTO, type HomeExploreCardDTO } from "@/lib/home-explore-dto";
 import { RecentlyViewedHome } from "@/components/store/RecentlyViewedHome";
-import { HeroBrowseBackdrop } from "@/components/store/HeroBrowseBackdrop";
+import { HeroProcessCarousel } from "@/components/store/HeroProcessCarousel";
+import { HomeTrustBar } from "@/components/store/HomeTrustBar";
+import { HomeShopByRecipient } from "@/components/store/HomeShopByRecipient";
+import { HomeBrandBenefits } from "@/components/store/HomeBrandBenefits";
+
+/** Public sample MP4 (hotlink-friendly); replace via `NEXT_PUBLIC_HOME_HERO_VIDEO_URL` in production. */
+const DEFAULT_HOME_HERO_VIDEO_PLACEHOLDER = "https://www.w3schools.com/html/mov_bbb.mp4";
 
 function dedupeImageUrls(urls: (string | undefined | null)[]): string[] {
   const seen = new Set<string>();
@@ -42,23 +47,28 @@ export default async function HomePage() {
     ...categories.map((c) => c.images?.[0]),
     ...featured.map((p) => p.images?.[0]),
   ]);
+  /** MP4/WebM/MOV — full-bleed muted loop behind hero stills; env overrides web placeholder. */
+  const heroVideoUrl =
+    process.env.NEXT_PUBLIC_HOME_HERO_VIDEO_URL?.trim() || DEFAULT_HOME_HERO_VIDEO_PLACEHOLDER;
 
   return (
-    <div className="space-y-10 md:space-y-12">
-      <section className="relative overflow-hidden rounded-2xl px-5 py-8 text-white shadow-[0_25px_60px_-15px_rgba(159,18,57,0.35),0_12px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/20 sm:px-7 sm:py-9 md:rounded-3xl md:px-10 md:py-10">
-        {heroBackdropUrls.length > 0 ? <HeroBrowseBackdrop urls={heroBackdropUrls} /> : null}
-        {/* Deep jewel base + warm colour wash (lets photos stay lively on the right) */}
+    <div className="space-y-6 md:space-y-8">
+      <section className="relative overflow-hidden rounded-lg border border-slate-200/90 bg-slate-900 px-5 py-8 text-white shadow-[0_2px_8px_rgba(15,23,42,0.08)] sm:px-7 sm:py-9 md:rounded-xl md:px-10 md:py-10">
+        {heroBackdropUrls.length > 0 || heroVideoUrl ? (
+          <HeroProcessCarousel urls={heroBackdropUrls} videoUrl={heroVideoUrl} />
+        ) : null}
+        {/* Left-heavy washes: keep copy readable; leave the right clearer for hero video / imagery */}
         <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl bg-gradient-to-br from-rose-950/88 via-ink/78 to-amber-950/72 md:rounded-3xl"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-gradient-to-r from-rose-950/90 from-0% via-ink/72 via-[36%] via-amber-950/18 via-[58%] to-transparent to-[96%] md:rounded-xl"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl bg-gradient-to-tr from-accent/30 via-transparent to-rose-light/35 md:rounded-3xl"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-gradient-to-r from-accent/32 from-0% via-rose-light/14 via-[52%] to-transparent to-[94%] md:rounded-xl"
           aria-hidden
         />
-        {/* Readability for copy — fades out so the marquee stays colourful */}
+        {/* Readability for copy — strong on the left only */}
         <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-2xl bg-gradient-to-r from-black/70 from-0% via-black/28 via-[48%] to-transparent to-100% md:rounded-3xl"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-gradient-to-r from-black/72 from-0% via-black/22 via-[44%] to-transparent to-[100%] md:rounded-xl"
           aria-hidden
         />
         <div
@@ -68,18 +78,18 @@ export default async function HomePage() {
             Prisbo Creations
           </p>
           <h1 className="font-display text-2xl leading-snug text-white sm:text-3xl sm:leading-tight md:text-4xl">
-            Personalized pieces that feel unmistakably premium.
+            We craft personalised gifts and keepsakes — in our studio, not from a faceless warehouse.
           </h1>
           <p className="max-w-xl text-sm leading-relaxed text-sand/95 sm:text-base">
-            From acrylic keepsakes to packaging that elevates your brand — every order is produced
-            with care and crisp detail.
+            Laser-cut acrylic, careful print finishing, and packaging you&apos;ll be proud to hand over.
+            Every piece is made for your story.
           </p>
           <div className="flex flex-wrap gap-2 pt-1 [text-shadow:none] sm:gap-3">
             <Link
               href="/categories"
               className="inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-accent to-accent-light px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(180,83,9,0.45)] ring-2 ring-white/25 transition hover:brightness-110 sm:min-h-11 sm:px-6 sm:py-3"
             >
-              Browse categories
+              Shop the catalog
             </Link>
             {!session ? (
               <Link
@@ -95,8 +105,14 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute -bottom-14 -left-6 z-[2] h-52 w-52 rounded-full bg-gradient-to-tr from-rose-light/45 via-rose/30 to-transparent blur-3xl sm:h-60 sm:w-60" />
       </section>
 
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6">
-        <div className="min-w-0 flex-1 space-y-10">
+      <HomeTrustBar />
+
+      <HomeShopByRecipient />
+
+      <HomeBrandBenefits />
+
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
+        <div className="min-w-0 flex-1 space-y-8 rounded-lg border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] sm:p-6 md:space-y-10 md:p-8">
           {featured.length > 0 ? (
             <section className="space-y-3">
               <div className="flex items-end justify-between gap-4">
@@ -107,24 +123,23 @@ export default async function HomePage() {
               </div>
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 md:gap-2 md:overflow-visible md:pb-0 lg:grid-cols-6">
                 {featured.map((p) => {
-                  const colorVariants = colorVariantsFromDoc(p);
-                  const defaultImages = Array.isArray(p.images) ? p.images : [];
-                  const thumb =
-                    listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
+                  const dto = productToExploreCardDTO(p) as HomeExploreCardDTO;
                   const multi = productHasOptions(p);
                   const price = multi ? minOptionPricePaise(p) : p.pricePaise;
                   return (
                     <HomeProductCard
                       key={String(p._id)}
                       variant="featured"
-                      slug={p.slug}
-                      name={p.name}
-                      productId={String(p._id)}
+                      slug={dto.slug}
+                      name={dto.name}
+                      productId={dto.id}
                       listPricePaise={price}
-                      stock={p.stock}
-                      imageUrl={thumb}
+                      compareAtPaise={dto.compareAtPaise}
+                      stock={dto.stock}
+                      imageUrl={dto.imageUrl}
+                      hoverImageUrl={dto.hoverImageUrl}
                       multi={multi}
-                      hasColorVariants={colorVariants.length > 0}
+                      hasColorVariants={dto.hasColorVariants}
                     />
                   );
                 })}

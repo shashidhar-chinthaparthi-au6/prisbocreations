@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { formatInrFromPaise } from "@/lib/format";
 import { ProductGridCarousel } from "@/components/category/ProductGridCarousel";
+import { ProductQuickViewModal } from "@/components/category/ProductQuickViewModal";
 import { QuickAddToCart } from "@/components/category/QuickAddToCart";
 import { StoreMedia } from "@/components/store/StoreMedia";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
@@ -14,6 +15,8 @@ export type ListingProduct = {
   name: string;
   sku: string;
   pricePaise: number;
+  /** Optional crossed-out “was” price when on sale. */
+  compareAtPaise?: number;
   stock: number;
   images: string[];
   /** Gallery for grid cards (first colour’s images when colour variants exist). */
@@ -31,6 +34,7 @@ type SortMode = "name" | "price_asc" | "price_desc";
 export function SubcategoryProductListing({ products }: { products: ListingProduct[] }) {
   const [view, setView] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<SortMode>("name");
+  const [quickSlug, setQuickSlug] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -68,6 +72,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
 
   return (
     <div className="space-y-4">
+      {quickSlug ? <ProductQuickViewModal slug={quickSlug} onClose={() => setQuickSlug(null)} /> : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-muted">
           {products.length} product{products.length === 1 ? "" : "s"}
@@ -137,6 +142,11 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                 {sortedProducts.map((p) => {
                   const multi = productHasOptions(p);
                   const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
+                  const compare = p.compareAtPaise;
+                  const onSale =
+                    typeof compare === "number" &&
+                    compare > listPrice &&
+                    Number.isFinite(compare);
                   const thumb = p.carouselImages[0] ?? p.images[0];
                   return (
                   <tr key={p._id} className="border-b border-sand-deep/80 last:border-0">
@@ -172,7 +182,23 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                       {p.sku}
                     </td>
                     <td className="px-3 py-3 text-right font-semibold text-ink sm:px-4">
-                      {multi ? (
+                      {onSale ? (
+                        <span className="inline-flex flex-col items-end gap-0.5 sm:inline-flex sm:flex-row sm:items-baseline sm:gap-2">
+                          <span className="text-xs font-normal text-ink-muted line-through">
+                            {formatInrFromPaise(compare!)}
+                          </span>
+                          <span className="text-emerald-800">
+                            {multi ? (
+                              <>
+                                <span className="text-xs font-normal text-ink-muted">From </span>
+                                {formatInrFromPaise(listPrice)}
+                              </>
+                            ) : (
+                              formatInrFromPaise(listPrice)
+                            )}
+                          </span>
+                        </span>
+                      ) : multi ? (
                         <span>
                           <span className="text-xs font-normal text-ink-muted">From </span>
                           {formatInrFromPaise(listPrice)}
@@ -210,20 +236,60 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
           {sortedProducts.map((p) => {
             const multi = productHasOptions(p);
             const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;
+            const compare = p.compareAtPaise;
+            const onSale =
+              typeof compare === "number" &&
+              compare > listPrice &&
+              Number.isFinite(compare);
             const gridImages =
               p.carouselImages.length > 0 ? p.carouselImages : p.images;
+            const second = gridImages[1];
             return (
             <div
               key={p._id}
-              className="flex h-full flex-col overflow-hidden rounded-xl border border-sand-deep bg-white shadow-sm sm:rounded-2xl"
+              className="group/card flex h-full flex-col overflow-hidden rounded-xl border border-sand-deep bg-white shadow-sm sm:rounded-2xl"
             >
               <Link href={`/product/${p.slug}`} className="block shrink-0">
                 <div className="relative aspect-square w-full overflow-hidden bg-sand-deep sm:aspect-[4/3]">
-                  <ProductGridCarousel
-                    images={gridImages}
-                    productName={p.name}
-                    sizes="(max-width:640px) 50vw, (max-width:1024px) 50vw, 33vw"
-                  />
+                  {second ? (
+                    <>
+                      <div className="hidden h-full w-full md:block">
+                        <div className="relative h-full w-full">
+                          <StoreMedia
+                            src={gridImages[0]}
+                            alt={p.name}
+                            fill
+                            className="object-cover transition-opacity duration-300 group-hover/card:opacity-0"
+                            sizes="(max-width:1024px) 50vw, 33vw"
+                            fetchPriority="low"
+                            videoControls={false}
+                          />
+                          <StoreMedia
+                            src={second}
+                            alt=""
+                            fill
+                            className="absolute inset-0 object-cover opacity-0 transition-opacity duration-300 group-hover/card:opacity-100"
+                            sizes="(max-width:1024px) 50vw, 33vw"
+                            fetchPriority="low"
+                            videoControls={false}
+                          />
+                        </div>
+                      </div>
+                      <div className="h-full w-full md:hidden">
+                        <ProductGridCarousel
+                          images={gridImages}
+                          productName={p.name}
+                          sizes="(max-width:640px) 50vw, (max-width:1024px) 50vw, 33vw"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <ProductGridCarousel
+                      images={gridImages}
+                      productName={p.name}
+                      sizes="(max-width:640px) 50vw, (max-width:1024px) 50vw, 33vw"
+                    />
+                  )}
                 </div>
               </Link>
               <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
@@ -243,9 +309,25 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                       ? "Colours — open product to choose"
                       : `Stock: ${p.stock}`}
                 </p>
-                <div className="mt-auto flex min-h-[2.75rem] items-center justify-between gap-2 border-t border-sand-deep pt-3">
+                <div className="mt-auto flex min-h-[2.75rem] flex-wrap items-center justify-between gap-2 border-t border-sand-deep pt-3">
                   <p className="min-w-0 shrink font-display text-base font-semibold tabular-nums text-ink sm:text-lg">
-                    {multi ? (
+                    {onSale ? (
+                      <span className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
+                        <span className="text-sm font-normal text-ink-muted line-through sm:text-base">
+                          {formatInrFromPaise(compare!)}
+                        </span>
+                        <span className="text-emerald-800">
+                          {multi ? (
+                            <span>
+                              <span className="text-xs font-normal text-ink-muted sm:text-sm">From </span>
+                              {formatInrFromPaise(listPrice)}
+                            </span>
+                          ) : (
+                            formatInrFromPaise(listPrice)
+                          )}
+                        </span>
+                      </span>
+                    ) : multi ? (
                       <span>
                         <span className="text-sm font-normal text-ink-muted sm:text-base">From </span>
                         {formatInrFromPaise(listPrice)}
@@ -254,18 +336,30 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                       formatInrFromPaise(listPrice)
                     )}
                   </p>
-                  <QuickAddToCart
-                    inline
-                    stock={multi ? 1 : p.stock}
-                    requiresOptionChoice={multi || Boolean(p.hasColorVariants)}
-                    product={{
-                      id: p._id,
-                      slug: p.slug,
-                      name: p.name,
-                      pricePaise: listPrice,
-                      image: gridImages[0] ?? p.images[0],
-                    }}
-                  />
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setQuickSlug(p.slug);
+                      }}
+                      className="rounded-full border border-sand-deep bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted hover:border-accent hover:text-accent sm:px-3 sm:text-xs"
+                    >
+                      Quick view
+                    </button>
+                    <QuickAddToCart
+                      inline
+                      stock={multi ? 1 : p.stock}
+                      requiresOptionChoice={multi || Boolean(p.hasColorVariants)}
+                      product={{
+                        id: p._id,
+                        slug: p.slug,
+                        name: p.name,
+                        pricePaise: listPrice,
+                        image: gridImages[0] ?? p.images[0],
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

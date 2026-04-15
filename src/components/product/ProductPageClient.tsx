@@ -72,7 +72,7 @@ export function ProductPageClient({
   const cartThumbnailUrl = galleryImages[0] ?? product.image;
 
   return (
-    <div className="grid items-start gap-10 lg:grid-cols-2">
+    <div className="grid items-start gap-10 pb-24 md:pb-0 lg:grid-cols-2">
       <ProductGallery images={galleryImages} productName={galleryProductName} />
       <div className="space-y-6">
         {breadcrumb}

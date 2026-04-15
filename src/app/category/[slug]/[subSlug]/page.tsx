@@ -38,12 +38,18 @@ function serializeProducts(products: Awaited<ReturnType<typeof listProducts>>): 
     const cv = colorVariantsFromDoc(p);
     const baseImages = p.images ?? [];
     const carouselImages = listingCarouselImages(baseImages, cv);
+    const cap =
+      typeof (p as { compareAtPaise?: unknown }).compareAtPaise === "number" &&
+      Number.isFinite((p as { compareAtPaise: number }).compareAtPaise)
+        ? (p as { compareAtPaise: number }).compareAtPaise
+        : undefined;
     return {
       _id: String(p._id),
       slug: p.slug,
       name: p.name,
       sku: p.sku,
       pricePaise: p.pricePaise,
+      compareAtPaise: cap,
       stock: p.stock,
       images: baseImages,
       carouselImages,

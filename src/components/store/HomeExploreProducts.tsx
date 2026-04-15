@@ -149,8 +149,10 @@ export function HomeExploreProducts({ initial, exploreFeedMode, pageSize = 18 }:
             name={dto.name}
             productId={dto.id}
             listPricePaise={dto.listPricePaise}
+            compareAtPaise={dto.compareAtPaise}
             stock={dto.stock}
             imageUrl={dto.imageUrl}
+            hoverImageUrl={dto.hoverImageUrl}
             multi={dto.multi}
             hasColorVariants={dto.hasColorVariants}
           />

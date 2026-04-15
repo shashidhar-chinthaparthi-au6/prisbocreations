@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
+import { orderLineTotalPaise } from "@/lib/order-line-total";
 import { getSellerAddress } from "@/lib/seller-address";
 import { PrintInvoiceButton } from "@/components/orders/PrintInvoiceButton";
 
@@ -122,13 +123,28 @@ export default async function OrderInvoicePage({
             </tr>
           </thead>
           <tbody>
-            {order.items.map((it, i) => (
-              <tr key={i} className="border-b border-sand-deep/60">
-                <td className="py-3 pr-4 text-ink">{it.name}</td>
-                <td className="py-3 pr-4 text-ink-muted">{it.quantity}</td>
-                <td className="py-3 text-right text-ink">{formatInrFromPaise(it.unitPricePaise * it.quantity)}</td>
-              </tr>
-            ))}
+            {order.items.map((it, i) => {
+              const line = it as typeof it & { giftWrapPaise?: number; giftMessage?: string };
+              return (
+                <tr key={i} className="border-b border-sand-deep/60">
+                  <td className="py-3 pr-4 text-ink">
+                    <span className="block">{line.name}</span>
+                    {typeof line.giftWrapPaise === "number" && line.giftWrapPaise > 0 ? (
+                      <span className="mt-1 block text-xs text-accent">
+                        Gift wrap {formatInrFromPaise(line.giftWrapPaise * line.quantity)}
+                      </span>
+                    ) : null}
+                    {line.giftMessage?.trim() ? (
+                      <span className="mt-1 block text-xs text-ink-muted">Gift: {line.giftMessage}</span>
+                    ) : null}
+                  </td>
+                  <td className="py-3 pr-4 text-ink-muted">{line.quantity}</td>
+                  <td className="py-3 text-right text-ink">
+                    {formatInrFromPaise(orderLineTotalPaise(line))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 

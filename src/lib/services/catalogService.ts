@@ -333,6 +333,8 @@ export async function adminCreateProduct(input: {
   tags?: string[];
   featured?: boolean;
   isActive?: boolean;
+  /** “Was” price for sale strikethrough; should exceed `pricePaise`. */
+  compareAtPaise?: number;
   options?: AdminProductOptionInput[];
   colorVariants?: AdminProductColorVariantInput[];
   allowCustomerCustomization?: boolean;
@@ -343,9 +345,16 @@ export async function adminCreateProduct(input: {
   customizationImageRequired?: boolean;
   customizationTextRequired?: boolean;
 }) {
-  const { options, colorVariants, ...rest } = input;
+  const { options, colorVariants, compareAtPaise, ...rest } = input;
+  const cap =
+    typeof compareAtPaise === "number" &&
+    Number.isFinite(compareAtPaise) &&
+    compareAtPaise > rest.pricePaise
+      ? compareAtPaise
+      : undefined;
   return Product.create({
     ...rest,
+    ...(cap !== undefined ? { compareAtPaise: cap } : {}),
     options: (options ?? []).map((o) => ({
       key: o.key.trim(),
       label: o.label.trim(),
@@ -376,6 +385,7 @@ export async function adminUpdateProduct(
     tags: string[];
     isActive: boolean;
     featured: boolean;
+    compareAtPaise: number | null;
     options: AdminProductOptionInput[];
     colorVariants: AdminProductColorVariantInput[];
     allowCustomerCustomization: boolean;
@@ -387,9 +397,10 @@ export async function adminUpdateProduct(
     customizationTextRequired: boolean;
   }>,
 ) {
-  const next = { ...patch };
+  const { compareAtPaise, ...patchRest } = patch;
+  const next = { ...patchRest } as Record<string, unknown>;
   if (patch.options !== undefined) {
-    (next as { options: unknown }).options = patch.options.map((o) => ({
+    next.options = patch.options.map((o) => ({
       key: o.key.trim(),
       label: o.label.trim(),
       pricePaise: o.pricePaise,
@@ -399,11 +410,21 @@ export async function adminUpdateProduct(
     }));
   }
   if (patch.colorVariants !== undefined) {
-    (next as { colorVariants: unknown }).colorVariants = patch.colorVariants.map((v) => ({
+    next.colorVariants = patch.colorVariants.map((v) => ({
       key: v.key.trim(),
       label: v.label.trim(),
       images: (v.images ?? []).map((u) => u.trim()).filter(Boolean),
     }));
+  }
+  if (compareAtPaise === null) {
+    return Product.findByIdAndUpdate(
+      id,
+      { $set: next, $unset: { compareAtPaise: "" } },
+      { new: true },
+    ).lean();
+  }
+  if (typeof compareAtPaise === "number" && Number.isFinite(compareAtPaise)) {
+    next.compareAtPaise = compareAtPaise;
   }
   return Product.findByIdAndUpdate(id, next, { new: true }).lean();
 }

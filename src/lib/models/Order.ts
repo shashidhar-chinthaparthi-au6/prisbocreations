@@ -15,6 +15,9 @@ const OrderItemSchema = new Schema(
     colorLabel: { type: String },
     customerImageUrl: { type: String },
     customerNotes: { type: String },
+    /** Gift wrap add-on per unit (paise), included in line total. */
+    giftWrapPaise: { type: Number, default: 0, min: 0 },
+    giftMessage: { type: String, trim: true, maxlength: 600 },
   },
   { _id: false }
 );

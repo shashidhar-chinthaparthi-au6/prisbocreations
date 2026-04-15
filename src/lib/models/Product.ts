@@ -34,6 +34,8 @@ const ProductSchema = new Schema(
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     description: { type: String, required: true },
     pricePaise: { type: Number, required: true, min: 0 },
+    /** Optional “was” price for sale display (should exceed `pricePaise` when set). */
+    compareAtPaise: { type: Number, min: 0 },
     currency: { type: String, default: "INR" },
     sku: { type: String, required: true, unique: true, trim: true },
     stock: { type: Number, required: true, default: 0, min: 0 },

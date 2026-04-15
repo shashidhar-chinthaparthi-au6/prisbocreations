@@ -138,7 +138,7 @@ export function SearchSuggestInput({
 
   const inputClass =
     variant === "header"
-      ? "min-h-12 w-full rounded-xl border border-sand-deep bg-white px-4 py-2.5 text-base text-ink placeholder:text-ink-muted/70 shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 md:min-h-[3.25rem] md:text-[1.05rem]"
+      ? "min-h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3.5 py-2 text-[0.9375rem] text-slate-900 shadow-[inset_0_1px_1px_rgba(15,23,42,0.04)] placeholder:text-slate-500 focus:border-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/25 sm:min-h-12 sm:px-4 sm:text-base md:min-h-[3rem]"
       : "min-h-12 w-full rounded-xl border border-sand-deep px-4 py-3 text-base text-ink shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent";
 
   function goProduct(slug: string) {
@@ -184,7 +184,14 @@ export function SearchSuggestInput({
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-sand-deep">
               {item.thumb ? (
                 // eslint-disable-next-line @next/next/no-img-element -- arbitrary CDN URLs
-                <img src={item.thumb} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={item.thumb}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
+                />
               ) : null}
             </div>
             <div className="min-w-0 flex-1">

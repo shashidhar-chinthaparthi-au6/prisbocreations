@@ -17,6 +17,8 @@ const lineSchema = z.object({
   /** URL checked again in orderService (trusted host); avoid z.url() rejecting valid S3/edge cases */
   customerImageUrl: emptyToUndefined(z.string().max(2000).optional()),
   customerNotes: emptyToUndefined(z.string().max(2000).optional()),
+  giftWrap: z.boolean().optional(),
+  giftMessage: emptyToUndefined(z.string().max(500).optional()),
 });
 
 const shipSchema = z.object({

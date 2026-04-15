@@ -24,19 +24,29 @@ function CartIcon({ className }: { className?: string }) {
 }
 
 export function HeaderCart() {
-  const { count } = useCart();
+  const { count, setDrawerOpen } = useCart();
   return (
-    <Link
-      href="/cart"
-      className="relative inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-sand-deep bg-white/90 text-ink shadow-sm transition hover:border-accent hover:text-accent"
-      aria-label={count > 0 ? `Shopping cart, ${count} items` : "Shopping cart"}
-    >
-      <CartIcon className="h-5 w-5" />
-      {count > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white shadow">
-          {count > 99 ? "99+" : count}
-        </span>
-      ) : null}
-    </Link>
+    <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+      <button
+        type="button"
+        onClick={() => setDrawerOpen(true)}
+        className="relative inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-slate-800 shadow-sm transition hover:border-accent/60 hover:text-accent sm:min-h-11 sm:min-w-0 sm:px-3"
+        aria-label={count > 0 ? `Open cart, ${count} items` : "Open cart"}
+      >
+        <CartIcon className="h-5 w-5 shrink-0" />
+        <span className="hidden text-xs font-semibold sm:inline">Cart</span>
+        {count > 0 ? (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white shadow">
+            {count > 99 ? "99+" : count}
+          </span>
+        ) : null}
+      </button>
+      <Link
+        href="/cart"
+        className="hidden min-h-11 items-center rounded-md px-1.5 text-xs font-medium text-slate-500 underline-offset-2 hover:text-accent lg:inline-flex"
+      >
+        View bag
+      </Link>
+    </div>
   );
 }

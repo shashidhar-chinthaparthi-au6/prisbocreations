@@ -14,6 +14,8 @@ export type AdminOrderItem = {
   colorLabel?: string;
   customerImageUrl?: string;
   customerNotes?: string;
+  giftWrapPaise?: number;
+  giftMessage?: string;
 };
 
 export type AdminOrderShipping = {

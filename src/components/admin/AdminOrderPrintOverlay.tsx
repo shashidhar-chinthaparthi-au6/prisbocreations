@@ -1,6 +1,7 @@
 "use client";
 
 import { formatInrFromPaise } from "@/lib/format";
+import { orderLineTotalPaise } from "@/lib/order-line-total";
 import { getSellerAddress } from "@/lib/seller-address";
 import type { AdminOrderFull } from "@/lib/admin-order-types";
 
@@ -133,7 +134,7 @@ export function AdminOrderPrintOverlay({ order, kind }: Props) {
                 <td className="py-3 pr-4 font-mono text-xs text-ink-muted">{it.sku}</td>
                 <td className="py-3 pr-4 text-ink-muted">{it.quantity}</td>
                 <td className="py-3 text-right text-ink">
-                  {formatInrFromPaise(it.unitPricePaise * it.quantity)}
+                  {formatInrFromPaise(orderLineTotalPaise(it))}
                 </td>
               </tr>
             ))}
@@ -263,6 +264,10 @@ export function AdminOrderPrintOverlay({ order, kind }: Props) {
           {(order.items ?? []).map((it, i) => (
             <li key={i}>
               {it.name} × {it.quantity}
+              {typeof it.giftWrapPaise === "number" && it.giftWrapPaise > 0
+                ? ` — Gift wrap ${formatInrFromPaise(it.giftWrapPaise * it.quantity)}`
+                : ""}
+              {it.giftMessage?.trim() ? ` — Gift: ${it.giftMessage.trim().slice(0, 100)}` : ""}
               {it.customerNotes?.trim() ? ` — Note: ${it.customerNotes.trim().slice(0, 120)}` : ""}
             </li>
           ))}

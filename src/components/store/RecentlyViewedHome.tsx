@@ -32,7 +32,7 @@ export function RecentlyViewedHome({ sidebar = false }: Props) {
             <li key={p.slug}>
               <Link
                 href={`/product/${p.slug}`}
-                className="group flex gap-2 rounded-lg border border-sand-deep bg-white p-1.5 shadow-sm transition hover:border-accent"
+                className="group flex gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm transition hover:border-accent"
               >
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-sand-deep sm:h-12 sm:w-12">
                   {p.image ? (

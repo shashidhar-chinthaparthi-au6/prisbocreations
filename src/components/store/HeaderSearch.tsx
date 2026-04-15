@@ -8,7 +8,7 @@ import { SearchSuggestInput } from "@/components/store/SearchSuggestInput";
 export function HeaderSearchFallback() {
   return (
     <div
-      className="h-12 w-full max-w-md rounded-xl border border-sand-deep/50 bg-white/50 sm:max-w-lg md:max-w-xl lg:max-w-2xl"
+      className="h-11 w-full max-w-xl rounded-md border border-slate-200 bg-slate-50 sm:h-12 sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
       aria-hidden
     />
   );
@@ -36,7 +36,7 @@ function HeaderSearchInner() {
       action="/search"
       method="get"
       autoComplete="off"
-      className="flex w-full max-w-md justify-center sm:max-w-lg md:max-w-xl lg:max-w-2xl"
+      className="flex w-full max-w-xl justify-center sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
       role="search"
     >
       <label htmlFor="header-search" className="sr-only">

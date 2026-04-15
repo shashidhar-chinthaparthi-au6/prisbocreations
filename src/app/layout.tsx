@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SiteHeader />
             <main
               id="site-main-scroll"
-              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-[max(1rem,env(safe-area-inset-left))] py-8 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-8"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-[#f1f3f6] px-[max(1rem,env(safe-area-inset-left))] py-6 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-7 lg:px-8"
             >
               {children}
             </main>

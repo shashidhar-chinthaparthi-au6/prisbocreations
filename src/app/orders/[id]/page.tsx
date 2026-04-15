@@ -6,6 +6,7 @@ import { resolveCustomerTrackingUrl, shiprocketAggregateTrackingUrl } from "@/li
 import { isShiprocketConfigured } from "@/lib/shiprocket-config";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
+import { orderLineTotalPaise } from "@/lib/order-line-total";
 import { OrderCancelPanel } from "@/components/orders/OrderCancelPanel";
 import { RetryShipmentSyncButton } from "@/components/orders/RetryShipmentSyncButton";
 
@@ -153,13 +154,33 @@ export default async function OrderDetailPage({
             const item = it as typeof it & {
               customerImageUrl?: string;
               customerNotes?: string;
+              giftWrapPaise?: number;
+              giftMessage?: string;
             };
+            const wrapEach =
+              typeof item.giftWrapPaise === "number" && item.giftWrapPaise > 0
+                ? item.giftWrapPaise
+                : 0;
             return (
               <li key={i} className="flex flex-col gap-2 border-b border-sand-deep/60 py-3 text-sm last:border-0 sm:flex-row sm:justify-between sm:gap-4">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-ink">
                     {item.name} × {item.quantity}
                   </p>
+                  {wrapEach > 0 ? (
+                    <p className="mt-1 text-xs font-medium text-accent">
+                      Gift wrap {formatInrFromPaise(wrapEach * item.quantity)} total
+                      <span className="font-normal text-ink-muted">
+                        {" "}
+                        ({formatInrFromPaise(wrapEach)} × {item.quantity})
+                      </span>
+                    </p>
+                  ) : null}
+                  {item.giftMessage?.trim() ? (
+                    <p className="mt-1 rounded-md bg-sand/60 px-2 py-1.5 text-xs text-ink-muted">
+                      <span className="font-medium text-ink">Gift message:</span> {item.giftMessage}
+                    </p>
+                  ) : null}
                   {item.customerNotes?.trim() ? (
                     <p className="mt-1 whitespace-pre-wrap text-xs text-ink-muted">
                       {item.customerNotes}
@@ -177,7 +198,7 @@ export default async function OrderDetailPage({
                   ) : null}
                 </div>
                 <span className="shrink-0 text-ink-muted sm:text-right">
-                  {formatInrFromPaise(item.unitPricePaise * item.quantity)}
+                  {formatInrFromPaise(orderLineTotalPaise(item))}
                 </span>
               </li>
             );

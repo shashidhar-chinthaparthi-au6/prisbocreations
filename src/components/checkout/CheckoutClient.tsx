@@ -10,6 +10,7 @@ import { useCart } from "@/components/cart/CartProvider";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AddressFormModal, type AddressFormValue } from "@/components/account/AddressFormModal";
 import { formatInrFromPaise } from "@/lib/format";
+import { freeShippingMinRupeesWhole, qualifiesForFreeShipping } from "@/lib/free-shipping";
 import type { MeUserDto } from "@/lib/user-me-dto";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -49,6 +50,35 @@ type ShipCourierRow = {
 };
 
 const REGISTER_NEXT = "/login?next=/checkout&tab=register";
+
+function CheckoutProgress() {
+  const steps = ["Shipping", "Payment", "Review"] as const;
+  return (
+    <div className="rounded-2xl border border-sand-deep bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Checkout</p>
+      <ol className="mt-2 flex items-center gap-1 text-xs font-medium text-ink-muted sm:text-sm">
+        {steps.map((label, i) => (
+          <li key={label} className="flex min-w-0 flex-1 items-center gap-2">
+            <span
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs sm:h-8 sm:w-8 ${
+                i === 0 ? "bg-accent text-white" : "border border-sand-deep bg-sand/40 text-ink-muted"
+              }`}
+            >
+              {i + 1}
+            </span>
+            <span className={`min-w-0 truncate ${i === 0 ? "text-ink" : ""}`}>{label}</span>
+            {i < steps.length - 1 ? (
+              <span className="mx-1 hidden h-px min-w-[0.75rem] flex-1 bg-sand-deep sm:block" aria-hidden />
+            ) : null}
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-[11px] text-ink-muted sm:text-xs">
+        You&apos;re on <strong className="text-ink">shipping &amp; delivery</strong>. Payment runs when you place the order; review your total on the right before confirming.
+      </p>
+    </div>
+  );
+}
 
 export function CheckoutClient({
   isAuthenticated,
@@ -171,10 +201,12 @@ export function CheckoutClient({
     };
   }, [isAuthenticated, proceedAsGuest, ship.postalCode, payMode]);
 
-  const deliveryPaise = useMemo(() => {
+  const quotedDeliveryPaise = useMemo(() => {
     const row = shipQuotes.find((c) => c.courierId === selectedShiprocketCourierId);
     return row ? Math.round(row.totalChargeRupees * 100) : 0;
   }, [shipQuotes, selectedShiprocketCourierId]);
+  const freeShippingApplied = qualifiesForFreeShipping(subtotalPaise);
+  const deliveryPaise = freeShippingApplied ? 0 : quotedDeliveryPaise;
   const grandTotalPaise = subtotalPaise + deliveryPaise;
 
   async function submitCheckoutNewAddress(v: AddressFormValue) {
@@ -244,6 +276,8 @@ export function CheckoutClient({
             ? { customerImageUrl: l.customerImageUrl.trim() }
             : {}),
           ...(l.customerNotes?.trim() ? { customerNotes: l.customerNotes.trim() } : {}),
+          ...(l.giftWrap ? { giftWrap: true } : {}),
+          ...(l.giftMessage?.trim() ? { giftMessage: l.giftMessage.trim() } : {}),
         })),
         shipping: ship,
         paymentMethod: "cod",
@@ -292,6 +326,8 @@ export function CheckoutClient({
             ? { customerImageUrl: l.customerImageUrl.trim() }
             : {}),
           ...(l.customerNotes?.trim() ? { customerNotes: l.customerNotes.trim() } : {}),
+          ...(l.giftWrap ? { giftWrap: true } : {}),
+          ...(l.giftMessage?.trim() ? { giftMessage: l.giftMessage.trim() } : {}),
         })),
         shipping: ship,
         paymentMethod: "online",
@@ -520,6 +556,14 @@ export function CheckoutClient({
             </span>
           </div>
         ) : null}
+        {freeShippingApplied ? (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-950">
+            <span className="font-semibold text-emerald-900">Free delivery</span> on this order — your
+            cart is over ₹{freeShippingMinRupeesWhole().toLocaleString("en-IN")}. Courier fees are
+            waived at checkout (you may still see a quote below for reference).
+          </p>
+        ) : null}
+        <CheckoutProgress />
         <div className="grid gap-10 lg:grid-cols-2">
       <div className="space-y-4 rounded-2xl border border-sand-deep bg-white p-6">
         <h2 className="font-display text-xl text-ink">Shipping</h2>
@@ -707,7 +751,18 @@ export function CheckoutClient({
           </div>
           <div className="flex justify-between gap-4 text-ink-muted">
             <dt>Delivery (estimate)</dt>
-            <dd className="text-ink">{formatInrFromPaise(deliveryPaise)}</dd>
+            <dd className="text-right text-ink">
+              {freeShippingApplied && quotedDeliveryPaise > 0 ? (
+                <span className="inline-flex flex-col items-end gap-0.5">
+                  <span className="text-xs text-ink-muted line-through">
+                    {formatInrFromPaise(quotedDeliveryPaise)}
+                  </span>
+                  <span className="font-semibold text-emerald-800">FREE</span>
+                </span>
+              ) : (
+                formatInrFromPaise(deliveryPaise)
+              )}
+            </dd>
           </div>
           <div className="flex justify-between gap-4 border-t border-sand-deep pt-2 font-display text-xl text-ink">
             <dt>Total</dt>
@@ -727,10 +782,11 @@ export function CheckoutClient({
           <legend className="text-sm font-medium text-ink">Payment</legend>
           {!ONLINE_CHECKOUT_ENABLED ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-3 text-sm text-amber-950">
-              <p className="font-medium text-ink">Pay online — temporarily unavailable</p>
+              <p className="font-medium text-ink">UPI &amp; cards — temporarily unavailable</p>
               <p className="mt-1 text-xs leading-relaxed text-amber-950/95">
-                We&apos;re pausing card / UPI checkout for a short time. It will be back soon. Please
-                use <strong>cash on delivery</strong> below to complete your order.
+                When online checkout returns, <strong>Google Pay, PhonePe, and other UPI apps</strong> will
+                appear first in Razorpay for the fastest path. For now, please use{" "}
+                <strong>cash on delivery</strong> below.
               </p>
             </div>
           ) : (
@@ -743,9 +799,9 @@ export function CheckoutClient({
                 onChange={() => setPayMode("razorpay")}
               />
               <span>
-                <span className="font-medium text-ink">Pay online</span>
+                <span className="font-medium text-ink">Pay online (UPI first)</span>
                 <span className="mt-0.5 block text-xs text-ink-muted">
-                  Card, UPI, netbanking via Razorpay
+                  Google Pay, PhonePe, BHIM UPI, then cards &amp; netbanking — via Razorpay
                 </span>
               </span>
             </label>

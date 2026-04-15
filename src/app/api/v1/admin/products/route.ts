@@ -29,6 +29,7 @@ const createSchema = z
     name: z.string().min(1),
     description: z.string().min(1).max(250_000),
     pricePaise: z.number().int().positive(),
+    compareAtPaise: z.number().int().min(0).optional(),
     stock: z.number().int().min(0),
     images: zImageRefArray(),
     tags: z.array(z.string()).optional(),
@@ -66,6 +67,14 @@ const createSchema = z
           path: ["colorVariants"],
         });
       }
+    }
+    const cap = data.compareAtPaise;
+    if (typeof cap === "number" && cap > 0 && cap <= data.pricePaise) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Compare-at (was price) must be greater than the selling price",
+        path: ["compareAtPaise"],
+      });
     }
   });
 
