@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { StoreMedia } from "@/components/store/StoreMedia";
 import { useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { cartLineId } from "@/lib/cart-line-id";
@@ -93,7 +93,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
         <div className="relative aspect-square overflow-hidden rounded-t-[9px] bg-[var(--sf)]">
           {product.imageUrl ? (
             <>
-              <Image
+              <StoreMedia
                 src={product.imageUrl}
                 alt={product.name}
                 fill
@@ -101,16 +101,18 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
                   secondaryImg && hover ? "opacity-0" : "opacity-100"
                 } ${out ? "grayscale-[30%]" : ""}`}
                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                fetchPriority="low"
               />
               {secondaryImg ? (
-                <Image
+                <StoreMedia
                   src={secondaryImg}
                   alt=""
                   fill
-                  className={`img-secondary absolute inset-0 object-cover transition-opacity duration-[250ms] ease-out ${
+                  className={`img-secondary transition-opacity duration-[250ms] ease-out ${
                     hover ? "opacity-100" : "opacity-0"
                   }`}
                   sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  fetchPriority="low"
                 />
               ) : null}
             </>

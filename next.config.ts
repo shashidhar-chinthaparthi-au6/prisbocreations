@@ -23,6 +23,17 @@ const nextConfig: NextConfig = {
         hostname: "prisbocreations.s3.us-east-1.amazonaws.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "prisbocreationsprod.s3.us-east-1.amazonaws.com",
+        pathname: "/**",
+      },
+      // Virtual-hosted URLs: <bucket>.s3.us-east-1.amazonaws.com
+      {
+        protocol: "https",
+        hostname: "*.s3.us-east-1.amazonaws.com",
+        pathname: "/**",
+      },
     ],
   },
   async headers() {
