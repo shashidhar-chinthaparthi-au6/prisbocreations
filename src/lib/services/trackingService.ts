@@ -309,6 +309,7 @@ export function buildTrackPayload(input: {
     cacheAgeHours: Math.round(cacheAgeHours * 10) / 10,
     lastFetchAttemptFailed: Boolean(lastFetchAttemptFailed),
     flowStages: FLOW_STAGES,
+    isGuestOrder: !order.userId,
   };
 }
 

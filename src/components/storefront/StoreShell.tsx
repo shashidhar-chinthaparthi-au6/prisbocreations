@@ -13,7 +13,7 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
       </div>
       <main
         id="site-main-scroll"
-        className="min-h-0 flex-1 px-[max(1rem,env(safe-area-inset-left))] py-6 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-10"
+        className="w-full grow px-[max(1rem,env(safe-area-inset-left))] py-6 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-10"
       >
         {children}
       </main>

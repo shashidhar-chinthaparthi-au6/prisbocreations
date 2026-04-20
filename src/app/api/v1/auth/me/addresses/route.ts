@@ -1,9 +1,14 @@
 import { z } from "zod";
 import { connectDb } from "@/lib/db";
-import { User } from "@/lib/models/User";
 import { requireAuth } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { normalizeAddress, userAddressSchema } from "@/lib/user-address";
+import { listAddressesForUser, createUserAddress, updateUserAddress, deleteUserAddress } from "@/lib/account/address-service";
+import { addressDocToMeDto } from "@/lib/account/user-address-dto";
+
+function rowsToResponse(rows: Awaited<ReturnType<typeof listAddressesForUser>>) {
+  return rows.map((r) => addressDocToMeDto(r));
+}
 
 export async function POST(req: Request) {
   const auth = await requireAuth();
@@ -18,14 +23,27 @@ export async function POST(req: Request) {
   }
 
   await connectDb();
-  const doc = await User.findByIdAndUpdate(
-    auth.session.sub,
-    { $push: { addresses: addr } },
-    { new: true, runValidators: true },
-  ).lean();
-  if (!doc) return jsonError("Not found", 404);
+  try {
+    await createUserAddress(auth.session.sub, {
+      label: "Home",
+      fullName: addr.fullName,
+      phone: addr.phone,
+      line1: addr.line1,
+      line2: addr.line2,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.postalCode.replace(/\D/g, "").slice(0, 6),
+      country: addr.country,
+      isDefault: false,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg === "address_limit") return jsonError("Address limit reached", 400);
+    return jsonError("Could not save address", 400);
+  }
 
-  return jsonOk({ addresses: doc.addresses ?? [] });
+  const rows = await listAddressesForUser(auth.session.sub);
+  return jsonOk({ addresses: rowsToResponse(rows) });
 }
 
 const patchIndexSchema = z.object({
@@ -46,20 +64,30 @@ export async function PATCH(req: Request) {
   }
 
   await connectDb();
-  const user = await User.findById(auth.session.sub);
-  if (!user) return jsonError("Not found", 404);
+  const rows = await listAddressesForUser(auth.session.sub);
+  if (body.index >= rows.length) return jsonError("Address not found", 404);
 
-  const list = user.addresses ?? [];
-  if (body.index >= list.length) return jsonError("Address not found", 404);
-
+  const id = String(rows[body.index]!._id);
   const next = normalizeAddress(body.address);
 
-  list.splice(body.index, 1, next);
-  user.markModified("addresses");
-  await user.save();
+  try {
+    await updateUserAddress(auth.session.sub, id, {
+      label: rows[body.index]!.label as "Home" | "Office" | "Other",
+      fullName: next.fullName,
+      phone: next.phone,
+      line1: next.line1,
+      line2: next.line2,
+      city: next.city,
+      state: next.state,
+      pincode: next.postalCode.replace(/\D/g, "").slice(0, 6),
+      country: next.country,
+    });
+  } catch {
+    return jsonError("Could not update address", 400);
+  }
 
-  const fresh = await User.findById(auth.session.sub).lean();
-  return jsonOk({ addresses: fresh?.addresses ?? [] });
+  const fresh = await listAddressesForUser(auth.session.sub);
+  return jsonOk({ addresses: rowsToResponse(fresh) });
 }
 
 const deleteSchema = z.object({
@@ -79,16 +107,20 @@ export async function DELETE(req: Request) {
   }
 
   await connectDb();
-  const user = await User.findById(auth.session.sub);
-  if (!user) return jsonError("Not found", 404);
+  const rows = await listAddressesForUser(auth.session.sub);
+  if (body.index >= rows.length) return jsonError("Address not found", 404);
 
-  const list = user.addresses ?? [];
-  if (body.index >= list.length) return jsonError("Address not found", 404);
+  const id = String(rows[body.index]!._id);
+  try {
+    await deleteUserAddress(auth.session.sub, id);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg === "cannot_delete_only_default") {
+      return jsonError("Set another address as default first", 400);
+    }
+    return jsonError("Could not delete address", 400);
+  }
 
-  list.splice(body.index, 1);
-  user.markModified("addresses");
-  await user.save();
-
-  const fresh = await User.findById(auth.session.sub).lean();
-  return jsonOk({ addresses: fresh?.addresses ?? [] });
+  const fresh = await listAddressesForUser(auth.session.sub);
+  return jsonOk({ addresses: rowsToResponse(fresh) });
 }

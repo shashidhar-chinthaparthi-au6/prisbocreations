@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useSession } from "next-auth/react";
 import { useCart } from "@/components/cart/CartProvider";
 import type { CartLine } from "@/components/cart/CartProvider";
 import { CartItem } from "@/components/cart/CartItem";
@@ -23,6 +24,7 @@ function EmptyBagIcon({ className }: { className?: string }) {
 
 export function CartDrawer() {
   const { lines, subtotalPaise, drawerOpen, setDrawerOpen, remove, setQty } = useCart();
+  const { status } = useSession();
   const [caps, setCaps] = useState<Record<string, number>>({});
 
   const refreshCaps = useCallback(() => {
@@ -193,6 +195,18 @@ export function CartDrawer() {
               >
                 Checkout
               </Link>
+              {status === "unauthenticated" ? (
+                <p className="mt-3 text-center text-xs leading-relaxed text-[#6B6560]">
+                  <Link
+                    href="/register?redirect=/checkout&source=checkout"
+                    onClick={() => setDrawerOpen(false)}
+                    className="font-semibold text-[#C47A2B] hover:underline"
+                  >
+                    Create an account
+                  </Link>{" "}
+                  to save your cart across devices.
+                </p>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}

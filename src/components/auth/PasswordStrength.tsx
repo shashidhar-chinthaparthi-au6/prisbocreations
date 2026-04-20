@@ -1,40 +1,56 @@
 "use client";
 
-export type StrengthLabel = "Weak" | "Fair" | "Good" | "Strong";
-
-export function passwordStrength(password: string): { filled: number; label: StrengthLabel } {
-  const len = password.length;
-  if (len < 8) return { filled: 1, label: "Weak" };
-  const hasLetter = /[a-zA-Z]/.test(password);
-  const hasDigit = /\d/.test(password);
-  const hasSpecial = /[^a-zA-Z0-9]/.test(password);
-  const onlyLetters = hasLetter && !hasDigit && !hasSpecial;
-  const onlyDigits = hasDigit && !hasLetter && !hasSpecial;
-  if (onlyLetters || onlyDigits) return { filled: 2, label: "Fair" };
-  if (hasLetter && hasDigit && !hasSpecial) return { filled: 3, label: "Good" };
-  if (hasLetter && hasDigit && hasSpecial) return { filled: 4, label: "Strong" };
-  if (hasSpecial && hasLetter && hasDigit) return { filled: 4, label: "Strong" };
-  if (hasLetter && hasSpecial) return { filled: 3, label: "Good" };
-  if (hasDigit && hasSpecial) return { filled: 3, label: "Good" };
-  return { filled: 3, label: "Good" };
+export function getPasswordStrengthLevel(p: string): 0 | 1 | 2 | 3 | 4 {
+  if (!p) return 0;
+  if (p.length < 8) return 1;
+  const classes = [
+    /[a-z]/.test(p),
+    /[A-Z]/.test(p),
+    /[0-9]/.test(p),
+    /[^a-zA-Z0-9]/.test(p),
+  ].filter(Boolean).length;
+  if (classes === 1) return 2;
+  if (classes === 2) return 3;
+  return 4;
 }
 
+const LABELS = ["", "Weak", "Fair", "Good", "Strong"] as const;
+const COLORS = ["", "#B91C1C", "#D97706", "#D97706", "#2D6A4F"] as const;
+
+/** @deprecated Use getPasswordStrengthLevel */
+export function passwordStrength(password: string): { filled: number; label: "Weak" | "Fair" | "Good" | "Strong" } {
+  const n = getPasswordStrengthLevel(password);
+  if (n <= 1) return { filled: Math.max(1, n), label: "Weak" };
+  const label = LABELS[n] as "Weak" | "Fair" | "Good" | "Strong";
+  return { filled: n, label };
+}
+
+export type StrengthLabel = "Weak" | "Fair" | "Good" | "Strong";
+
 export function PasswordStrength({ password }: { password: string }) {
-  const { filled, label } = passwordStrength(password);
-  const segClass = (i: number) => {
-    if (i >= filled) return "bg-[#E8E0D6]";
-    if (filled <= 1) return "bg-[#C94B4B]";
-    if (filled <= 3) return "bg-[#D4A017]";
-    return "bg-[#2D7A4E]";
-  };
+  const strength = getPasswordStrengthLevel(password);
+  if (strength === 0) return null;
+
+  const fillColor = COLORS[strength];
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex flex-1 gap-1">
+    <div className="mt-1.5 space-y-1.5">
+      <div className="flex gap-1">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${segClass(i)}`} />
+          <div
+            key={i}
+            className="h-[4px] flex-1 rounded-[2px] transition-[background-color] duration-200 ease-out"
+            style={{
+              backgroundColor: i < strength ? fillColor : "#E8E0D6",
+            }}
+          />
         ))}
       </div>
-      <span className="shrink-0 text-xs font-medium text-[#6B6560]">{label}</span>
+      <p
+        className="text-right text-xs font-medium transition-colors duration-200"
+        style={{ color: fillColor }}
+      >
+        {LABELS[strength]}
+      </p>
     </div>
   );
 }

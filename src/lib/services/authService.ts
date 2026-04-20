@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { computeInitials } from "@/lib/account/compute-initials";
 import { User, type UserDoc } from "@/lib/models/User";
 import { signAccessToken, type JwtPayload } from "@/lib/auth/jwt";
 import { appBaseUrl } from "@/lib/notify/config";
@@ -13,19 +14,27 @@ export async function registerStorefrontUser(input: {
   password: string;
   fullName: string;
   phone?: string;
-}): Promise<{ userId: string }> {
+}): Promise<{ userId: string; fullName: string }> {
   const existing = await User.findOne({ email: input.email.toLowerCase() });
   if (existing) throw new Error("EMAIL_TAKEN");
 
   const passwordHash = await bcrypt.hash(input.password, 12);
+  const name = input.fullName.trim();
+  const phoneDigits = input.phone?.replace(/\D/g, "") ?? "";
+  const phoneNorm = /^[6-9]\d{9}$/.test(phoneDigits) ? phoneDigits : undefined;
+
   const user = await User.create({
     email: input.email.toLowerCase(),
     passwordHash,
-    name: input.fullName.trim(),
-    phone: input.phone,
+    name,
+    avatarInitials: computeInitials(name),
+    phone: phoneNorm,
     role: "customer",
+    notifOrderUpdates: true,
+    notifSMS: Boolean(phoneNorm),
+    notifOffers: false,
   });
-  return { userId: user._id.toString() };
+  return { userId: user._id.toString(), fullName: user.name };
 }
 
 export async function registerUser(input: {
@@ -38,10 +47,12 @@ export async function registerUser(input: {
   if (existing) throw new Error("Email already registered");
 
   const passwordHash = await bcrypt.hash(input.password, 12);
+  const name = input.name.trim();
   const user = await User.create({
     email: input.email.toLowerCase(),
     passwordHash,
-    name: input.name,
+    name,
+    avatarInitials: computeInitials(name),
     phone: input.phone,
     role: "customer",
   });
@@ -110,7 +121,8 @@ export async function requestPasswordReset(emailRaw: string): Promise<void> {
   });
 
   const link = `${appBaseUrl()}/reset-password?uid=${user._id.toString()}&token=${encodeURIComponent(token)}`;
-  await notifyPasswordResetEmail(user.email, link);
+  const firstName = user.name?.trim().split(/\s+/)[0] ?? "there";
+  await notifyPasswordResetEmail(user.email, link, firstName);
 }
 
 export async function resetPasswordWithToken(
@@ -163,7 +175,8 @@ export async function requestStorefrontPasswordReset(
   });
 
   const link = `${appBaseUrl()}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-  await sendPasswordResetLinkEmail(user.email, link);
+  const firstName = user.name?.trim().split(/\s+/)[0] ?? "there";
+  await sendPasswordResetLinkEmail(user.email, link, firstName);
   return { accountFound: true };
 }
 

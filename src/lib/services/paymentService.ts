@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import Razorpay from "razorpay";
+import { notifyLowStockForProductIds } from "@/lib/notify/low-stock";
 import { getEnv } from "@/lib/env";
 import { Payment } from "@/lib/models/Payment";
 import { Order } from "@/lib/models/Order";
@@ -117,6 +118,9 @@ export async function recordVerifiedPayment(input: {
 
   await markOrderPaid(order._id.toString());
   await decrementInventoryForOrderItems(order.items);
+  void notifyLowStockForProductIds(
+    order.items.map((it) => String((it as { productId: unknown }).productId)),
+  ).catch(() => {});
 
   return { ok: true as const };
 }

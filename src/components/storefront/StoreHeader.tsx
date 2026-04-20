@@ -42,7 +42,7 @@ export function StoreHeader() {
     let cancelled = false;
     (async () => {
       try {
-        const r = await fetch("/api/categories");
+        const r = await fetch("/api/categories", { credentials: "include" });
         const j = (await r.json()) as { ok?: boolean; data?: NavCategory[] };
         if (!cancelled && j.data) setNav(j.data);
       } catch {

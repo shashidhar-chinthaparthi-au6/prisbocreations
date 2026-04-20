@@ -1,11 +1,16 @@
-import { redirect } from "next/navigation";
-import { getStoreSession } from "@/lib/auth/store-session";
-import { connectDb } from "@/lib/db";
-import { getUserById } from "@/lib/services/authService";
-import { userDocToMeDto } from "@/lib/user-me-dto";
-import { AccountProfileClient } from "@/components/account/AccountProfileClient";
+import { Suspense } from "react";
+import { ProfilePage } from "@/components/account/profile/ProfilePage";
 
 export const metadata = { title: "Profile" };
+
+function ProfileFallback() {
+  return (
+    <div className="mx-auto max-w-[560px]">
+      <h1 className="font-display text-2xl text-[var(--brand-ink)]">Profile</h1>
+      <div className="mt-6 h-40 animate-pulse rounded-2xl bg-[var(--brand-border)]" />
+    </div>
+  );
+}
 
 export default async function AccountProfilePage({
   searchParams,
@@ -13,16 +18,9 @@ export default async function AccountProfilePage({
   searchParams: Promise<{ denied?: string }>;
 }) {
   const sp = await searchParams;
-  const session = await getStoreSession();
-  if (!session) redirect("/login?redirect=/account/profile");
-
-  await connectDb();
-  const user = await getUserById(session.sub);
-  if (!user) redirect("/login");
-
-  const initialUser = userDocToMeDto(user);
-
   return (
-    <AccountProfileClient initialUser={initialUser} deniedAdmin={sp.denied === "admin"} />
+    <Suspense fallback={<ProfileFallback />}>
+      <ProfilePage deniedAdmin={sp.denied === "admin"} />
+    </Suspense>
   );
 }

@@ -2,20 +2,20 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { connectDb } from "@/lib/db";
 import { User } from "@/lib/models/User";
-import { getUserById } from "@/lib/services/authService";
 import { requireAuth } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
-import { userDocToMeDto } from "@/lib/user-me-dto";
+import { computeInitials } from "@/lib/account/compute-initials";
+import { loadMeUserDto } from "@/lib/services/meUserLoader";
 
 export async function GET() {
   const auth = await requireAuth();
   if (!auth.ok) return auth.response;
 
   await connectDb();
-  const user = await getUserById(auth.session.sub);
+  const user = await loadMeUserDto(auth.session.sub);
   if (!user) return jsonError("Not found", 404);
 
-  return jsonOk({ user: userDocToMeDto(user) });
+  return jsonOk({ user });
 }
 
 function isHttpOrHttpsUrl(s: string): boolean {
@@ -79,7 +79,11 @@ export async function PATCH(req: Request) {
   const $set: Record<string, unknown> = {};
   const $unset: Record<string, 1> = {};
 
-  if (body.name !== undefined) $set.name = body.name.trim();
+  if (body.name !== undefined) {
+    const n = body.name.trim();
+    $set.name = n;
+    $set.avatarInitials = computeInitials(n);
+  }
   if (body.phone !== undefined) {
     const p = body.phone?.trim();
     if (p) $set.phone = p;
@@ -112,8 +116,8 @@ export async function PATCH(req: Request) {
     return jsonError(msg, 400);
   }
 
-  const updated = await User.findOne(idFilter).lean();
-  if (!updated) return jsonError("Not found", 404);
+  const refreshed = await loadMeUserDto(userId);
+  if (!refreshed) return jsonError("Not found", 404);
 
-  return jsonOk({ user: userDocToMeDto(updated) });
+  return jsonOk({ user: refreshed });
 }

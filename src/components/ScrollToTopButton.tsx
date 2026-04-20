@@ -31,26 +31,33 @@ export function ScrollToTopButton() {
     }
 
     const main = document.getElementById(SITE_MAIN_SCROLL_ID);
-    if (!main) {
-      return cleanupFooter;
-    }
+
+    const scrollTop = () => {
+      if (main && main.scrollHeight > main.clientHeight + 2) return main.scrollTop;
+      return window.scrollY || document.documentElement.scrollTop;
+    };
 
     const update = () => {
-      setShow(main.scrollTop > 320);
+      setShow(scrollTop() > 320);
     };
 
     update();
-    main.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("scroll", update, { passive: true });
+    main?.addEventListener("scroll", update, { passive: true });
     return () => {
-      main.removeEventListener("scroll", update);
+      window.removeEventListener("scroll", update);
+      main?.removeEventListener("scroll", update);
       cleanupFooter?.();
     };
   }, [pathname]);
 
   const goTop = useCallback(() => {
     const main = document.getElementById(SITE_MAIN_SCROLL_ID);
-    if (!main) return;
-    main.scrollTo({ top: 0, behavior: "auto" });
+    if (main && main.scrollHeight > main.clientHeight + 2) {
+      main.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }, []);
 
   if (!show) return null;

@@ -30,6 +30,15 @@ const UserSchema = new Schema(
     addresses: { type: [AddressSchema], default: [] },
     passwordResetTokenHash: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
+    /** Shown when no profile photo; updated when name changes. */
+    avatarInitials: { type: String, trim: true },
+    notifOrderUpdates: { type: Boolean, default: true },
+    notifOffers: { type: Boolean, default: false },
+    notifSMS: { type: Boolean, default: true },
+    emailChangeTokenHash: { type: String, select: false },
+    emailChangeTo: { type: String, trim: true, lowercase: true },
+    emailChangeExpiry: { type: Date },
+    deletedAt: { type: Date },
   },
   { timestamps: true }
 );

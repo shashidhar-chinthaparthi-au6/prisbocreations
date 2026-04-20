@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
+import { HomeDeletedToast } from "@/components/storefront/HomeDeletedToast";
 import { connectDb } from "@/lib/db";
 import { listCategories } from "@/lib/services/catalogService";
 import { listStorefrontProducts } from "@/lib/services/storefrontCatalog";
@@ -28,6 +30,9 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-14 sm:space-y-16">
+      <Suspense fallback={null}>
+        <HomeDeletedToast />
+      </Suspense>
       {/* Hero */}
       <section className="relative isolate min-h-[400px] overflow-hidden rounded-2xl sm:min-h-[520px]">
         <Image src={HERO_IMG} alt="" fill priority className="object-cover" sizes="100vw" />

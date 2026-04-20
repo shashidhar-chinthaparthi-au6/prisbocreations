@@ -35,4 +35,6 @@ export type TrackPayload = {
   cacheAgeHours: number;
   lastFetchAttemptFailed: boolean;
   flowStages: TrackingStage[];
+  /** Present when order was placed without a linked user account. */
+  isGuestOrder?: boolean;
 };

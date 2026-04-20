@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/components/cart/CartProvider";
 import { PasswordInput } from "@/components/auth/PasswordInput";
+import { PasswordStrength } from "@/components/auth/PasswordStrength";
 import { Spinner } from "@/components/ui/Spinner";
 import { StepIndicator } from "@/components/checkout/StepIndicator";
 import { apiFetch } from "@/lib/api/fetch-client";
@@ -20,6 +21,7 @@ import { useWishlistStore } from "@/lib/store/wishlist-store";
 import { INDIAN_STATES, isIndianState } from "@/lib/indian-states";
 import type { MeUserDto } from "@/lib/user-me-dto";
 import { StoreMedia } from "@/components/store/StoreMedia";
+import { registerFieldsSchema } from "@/lib/validators/auth";
 
 const ACCENT = "bg-[#C47A2B] hover:bg-[#b06d26]";
 
@@ -73,6 +75,7 @@ export function CheckoutFlowClient({
   const [emailExists, setEmailExists] = useState<boolean | null>(null);
   const [checkEmailLoading, setCheckEmailLoading] = useState(false);
   const [accountPwd, setAccountPwd] = useState("");
+  const [guestAccountFullName, setGuestAccountFullName] = useState("");
   const [authErr, setAuthErr] = useState<string | null>(null);
   const [busyAuth, setBusyAuth] = useState(false);
   const [pinHint, setPinHint] = useState<string | null>(null);
@@ -352,16 +355,24 @@ export function CheckoutFlowClient({
       setAuthErr(v);
       return;
     }
-    if (accountPwd.length < 8) {
-      setAuthErr("Password must be at least 8 characters");
+    const phoneDigits = guestPhone.replace(/\D/g, "").match(/^[6-9]\d{9}$/)?.[0];
+    const parsed = registerFieldsSchema.safeParse({
+      fullName: guestAccountFullName.trim(),
+      email: guestEmail.trim().toLowerCase(),
+      password: accountPwd,
+      phone: phoneDigits,
+    });
+    if (!parsed.success) {
+      const flat = parsed.error.flatten().fieldErrors;
+      setAuthErr(
+        flat.fullName?.[0] ??
+          flat.email?.[0] ??
+          flat.phone?.[0] ??
+          flat.password?.[0] ??
+          "Check the form and try again",
+      );
       return;
     }
-    const fullName =
-      guestEmail
-        .split("@")[0]
-        .replace(/[._-]+/g, " ")
-        .trim()
-        .slice(0, 80) || "Customer";
     setBusyAuth(true);
     const wishSnapshot = useWishlistStore.getState().ids.slice();
     useWishlistStore.setState({ mergeInProgress: true });
@@ -369,30 +380,76 @@ export function CheckoutFlowClient({
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName,
-          email: guestEmail.trim().toLowerCase(),
-          password: accountPwd,
-          phone: guestPhone.replace(/\D/g, "").match(/^[6-9]\d{9}$/)?.[0],
-        }),
+        body: JSON.stringify(parsed.data),
       });
-      const j = (await res.json()) as { ok?: boolean; error?: string };
+      const j = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        errors?: Record<string, string[] | undefined>;
+      };
+      if (res.status === 429) {
+        setAuthErr(
+          j.error ??
+            "Too many accounts created from this device. Please try again in an hour.",
+        );
+        return;
+      }
+      if (res.status === 422 && j.errors) {
+        const msg =
+          j.errors.fullName?.[0] ??
+          j.errors.email?.[0] ??
+          j.errors.phone?.[0] ??
+          j.errors.password?.[0];
+        setAuthErr(msg ?? "Could not create account");
+        return;
+      }
+      if (res.status === 409) {
+        setAuthErr(j.errors?.email?.[0] ?? "An account with this email already exists");
+        return;
+      }
       if (!res.ok || !j.ok) {
         setAuthErr(j.error ?? "Could not create account");
         return;
       }
       const sign = await signIn("credentials", {
-        email: guestEmail.trim().toLowerCase(),
+        email: parsed.data.email,
         password: accountPwd,
         redirect: false,
       });
       if (sign?.error) {
-        setAuthErr("Signed up but could not sign in. Try logging in.");
+        setAuthErr("Account created but sign-in failed. Please sign in manually.");
         return;
       }
-      await mergeWishlistAfterSignIn(wishSnapshot);
-      await mergeGuestCartAfterSignIn();
+      try {
+        await mergeWishlistAfterSignIn(wishSnapshot);
+      } catch {
+        /* non-blocking */
+      }
+      try {
+        await mergeGuestCartAfterSignIn();
+      } catch {
+        /* non-blocking */
+      }
+      try {
+        const cr = await fetch("/api/auth/claim-guest-orders", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (cr.ok) {
+          const cj = (await cr.json()) as { ok?: boolean; data?: { claimed?: number } };
+          const claimed = cj.data?.claimed ?? 0;
+          if (claimed > 0) {
+            const { dispatchStoreToast } = await import("@/components/store/StoreToaster");
+            dispatchStoreToast(
+              `${claimed} previous order${claimed > 1 ? "s" : ""} linked to your account!`,
+            );
+          }
+        }
+      } catch {
+        /* non-blocking */
+      }
       setAccountPwd("");
+      setGuestAccountFullName("");
       goToStep(0);
     } catch {
       setAuthErr("Something went wrong");
@@ -644,13 +701,31 @@ export function CheckoutFlowClient({
               ) : null}
 
               {emailExists === false ? (
-                <div className="rounded-xl border border-[#E8E0D6] bg-[#F5E6D0]/40 p-4 text-sm">
-                  <p className="font-medium text-[#3D3835]">Save time on future orders</p>
-                  <p className="mt-1 text-[#6B6560]">
-                    Create a free account to track orders and save addresses.
+                <div
+                  className="mt-4 rounded-[10px] border border-[#E8E0D6] bg-[#FDFAF7] p-4 text-sm"
+                >
+                  <p className="text-[13px] font-semibold text-[#1A1A1A]">Save time on future orders</p>
+                  <p className="mt-2 text-xs leading-relaxed text-[#6B6560]">
+                    Create a free account to track orders, save addresses, and checkout faster next time.
                   </p>
-                  <div className="mt-3">
-                    <PasswordInput label="Password" value={accountPwd} onChange={setAccountPwd} autoComplete="new-password" />
+                  <label className="mt-3 block text-sm font-medium text-[#1A1A1A]">
+                    <span className="mb-1 block text-xs font-normal text-[#6B6560]">Full name *</span>
+                    <input
+                      autoComplete="name"
+                      className="mt-1 w-full rounded-lg border border-[#E8E0D6] bg-white px-3 py-2.5 text-[#1A1A1A]"
+                      value={guestAccountFullName}
+                      onChange={(e) => setGuestAccountFullName(e.target.value)}
+                      placeholder="Your full name"
+                    />
+                  </label>
+                  <div className="mt-3 space-y-2">
+                    <PasswordInput
+                      label="Choose a password"
+                      value={accountPwd}
+                      onChange={setAccountPwd}
+                      autoComplete="new-password"
+                    />
+                    <PasswordStrength password={accountPwd} />
                   </div>
                   <button
                     type="button"

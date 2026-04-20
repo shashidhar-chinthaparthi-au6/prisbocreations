@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { getStoreSession } from "@/lib/auth/store-session";
 import { safeRedirectPath } from "@/lib/auth/auth-schemas";
 import { AuthCard } from "@/components/auth/AuthCard";
@@ -27,15 +28,20 @@ export default async function LoginPage({
 }) {
   const sp = await searchParams;
   const next = sp.next ?? "";
-  const session = await getStoreSession();
+  const legacySession = await getStoreSession();
+  const nextAuth = await auth();
 
   // Only send admins to the dashboard when they opened admin login (?next=/admin).
   // Storefront "Sign in" uses plain /login — those users should see customer Auth.js, not /admin.
-  if (session?.role === "admin" && next.startsWith("/admin")) {
+  if (legacySession?.role === "admin" && next.startsWith("/admin")) {
     redirect(next);
   }
-  if (session && session.role === "customer") {
-    redirect(safeRedirectPath(sp.redirect, "/account/orders"));
+  // Match middleware: `/account` requires NextAuth, not legacy JWT alone.
+  if (nextAuth?.user?.id) {
+    const role = (nextAuth.user as { role?: string }).role ?? "customer";
+    if (role === "customer") {
+      redirect(safeRedirectPath(sp.redirect, "/account/orders"));
+    }
   }
 
   const isAdminLogin = next.startsWith("/admin");

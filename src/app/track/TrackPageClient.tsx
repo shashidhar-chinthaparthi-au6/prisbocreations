@@ -263,6 +263,21 @@ export function TrackPageClient() {
 
           <OrderSummaryCard data={data} addressMode="public" />
 
+          {sessionStatus === "unauthenticated" && data.isGuestOrder && email.trim().includes("@") ? (
+            <div className="rounded-xl border border-[#E8E0D6] bg-[#FDFAF7] px-4 py-4 text-sm">
+              <p className="font-semibold text-[#1A1A1A]">Save this order to your account</p>
+              <p className="mt-1 text-xs leading-relaxed text-[#6B6560]">
+                Create a free account to track this order with your other purchases.
+              </p>
+              <Link
+                href={`/register?email=${encodeURIComponent(email.trim().toLowerCase())}&redirect=/account/orders`}
+                className="mt-3 inline-flex rounded-full bg-[#C47A2B] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#9A5E1E]"
+              >
+                Create account →
+              </Link>
+            </div>
+          ) : null}
+
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wide text-[#6B6560]">Shipment progress</h2>
             <div className="mt-4">

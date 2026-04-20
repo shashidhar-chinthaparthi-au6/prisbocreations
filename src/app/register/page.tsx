@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getStoreSession } from "@/lib/auth/store-session";
+import { auth } from "@/auth";
 import { safeRedirectPath } from "@/lib/auth/auth-schemas";
-import { AuthCard } from "@/components/auth/AuthCard";
+import { RegisterCard } from "@/components/auth/RegisterCard";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const metadata = { title: "Create account" };
@@ -17,18 +17,19 @@ export default async function RegisterPage({
   searchParams: Promise<{ redirect?: string }>;
 }) {
   const sp = await searchParams;
-  const session = await getStoreSession();
-  if (session) {
+  /** Only NextAuth protects `/account` in middleware; legacy `prisbo_session` alone must not skip registration. */
+  const na = await auth();
+  if (na?.user?.id) {
     redirect(safeRedirectPath(sp.redirect, "/account/orders"));
   }
 
   return (
     <div className="flex min-h-[calc(100dvh-10rem)] items-center justify-center bg-[#FDFAF7] py-8">
-      <AuthCard maxWidthClass="max-w-[480px]">
+      <RegisterCard>
         <Suspense fallback={<RegisterFallback />}>
           <RegisterForm />
         </Suspense>
-      </AuthCard>
+      </RegisterCard>
     </div>
   );
 }

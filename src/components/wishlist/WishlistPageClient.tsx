@@ -15,14 +15,17 @@ function WishlistGuestBanner() {
     <div className="rounded-2xl border border-[#E8E0D6] bg-[#FDFAF7] p-5 text-sm text-[#3D3835] shadow-sm">
       <p className="font-medium">You&apos;re browsing as a guest.</p>
       <p className="mt-1 text-[#6B6560]">
-        <Link href="/register?redirect=/account/wishlist" className="font-semibold text-[#C47A2B] hover:underline">
+        <Link
+          href="/register?redirect=/account/wishlist&source=wishlist"
+          className="font-semibold text-[#C47A2B] hover:underline"
+        >
           Create account
         </Link>{" "}
         to save your wishlist permanently and access it on any device.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">
         <Link
-          href="/register?redirect=/account/wishlist"
+          href="/register?redirect=/account/wishlist&source=wishlist"
           className="inline-flex rounded-full bg-[#C47A2B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#9A5E1E]"
         >
           Create account →

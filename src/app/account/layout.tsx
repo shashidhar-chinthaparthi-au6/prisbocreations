@@ -1,30 +1,16 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { connectDb } from "@/lib/db";
+import { getStoreSession } from "@/lib/auth/store-session";
+import { loadMeUserDto } from "@/lib/services/meUserLoader";
+import { AccountLayoutShell } from "@/components/account/AccountLayout";
 
-const tabs = [
-  { href: "/account/orders", label: "Orders" },
-  { href: "/account/profile", label: "Profile" },
-  { href: "/account/addresses", label: "Addresses" },
-  { href: "/account/wishlist", label: "Wishlist" },
-];
+export default async function AccountLayout({ children }: { children: React.ReactNode }) {
+  const session = await getStoreSession();
+  if (!session) redirect("/login?redirect=/account");
 
-export default function AccountLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mx-auto max-w-5xl">
-      <nav
-        className="mb-8 flex gap-2 overflow-x-auto border-b border-[var(--brand-border)] pb-2 text-sm font-medium text-[var(--brand-muted)] lg:gap-4"
-        aria-label="Account"
-      >
-        {tabs.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className="whitespace-nowrap rounded-full px-3 py-2 hover:bg-[var(--brand-amber-light)] hover:text-[var(--brand-ink)]"
-          >
-            {t.label}
-          </Link>
-        ))}
-      </nav>
-      {children}
-    </div>
-  );
+  await connectDb();
+  const user = await loadMeUserDto(session.sub);
+  if (!user) redirect("/login");
+
+  return <AccountLayoutShell initialUser={user}>{children}</AccountLayoutShell>;
 }

@@ -17,6 +17,7 @@ import {
   notifyOrderShipped,
   type OrderNotifyPayload,
 } from "@/lib/notify/dispatch";
+import { notifyLowStockForProductIds } from "@/lib/notify/low-stock";
 import { isTrustedCustomerImageUrl } from "@/lib/customer-upload";
 import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
 import { qualifiesForFreeShipping } from "@/lib/free-shipping";
@@ -464,6 +465,7 @@ export async function createOrderFromCart(input: {
     await decrementInventoryForOrderItems(items);
     /** Must await: on serverless, a fire-and-forget task is often cut off when the HTTP response ends. */
     await syncShiprocketForOrder(order._id.toString());
+    void notifyLowStockForProductIds(items.map((it) => it.productId.toString())).catch(() => {});
   }
 
   const plain = typeof (order as { toObject?: () => object }).toObject === "function"
@@ -475,7 +477,9 @@ export async function createOrderFromCart(input: {
 }
 
 export async function listOrdersForUser(userId: string) {
-  return Order.find({ userId }).sort({ createdAt: -1 }).lean();
+  if (!mongoose.Types.ObjectId.isValid(userId)) return [];
+  const uid = new mongoose.Types.ObjectId(userId);
+  return Order.find({ userId: uid }).sort({ createdAt: -1 }).lean();
 }
 
 function isOidString(s: string): boolean {

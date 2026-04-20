@@ -1,4 +1,7 @@
 import { isMsg91Configured } from "@/lib/notify/config";
+import { sendSMS } from "@/lib/notify/sms/msg91";
+
+export { formatPhone, sendSMS } from "@/lib/notify/sms/msg91";
 
 /** Normalize to 91XXXXXXXXXX (no +). */
 export function normalizeIndianMobile(raw: string): string | null {
@@ -9,17 +12,14 @@ export function normalizeIndianMobile(raw: string): string | null {
   return null;
 }
 
-/** Msg91 Flow API (v5). Create templates in the Msg91 panel and set template IDs in env. */
+/** Msg91 Flow API (v5). Used by scripts/tests; app code prefers `sendSMS` from `./sms/msg91`. */
 export async function sendMsg91Flow(input: {
   mobiles: string;
   templateId: string;
-  /** Shortcodes VAR1, VAR2, … must match the template in Msg91. */
   variables: Record<string, string>;
 }): Promise<boolean> {
   if (!isMsg91Configured()) return false;
-  const authkey = process.env.MSG91_AUTHKEY!.trim();
   const shortUrl = process.env.MSG91_SHORT_URL_DEFAULT ?? "0";
-
   const recipients = [
     {
       mobiles: input.mobiles.replace(/\D/g, ""),
@@ -32,7 +32,7 @@ export async function sendMsg91Flow(input: {
     headers: {
       accept: "application/json",
       "content-type": "application/json",
-      authkey,
+      authkey: process.env.MSG91_AUTHKEY!.trim(),
     },
     body: JSON.stringify({
       template_id: input.templateId,

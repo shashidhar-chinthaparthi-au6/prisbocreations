@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/db";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
 import { SuccessOrderClient } from "./SuccessOrderClient";
+import { GuestRegisterNudge } from "@/components/checkout/success/GuestRegisterNudge";
 import { addDays, format } from "date-fns";
 
 export const metadata = { title: "Order confirmed" };
@@ -127,18 +128,7 @@ export default async function CheckoutSuccessPage({
       </a>
 
       {isGuest ? (
-        <div className="rounded-2xl border border-[#E8E0D6] bg-[#F5E6D0]/40 p-5 text-sm">
-          <p className="font-medium text-[#3D3835]">Save your order history</p>
-          <p className="mt-1 text-[#6B6560]">
-            Create a free account to track this order and checkout faster next time.
-          </p>
-          <Link
-            href={emailQ ? `/register?email=${encodeURIComponent(emailQ)}` : "/register"}
-            className="mt-3 inline-flex rounded-full bg-[#C47A2B] px-5 py-2.5 text-sm font-semibold text-white"
-          >
-            Create account →
-          </Link>
-        </div>
+        <GuestRegisterNudge guestEmail={emailQ} shippingFullName={ship?.fullName} />
       ) : null}
     </div>
   );

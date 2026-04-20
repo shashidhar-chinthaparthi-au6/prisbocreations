@@ -41,26 +41,26 @@ function guestNudgeAfterAdd(beforeCount: number, afterCount: number) {
       variant: "wishlist",
       actionLabel: "Create account →",
         onAction: () => {
-          window.location.href = "/register?redirect=/account/wishlist";
+          window.location.href = "/register?redirect=/account/wishlist&source=wishlist";
         },
       });
     return;
   }
 
   if (afterCount >= 1 && beforeCount === 0 && !sessionFlag(NUDGE_KEY) && !sessionFlag(THREE_NUDGE_KEY)) {
-    firstWishlistNudgeTimer = setTimeout(() => {
+    if (firstWishlistNudgeTimer) {
+      clearTimeout(firstWishlistNudgeTimer);
       firstWishlistNudgeTimer = null;
-      if (sessionFlag(NUDGE_KEY) || sessionFlag(THREE_NUDGE_KEY)) return;
-      setSessionFlag(NUDGE_KEY);
-      dispatchStoreToast("Saved to wishlist\n\nCreate a free account to keep your wishlist safe across devices.", {
-        duration: 6000,
-        variant: "wishlist",
-        actionLabel: "Create account →",
-        onAction: () => {
-          window.location.href = "/register?redirect=/account/wishlist";
-        },
-      });
-    }, 2000);
+    }
+    setSessionFlag(NUDGE_KEY);
+    dispatchStoreToast("Saved to wishlist\n\nCreate a free account to keep your wishlist safe across devices.", {
+      duration: 6000,
+      variant: "wishlist",
+      actionLabel: "Create account →",
+      onAction: () => {
+        window.location.href = "/register?redirect=/account/wishlist&source=wishlist";
+      },
+    });
   }
 }
 

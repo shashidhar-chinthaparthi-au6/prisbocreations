@@ -29,6 +29,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = String(credentials.email).toLowerCase().trim();
         const user = await User.findOne({ email }).lean();
         if (!user) return null;
+        if (user.deletedAt) return null;
+        if (user.passwordHash === "DELETED") return null;
         const valid = await bcrypt.default.compare(String(credentials.password), user.passwordHash);
         if (!valid) return null;
         return {
