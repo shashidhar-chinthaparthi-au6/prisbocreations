@@ -12,6 +12,7 @@ import type { PurchaseProduct } from "@/components/product/ProductPurchaseClient
 import { recordRecentlyViewed } from "@/lib/recently-viewed";
 import { recordRecentlyViewedProductId } from "@/lib/recently-viewed-ids";
 import { WishlistHeart } from "@/components/ui/WishlistHeart";
+import { ProductReviewsSection } from "@/components/product-detail/ProductReviewsSection";
 
 type Props = {
   defaultImages: string[];
@@ -87,6 +88,7 @@ export function ProductPageClient({
   const cartThumbnailUrl = galleryImages[0] ?? product.image;
 
   return (
+    <>
     <div className="grid items-start gap-10 pb-24 md:pb-0 lg:grid-cols-2">
       <div className="relative lg:sticky lg:top-24">
         <div className="absolute right-2 top-2 z-10 md:right-3 md:top-3">
@@ -118,5 +120,9 @@ export function ProductPageClient({
         {backLink}
       </div>
     </div>
+    <div className="mx-auto max-w-[1100px]">
+      <ProductReviewsSection productId={product.id} productSlug={product.slug} />
+    </div>
+    </>
   );
 }

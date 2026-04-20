@@ -16,7 +16,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const qpRedirect = searchParams.get("redirect") ?? undefined;
-  const nextAfterLogin = safeRedirectPath(redirectTo ?? qpRedirect, "/account/orders");
+  const nextAfterLogin = safeRedirectPath(redirectTo ?? qpRedirect, "/");
   const passwordResetOk = searchParams.get("reset") === "1";
   const sessionExpired = searchParams.get("reason") === "session_expired";
 

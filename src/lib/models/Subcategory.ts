@@ -9,6 +9,8 @@ const SubcategorySchema = new Schema(
     sortOrder: { type: Number, default: 0 },
     images: { type: [String], default: [] },
     imageUrl: { type: String },
+    /** `{ headers: string[], rows: string[][] }` for storefront size chart modal */
+    sizeChartData: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true }
 );

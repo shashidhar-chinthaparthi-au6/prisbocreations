@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/components/cart/CartProvider";
 import { uploadCustomerImageToS3 } from "@/lib/api/customer-upload-client";
@@ -136,6 +136,22 @@ export function ProductPurchaseClient({
   const [isGift, setIsGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
   const [giftWrap, setGiftWrap] = useState(false);
+  const purchaseCtaRef = useRef<HTMLDivElement>(null);
+  const [showStickyPurchase, setShowStickyPurchase] = useState(false);
+
+  useEffect(() => {
+    const el = purchaseCtaRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        const aboveFoldPast = entry.boundingClientRect.top < 0;
+        setShowStickyPurchase(!entry.isIntersecting && aboveFoldPast);
+      },
+      { threshold: [0, 0.01, 1], rootMargin: "0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!visibleOptions.length) return;
@@ -340,6 +356,31 @@ export function ProductPurchaseClient({
 
   return (
     <>
+      {showStickyPurchase ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E8E0D6] bg-white/98 px-4 py-3 shadow-[0_-4px_24px_rgba(15,23,42,0.08)] backdrop-blur-md md:hidden has-safe-area-bottom"
+          role="region"
+          aria-label="Quick add to cart"
+        >
+          <div className="mx-auto flex max-w-lg items-center gap-2 sm:gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-ink">{product.name}</p>
+              <p className="font-display text-base font-semibold tabular-nums text-ink">
+                {formatInrFromPaise(unitPricePaise)}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              onClick={() => tryAddToCart({ openDrawer: true })}
+              className="min-h-11 shrink-0 rounded-full bg-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-accent-light disabled:opacity-50 sm:px-5 sm:text-sm"
+            >
+              Add to cart
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <p className="mt-3 text-2xl font-semibold text-ink">
         {visibleOptions.length > 0 ? (
           formatInrFromPaise(unitPricePaise)
@@ -709,114 +750,101 @@ export function ProductPurchaseClient({
         </div>
       ) : null}
 
-      <div className="mt-8 hidden space-y-3 md:block">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-          <label className="text-sm text-ink-muted" htmlFor="product-qty">
-            Qty
-          </label>
-          <input
-            id="product-qty"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={qtyStr}
-            onChange={(e) => setQtyStr(e.target.value)}
-            aria-invalid={qtyInvalid && qtyStr.trim() !== ""}
-            className="w-24 rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm sm:w-28"
-          />
-        </div>
-        {qtyHint ? (
-          <p className="text-sm text-rose" role="alert">
-            {qtyHint}
-          </p>
-        ) : null}
-        {customErr ? (
-          <p className="text-sm text-rose" role="alert">
-            {customErr}
-          </p>
-        ) : null}
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <button
-            type="button"
-            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
-            onClick={() => tryAddToCart({ openDrawer: false })}
-            className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Add to cart
-          </button>
-          <button
-            type="button"
-            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
-            onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
-            className="rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Buy now
-          </button>
-        </div>
-        {cartMsg ? <p className="text-sm text-accent">{cartMsg}</p> : null}
-      </div>
-
-      <div className="mt-4 space-y-3 md:hidden">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-ink-muted" htmlFor="product-qty-mobile">
-            Qty
-          </label>
-          <input
-            id="product-qty-mobile"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={qtyStr}
-            onChange={(e) => setQtyStr(e.target.value)}
-            className="w-24 rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm"
-          />
-        </div>
-        {qtyHint ? (
-          <p className="text-sm text-rose" role="alert">
-            {qtyHint}
-          </p>
-        ) : null}
-        {customErr ? (
-          <p className="text-sm text-rose" role="alert">
-            {customErr}
-          </p>
-        ) : null}
-      </div>
-
-      <div
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-sand-deep bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(15,23,42,0.12)] backdrop-blur-md md:hidden"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-      >
-        <div className="mx-auto flex max-w-lg items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-ink-muted">{product.name}</p>
-            <p className="font-display text-lg font-semibold text-ink">
-              {formatInrFromPaise(unitPricePaise)}
-              {giftWrap ? (
-                <span className="ml-1 text-xs font-normal text-ink-muted">
-                  + wrap {formatInrFromPaise(GIFT_WRAP_PAISE * (qtyNum ?? 1))}
-                </span>
-              ) : null}
-            </p>
+      <div ref={purchaseCtaRef}>
+        <div className="mt-8 hidden space-y-3 md:block">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+            <label className="text-sm text-ink-muted" htmlFor="product-qty">
+              Qty
+            </label>
+            <input
+              id="product-qty"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={qtyStr}
+              onChange={(e) => setQtyStr(e.target.value)}
+              aria-invalid={qtyInvalid && qtyStr.trim() !== ""}
+              className="min-h-9 w-24 rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm sm:w-28"
+            />
           </div>
-          <button
-            type="button"
-            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
-            onClick={() => tryAddToCart({ openDrawer: false })}
-            className="shrink-0 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:opacity-50"
-          >
-            Add to cart
-          </button>
-          <button
-            type="button"
-            disabled={maxStock < 1 || qtyInvalid || uploadBusy}
-            onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
-            className="shrink-0 rounded-full border-2 border-accent bg-white px-4 py-3 text-sm font-semibold text-accent disabled:opacity-50"
-          >
-            Buy now
-          </button>
+          {qtyHint ? (
+            <p className="text-sm text-rose" role="alert">
+              {qtyHint}
+            </p>
+          ) : null}
+          {customErr ? (
+            <p className="text-sm text-rose" role="alert">
+              {customErr}
+            </p>
+          ) : null}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <button
+              type="button"
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              onClick={() => tryAddToCart({ openDrawer: false })}
+              className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Add to cart
+            </button>
+            <button
+              type="button"
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
+              className="rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Buy now
+            </button>
+          </div>
+          {cartMsg ? <p className="text-sm text-accent">{cartMsg}</p> : null}
+        </div>
+
+        <div className="mt-4 space-y-3 md:hidden">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-ink-muted" htmlFor="product-qty-mobile">
+              Qty
+            </label>
+            <input
+              id="product-qty-mobile"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={qtyStr}
+              onChange={(e) => setQtyStr(e.target.value)}
+              className="min-h-11 w-full max-w-[8rem] rounded-lg border border-sand-deep bg-white px-3 py-2 text-base text-ink"
+            />
+          </div>
+          {qtyHint ? (
+            <p className="text-sm text-rose" role="alert">
+              {qtyHint}
+            </p>
+          ) : null}
+          {customErr ? (
+            <p className="text-sm text-rose" role="alert">
+              {customErr}
+            </p>
+          ) : null}
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              onClick={() => tryAddToCart({ openDrawer: false })}
+              className="min-h-11 w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Add to cart
+            </button>
+            <button
+              type="button"
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
+              className="min-h-11 w-full rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Buy now
+            </button>
+          </div>
+          {cartMsg ? <p className="text-sm text-accent">{cartMsg}</p> : null}
         </div>
       </div>
+
     </>
   );
 }

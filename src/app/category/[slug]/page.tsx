@@ -1,74 +1,179 @@
-import Link from "next/link";
+import { Suspense } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connectDb } from "@/lib/db";
+import { Category } from "@/lib/models/Category";
+import { effectiveCatalogImages } from "@/lib/catalog-images";
 import {
-  getCategoryBySlug,
-  listSubcategoriesByCategorySlug,
-  listPreviewImagesForSubcategory,
-} from "@/lib/services/catalogService";
-import { SubcategoryCard } from "@/components/category/SubcategoryCard";
+  listStorefrontCategoryRows,
+  listStorefrontFilterFacets,
+  listStorefrontProducts,
+  listStorefrontSubcategoryRowsForCategory,
+  type StorefrontSort,
+} from "@/lib/services/storefrontCatalog";
+import { getCategoryBySlug } from "@/lib/services/catalogService";
+import { StorefrontListing } from "@/components/listing/StorefrontListing";
+import { CategoryHero } from "@/components/category/CategoryHero";
+import { SubcategoryPills } from "@/components/category/SubcategoryPills";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export const revalidate = 60;
+
+function parseSort(s: string | undefined): StorefrontSort | undefined {
+  if (
+    s === "relevance" ||
+    s === "newest" ||
+    s === "price_asc" ||
+    s === "price_desc" ||
+    s === "popular" ||
+    s === "name_asc"
+  ) {
+    return s;
+  }
+  return undefined;
+}
+
+export async function generateStaticParams() {
+  await connectDb();
+  const rows = await Category.find().select("slug").lean();
+  return rows.map((r) => ({ slug: r.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
   await connectDb();
   const cat = await getCategoryBySlug(slug);
-  return { title: cat?.name ?? "Category" };
+  if (!cat) return { title: "Category" };
+  const desc =
+    typeof cat.description === "string" && cat.description.trim()
+      ? cat.description
+      : `Shop ${cat.name} — personalised and custom made in our studio.`;
+  const imgs = effectiveCatalogImages(cat);
+  return {
+    title: `${cat.name} — Prisbo Creations`,
+    description: desc,
+    openGraph: {
+      title: `${cat.name} — Prisbo Creations`,
+      ...(imgs[0] ? { images: [{ url: imgs[0] }] } : {}),
+    },
+  };
 }
 
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+async function CategoryListingSection({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const sort = parseSort(typeof sp.sort === "string" ? sp.sort : undefined);
+  const page = Math.max(1, Number(typeof sp.page === "string" ? sp.page : "1") || 1);
+  const q = typeof sp.q === "string" ? sp.q : undefined;
+  const subRaw =
+    typeof sp.sub === "string"
+      ? sp.sub
+      : typeof sp.subcategory === "string"
+        ? sp.subcategory
+        : undefined;
+  const priceMin =
+    typeof sp.price_min === "string" && sp.price_min !== "" ? Number(sp.price_min) : undefined;
+  const priceMax =
+    typeof sp.price_max === "string" && sp.price_max !== "" ? Number(sp.price_max) : undefined;
+  const inStockOnly = sp.in_stock === "false" ? false : undefined;
+  const occasion = typeof sp.occasion === "string" ? sp.occasion : undefined;
+  const material = typeof sp.material === "string" ? sp.material : undefined;
+  const minAverageRating = sp.rating === "4" ? 4 : undefined;
+
   await connectDb();
   const cat = await getCategoryBySlug(slug);
   if (!cat) notFound();
-  const subcategories = await listSubcategoriesByCategorySlug(slug);
 
-  const subsWithImages = await Promise.all(
-    subcategories.map(async (s) => {
-      const imageUrls = await listPreviewImagesForSubcategory(String(s._id), {
-        subcategoryImages: s.images,
-      });
-      return { sub: s, imageUrls };
+  const [counts, subcategories, result, facets] = await Promise.all([
+    listStorefrontCategoryRows(),
+    listStorefrontSubcategoryRowsForCategory(slug),
+    listStorefrontProducts({
+      categorySlugs: [slug],
+      subcategorySlug: subRaw,
+      q,
+      sort: sort ?? "relevance",
+      page,
+      pageSize: 24,
+      inStockOnly,
+      priceMinPaise:
+        priceMin != null && Number.isFinite(priceMin) ? Math.max(0, Math.round(priceMin * 100)) : undefined,
+      priceMaxPaise:
+        priceMax != null && Number.isFinite(priceMax) ? Math.max(0, Math.round(priceMax * 100)) : undefined,
+      occasion,
+      material,
+      minAverageRating,
     }),
-  );
+    listStorefrontFilterFacets({
+      categorySlugs: [slug],
+      subcategorySlug: subRaw,
+    }),
+  ]);
+
+  const totalInCat = counts.find((c) => c.slug === slug)?.count ?? result.total;
+  const heroImg = effectiveCatalogImages(cat)[0] ?? null;
+  const desc = typeof cat.description === "string" ? cat.description : "";
+  const subMeta = subRaw ? subcategories.find((s) => s.slug === subRaw) : undefined;
+
+  const categories = counts;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-sm text-accent">
-          <Link href="/categories">Categories</Link> / {cat.name}
-        </p>
-        <h1 className="mt-2 font-display text-3xl text-ink">{cat.name}</h1>
-        <p className="mt-2 max-w-2xl text-ink-muted">{cat.description}</p>
-        <p className="mt-3 text-sm text-ink-muted">
-          Choose a subcategory — swipe or scroll the images, then open to see all products and prices.
-        </p>
+    <div className="pb-16">
+      <CategoryHero
+        name={cat.name}
+        description={desc}
+        imageUrl={heroImg}
+        subcategoryCount={subcategories.length}
+        productCount={totalInCat}
+      />
+      <div className="mx-auto max-w-[1400px] px-4 pt-4 sm:px-6">
+        {subcategories.length > 0 ? (
+          <Suspense fallback={null}>
+            <SubcategoryPills categorySlug={slug} subcategories={subcategories} totalCount={totalInCat} />
+          </Suspense>
+        ) : null}
       </div>
-
-      {!subcategories.length ? (
-        <div className="rounded-2xl border border-dashed border-sand-deep bg-white/80 p-10 text-center text-ink-muted">
-          <p>No subcategories yet for this category.</p>
-          <p className="mt-2 text-sm">
-            Run <code className="rounded bg-sand px-1.5 py-0.5 text-ink">npm run seed</code> or add
-            subcategories in{" "}
-            <Link href="/admin" className="font-medium text-accent hover:underline">
-              Admin
-            </Link>
-            .
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subsWithImages.map(({ sub: s, imageUrls }) => (
-            <SubcategoryCard
-              key={String(s._id)}
-              href={`/category/${slug}/${s.slug}`}
-              name={s.name}
-              description={s.description}
-              imageUrls={imageUrls}
-            />
-          ))}
-        </div>
-      )}
+      <div className="mx-auto max-w-[1400px] px-4 pt-6 sm:px-6">
+        <StorefrontListing
+          initial={result}
+          categories={categories}
+          categoryLabelRows={categories.map((c) => ({ slug: c.slug, name: c.name }))}
+          subcategories={subcategories}
+          facets={facets}
+          mode="category"
+          title={cat.name}
+          subtitle={subMeta ? subMeta.name : undefined}
+          forcedCategorySlug={slug}
+        />
+      </div>
     </div>
+  );
+}
+
+export default function CategoryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="animate-pulse px-4 py-20 text-center text-sm text-[var(--brand-muted)]">
+          Loading…
+        </div>
+      }
+    >
+      <CategoryListingSection params={params} searchParams={searchParams} />
+    </Suspense>
   );
 }

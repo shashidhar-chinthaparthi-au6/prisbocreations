@@ -1,8 +1,6 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import type { MeUserDto } from "@/lib/user-me-dto";
 import { apiFetch } from "@/lib/api/fetch-client";
 import { AccountSidebar } from "./AccountSidebar";
@@ -24,8 +22,6 @@ export function AccountLayoutShell({
   initialUser: MeUserDto;
   children: ReactNode;
 }) {
-  const router = useRouter();
-  const { status } = useSession();
   const [user, setUser] = useState(initialUser);
 
   useEffect(() => {
@@ -49,11 +45,10 @@ export function AccountLayoutShell({
     return () => window.removeEventListener("prisbocreations:profile-updated", onProfileUpdated);
   }, [refreshUser]);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace(`/login?redirect=${encodeURIComponent("/account/orders")}`);
-    }
-  }, [status, router]);
+  // Do not redirect to /login from here when useSession() is "unauthenticated".
+  // That state can lag behind the server or flicker during hydration, which caused a
+  // ping-pong: /account/orders → /login → server sees session → /account/orders (loop in dev logs).
+  // Middleware + server account layouts already gate /account/*; after signOut, NextAuth navigates away.
 
   return (
     <AccountUserContext.Provider value={user}>

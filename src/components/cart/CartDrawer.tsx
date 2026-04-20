@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useSwipeToClose } from "@/hooks/useSwipeToClose";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/components/cart/CartProvider";
 import type { CartLine } from "@/components/cart/CartProvider";
@@ -12,20 +14,23 @@ import { formatInrFromPaise } from "@/lib/format";
 import { computeCartTotals } from "@/lib/store/cart-store";
 import { useCartStore } from "@/lib/store/cart-store";
 import { dispatchStoreToast } from "@/components/store/StoreToaster";
-
-function EmptyBagIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-      <path d="M6 7h15l-1.5 9H7.5L6 7z" />
-      <path d="M9 7V5a3 3 0 0 1 3-3v0a3 3 0 0 1 3 3v2" />
-    </svg>
-  );
-}
+import { StoreEmptyState } from "@/components/ui/StoreEmptyState";
 
 export function CartDrawer() {
+  const router = useRouter();
   const { lines, subtotalPaise, drawerOpen, setDrawerOpen, remove, setQty } = useCart();
   const { status } = useSession();
   const [caps, setCaps] = useState<Record<string, number>>({});
+  const [mobileLayout, setMobileLayout] = useState(false);
+  const sheetSwipe = useSwipeToClose(() => setDrawerOpen(false), "down", 80);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setMobileLayout(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const refreshCaps = useCallback(() => {
     if (!lines.length) {
@@ -123,15 +128,27 @@ export function CartDrawer() {
   const count = lines.reduce((n, l) => n + l.quantity, 0);
 
   return createPortal(
-    <div className="fixed inset-0 z-[240] flex justify-end" role="dialog" aria-modal="true" aria-label="Shopping cart">
+    <div
+      className={`fixed inset-0 z-[240] flex ${mobileLayout ? "flex-col justify-end" : "justify-end"}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Shopping cart"
+    >
       <button
         type="button"
         className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"
         aria-label="Close cart"
         onClick={() => setDrawerOpen(false)}
       />
-      <div className="relative flex h-full w-full max-w-[400px] flex-col bg-white shadow-2xl ring-1 ring-[#E8E0D6]">
-        <div className="flex items-center justify-between border-b border-[#E8E0D6] px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div
+        className={`relative flex max-h-[100dvh] flex-col bg-white shadow-2xl ring-1 ring-[#E8E0D6] ${
+          mobileLayout
+            ? "h-[min(100dvh,100%)] w-full max-w-none rounded-t-2xl"
+            : "h-full w-full max-w-[360px] lg:max-w-[400px]"
+        }`}
+        {...(mobileLayout ? sheetSwipe : {})}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-[#E8E0D6] px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div>
             <h2 className="text-base font-medium text-[#3D3835]">Your cart</h2>
             <p className="text-xs text-[#6B6560]">
@@ -148,20 +165,29 @@ export function CartDrawer() {
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+        <div className="drawer min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-3">
           {!lines.length ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <EmptyBagIcon className="mb-4 h-12 w-12 text-[#9A8F85]" />
-              <p className="font-medium text-[#3D3835]">Your cart is empty</p>
-              <p className="mt-1 text-sm text-[#6B6560]">Add something beautiful to get started.</p>
-              <Link
-                href="/products"
-                onClick={() => setDrawerOpen(false)}
-                className="mt-6 rounded-full bg-[#C47A2B] px-6 py-3 text-sm font-semibold text-white hover:bg-[#b06d26]"
-              >
-                Browse products →
-              </Link>
-            </div>
+            <StoreEmptyState
+              compact
+              className="border-[#E8E0D6] bg-white"
+              illustration="bag"
+              title="Nothing in your bag yet"
+              description="When you add items, they’ll show up here. Same cart on every page."
+              primary={{
+                label: "Browse products →",
+                onClick: () => {
+                  setDrawerOpen(false);
+                  router.push("/products");
+                },
+              }}
+              secondary={{
+                label: "View full cart page",
+                onClick: () => {
+                  setDrawerOpen(false);
+                  router.push("/cart");
+                },
+              }}
+            />
           ) : (
             <ul className="space-y-3">
               {lines.map((l) => (

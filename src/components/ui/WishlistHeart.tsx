@@ -9,13 +9,29 @@ type Props = {
   size?: "sm" | "md";
   /** When true, removing shows an undo toast (wishlist page). */
   showRemoveUndo?: boolean;
+  className?: string;
+  /** Tighter hit area for product grid cards (22px mobile / 26px desktop). */
+  density?: "default" | "compact";
 };
 
-export function WishlistHeart({ productId, productName = "Item", size = "sm", showRemoveUndo = false }: Props) {
+export function WishlistHeart({
+  productId,
+  productName = "Item",
+  size = "sm",
+  showRemoveUndo = false,
+  className = "",
+  density = "default",
+}: Props) {
   const { toggle, has } = useWishlist();
   const wishlisted = has(productId);
-  const iconSize = size === "sm" ? 18 : 22;
-  const dim = size === "sm" ? "h-8 w-8" : "h-[38px] w-[38px]";
+  const iconSize =
+    density === "compact" ? 14 : size === "sm" ? 18 : 22;
+  const dim =
+    density === "compact"
+      ? "h-[22px] w-[22px] md:h-[26px] md:w-[26px]"
+      : size === "sm"
+        ? "h-8 w-8"
+        : "h-[38px] w-[38px]";
 
   return (
     <button
@@ -35,7 +51,7 @@ export function WishlistHeart({ productId, productName = "Item", size = "sm", sh
         }
         void toggle(productId);
       }}
-      className={`flex ${dim} shrink-0 items-center justify-center rounded-full border-0 bg-white/95 text-[#C47A2B] shadow-[0_1px_4px_rgba(0,0,0,0.12)] backdrop-blur transition hover:bg-white`}
+      className={`flex ${dim} shrink-0 items-center justify-center rounded-full border-0 bg-white/95 text-[#C47A2B] shadow-[0_1px_3px_rgba(0,0,0,0.1)] backdrop-blur transition hover:bg-white ${className}`}
     >
       <svg
         width={iconSize}

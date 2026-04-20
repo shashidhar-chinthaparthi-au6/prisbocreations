@@ -40,7 +40,7 @@ export default async function LoginPage({
   if (nextAuth?.user?.id) {
     const role = (nextAuth.user as { role?: string }).role ?? "customer";
     if (role === "customer") {
-      redirect(safeRedirectPath(sp.redirect, "/account/orders"));
+      redirect(safeRedirectPath(sp.redirect, "/"));
     }
   }
 

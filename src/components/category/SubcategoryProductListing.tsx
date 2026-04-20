@@ -232,7 +232,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {sortedProducts.map((p) => {
             const multi = productHasOptions(p);
             const listPrice = multi ? minOptionPricePaise(p) : p.pricePaise;

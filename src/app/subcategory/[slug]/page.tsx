@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { connectDb } from "@/lib/db";
+import { Category } from "@/lib/models/Category";
+import { Subcategory } from "@/lib/models/Subcategory";
 import {
   listStorefrontCategoryRows,
   listStorefrontFilterFacets,
@@ -11,16 +14,6 @@ import {
 import { StorefrontListing } from "@/components/listing/StorefrontListing";
 
 export const revalidate = 60;
-
-export const metadata: Metadata = {
-  title: "All Products — Prisbo Creations",
-  description:
-    "Browse personalised gifts and keepsakes — Spotify keychains, photo mugs, custom coasters and more. Made in our studio in Hyderabad.",
-  openGraph: {
-    title: "All Products — Prisbo Creations",
-    images: [{ url: "https://prisbocreations.com/og/products.jpg" }],
-  },
-};
 
 function parseSort(s: string | undefined): StorefrontSort | undefined {
   if (
@@ -36,29 +29,33 @@ function parseSort(s: string | undefined): StorefrontSort | undefined {
   return undefined;
 }
 
-function spToCategoryList(val: string | string[] | undefined): string[] | undefined {
-  if (val === undefined) return undefined;
-  if (typeof val === "string") return val ? [val] : undefined;
-  const arr = val.filter((x): x is string => typeof x === "string" && Boolean(x));
-  return arr.length ? arr : undefined;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  await connectDb();
+  const subs = await Subcategory.find({ slug: slug.trim().toLowerCase() }).lean();
+  const sub = subs[0];
+  if (!sub) return { title: "Subcategory" };
+  return { title: `${sub.name} — Prisbo Creations` };
 }
 
-async function ProductsListingLoader({
+async function SubcategoryListingSection({
+  params,
   searchParams,
 }: {
+  params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const { slug } = await params;
   const sp = await searchParams;
   const sort = parseSort(typeof sp.sort === "string" ? sp.sort : undefined);
   const page = Math.max(1, Number(typeof sp.page === "string" ? sp.page : "1") || 1);
   const q = typeof sp.q === "string" ? sp.q : undefined;
-  const category = spToCategoryList(sp.category);
-  const subRaw =
-    typeof sp.sub === "string"
-      ? sp.sub
-      : typeof sp.subcategory === "string"
-        ? sp.subcategory
-        : undefined;
+  const categoryHint =
+    typeof sp.category === "string" ? sp.category.trim().toLowerCase() : undefined;
   const priceMin =
     typeof sp.price_min === "string" && sp.price_min !== "" ? Number(sp.price_min) : undefined;
   const priceMax =
@@ -69,11 +66,33 @@ async function ProductsListingLoader({
   const minAverageRating = sp.rating === "4" ? 4 : undefined;
 
   await connectDb();
-  const [categories, result, facets] = await Promise.all([
+  const slugNorm = slug.trim().toLowerCase();
+  const candidates = await Subcategory.find({ slug: slugNorm }).lean();
+  if (!candidates.length) notFound();
+
+  let sub = candidates[0];
+  if (candidates.length > 1) {
+    if (!categoryHint) {
+      notFound();
+    }
+    const cat = await Category.findOne({ slug: categoryHint }).lean();
+    if (!cat) notFound();
+    const match = candidates.find((c) => String(c.categoryId) === String(cat._id));
+    if (!match) notFound();
+    sub = match;
+  }
+
+  const catDoc = await Category.findById(sub.categoryId).lean();
+  if (!catDoc) notFound();
+  const catSlug = catDoc.slug;
+
+  const [categories, subcategories, result, facets] = await Promise.all([
     listStorefrontCategoryRows(),
+    listStorefrontSubcategoryRowsForCategory(catSlug),
     listStorefrontProducts({
-      categorySlugs: category,
-      subcategorySlug: subRaw,
+      categorySlugs: [catSlug],
+      subcategorySlug: slugNorm,
+      subcategoryCategorySlug: catSlug,
       q,
       sort: sort ?? "relevance",
       page,
@@ -88,15 +107,10 @@ async function ProductsListingLoader({
       minAverageRating,
     }),
     listStorefrontFilterFacets({
-      categorySlugs: category?.length === 1 ? category : undefined,
-      subcategorySlug: subRaw,
+      categorySlugs: [catSlug],
+      subcategorySlug: slugNorm,
     }),
   ]);
-
-  let subcategories: Awaited<ReturnType<typeof listStorefrontSubcategoryRowsForCategory>> = [];
-  if (category?.length === 1) {
-    subcategories = await listStorefrontSubcategoryRowsForCategory(category[0]);
-  }
 
   return (
     <div className="px-4 pb-16 pt-6 sm:px-6">
@@ -106,27 +120,32 @@ async function ProductsListingLoader({
         categoryLabelRows={categories.map((c) => ({ slug: c.slug, name: c.name }))}
         subcategories={subcategories}
         facets={facets}
-        mode="all"
-        title="All products"
+        mode="category"
+        title={sub.name}
+        subtitle={`${catDoc.name} · ${sub.name}`}
+        forcedCategorySlug={catSlug}
+        forcedSubcategorySlug={slugNorm}
       />
     </div>
   );
 }
 
-export default function AllProductsPage({
+export default function SubcategoryPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1400px] animate-pulse px-4 py-20 text-center text-sm text-[var(--brand-muted)]">
-          Loading products…
+        <div className="animate-pulse px-4 py-20 text-center text-sm text-[var(--brand-muted)]">
+          Loading…
         </div>
       }
     >
-      <ProductsListingLoader searchParams={searchParams} />
+      <SubcategoryListingSection params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

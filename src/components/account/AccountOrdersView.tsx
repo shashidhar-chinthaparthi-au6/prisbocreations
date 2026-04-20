@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatInrFromPaise } from "@/lib/format";
 import { OrderStatusBadge } from "@/components/account/OrderStatusBadge";
 import { ReorderButton } from "@/components/account/ReorderButton";
+import { StoreEmptyState } from "@/components/ui/StoreEmptyState";
 
 export type AccountOrderRow = {
   id: string;
@@ -55,21 +56,12 @@ function Thumbs({ urls }: { urls: string[] }) {
 export function AccountOrdersView({ orders }: { orders: AccountOrderRow[] }) {
   if (!orders.length) {
     return (
-      <div className="flex flex-col items-center py-16 text-center">
-        <div className="mb-4 text-5xl opacity-40" aria-hidden>
-          📦
-        </div>
-        <h2 className="font-display text-xl text-[var(--brand-ink)]">No orders yet</h2>
-        <p className="mt-2 max-w-sm text-sm text-[var(--brand-muted)]">
-          When you place an order, it&apos;ll show up here.
-        </p>
-        <Link
-          href="/products"
-          className="mt-6 rounded-full bg-[var(--brand-amber,#C47A2B)] px-5 py-2.5 text-sm font-semibold text-white"
-        >
-          Browse products →
-        </Link>
-      </div>
+      <StoreEmptyState
+        emoji="📦"
+        title="No orders yet"
+        description="When you shop with us, your orders and tracking will appear here."
+        primary={{ label: "Browse products →", href: "/products" }}
+      />
     );
   }
 

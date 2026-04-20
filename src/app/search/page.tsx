@@ -4,6 +4,7 @@ import { listStorefrontProducts } from "@/lib/services/storefrontCatalog";
 import { listNavCategoryTree } from "@/lib/services/catalogService";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { ProductsSortBar } from "@/components/storefront/ProductsSortBar";
+import { StoreEmptyState } from "@/components/ui/StoreEmptyState";
 
 export const revalidate = 60;
 
@@ -71,26 +72,37 @@ export default async function SearchPage({
       </div>
 
       {!query ? (
-        <div className="rounded-2xl border border-dashed border-[var(--brand-border-dark)] bg-[var(--brand-card)] p-10 text-center text-[var(--brand-muted)]">
-          <p>Type a keyword in the header search to see live suggestions.</p>
-        </div>
+        <StoreEmptyState
+          className="bg-[var(--brand-card)]"
+          illustration="search"
+          title="Search the catalog"
+          description="Use the search icon in the header for live suggestions as you type, or browse categories below."
+          primary={{ label: "Browse all products →", href: "/products" }}
+        />
       ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[var(--brand-border-dark)] bg-[var(--brand-card)] p-10">
-          <p className="text-center text-[var(--brand-muted)]">No results for “{query}”.</p>
-          <p className="mt-4 text-center text-sm text-[var(--brand-muted)]">Try a category:</p>
-          <ul className="mt-4 flex flex-wrap justify-center gap-2">
+        <StoreEmptyState
+          className="bg-[var(--brand-card)]"
+          illustration="search"
+          title={`No results for “${query}”`}
+          description="Try a shorter keyword, check spelling, or explore a category."
+          primary={{ label: "Browse all products →", href: "/products" }}
+        >
+          <p className="text-center text-xs font-medium uppercase tracking-wide text-[var(--brand-muted)]">
+            Popular categories
+          </p>
+          <ul className="mt-3 flex flex-wrap justify-center gap-2">
             {nav.map((c) => (
               <li key={c.slug}>
                 <Link
                   href={`/category/${c.slug}`}
-                  className="rounded-full border border-[var(--brand-border)] px-3 py-1.5 text-sm hover:border-[var(--brand-amber)]"
+                  className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-card)] px-3 py-1.5 text-sm text-[var(--brand-ink)] hover:border-[var(--brand-amber)]"
                 >
                   {c.name}
                 </Link>
               </li>
             ))}
           </ul>
-        </div>
+        </StoreEmptyState>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((p) => (

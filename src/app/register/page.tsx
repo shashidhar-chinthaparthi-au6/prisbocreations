@@ -20,7 +20,7 @@ export default async function RegisterPage({
   /** Only NextAuth protects `/account` in middleware; legacy `prisbo_session` alone must not skip registration. */
   const na = await auth();
   if (na?.user?.id) {
-    redirect(safeRedirectPath(sp.redirect, "/account/orders"));
+    redirect(safeRedirectPath(sp.redirect, "/"));
   }
 
   return (

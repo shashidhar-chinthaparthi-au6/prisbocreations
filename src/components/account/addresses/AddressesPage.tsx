@@ -8,6 +8,7 @@ import { AddressCard } from "./AddressCard";
 import { AddressForm, type AddressFormValues } from "./AddressForm";
 import { DeleteAddressModal } from "./DeleteAddressModal";
 import { dispatchStoreToast } from "@/components/store/StoreToaster";
+import { StoreEmptyState } from "@/components/ui/StoreEmptyState";
 
 type AddrResponse = { addresses: MeAddressDto[]; count: number; max: number };
 
@@ -158,27 +159,22 @@ export function AddressesPage() {
       ) : null}
 
       {list.length === 0 && mode === "idle" ? (
-        <div className="rounded-2xl border border-dashed border-[var(--brand-border)] bg-[var(--brand-surface)] px-6 py-14 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand-amber-light)] text-2xl text-[var(--brand-amber)]">
-            📍
-          </div>
-          <p className="font-display text-lg text-[var(--brand-ink)]">No saved addresses yet</p>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--brand-muted)]">
-            Save an address to checkout faster next time.
-          </p>
-          {!atLimit ? (
-            <button
-              type="button"
-              className="btn-primary mt-6 min-h-11 px-8"
-              onClick={() => {
-                setFormErr(null);
-                setMode("add");
-              }}
-            >
-              + Add your first address
-            </button>
-          ) : null}
-        </div>
+        <StoreEmptyState
+          illustration="pin"
+          title="No saved addresses yet"
+          description="Save a delivery address so checkout is quicker — you can add labels like Home or Work."
+          primary={
+            !atLimit
+              ? {
+                  label: "+ Add your first address",
+                  onClick: () => {
+                    setFormErr(null);
+                    setMode("add");
+                  },
+                }
+              : undefined
+          }
+        />
       ) : (
         <ul className="space-y-4">
           {list.map((a) => (

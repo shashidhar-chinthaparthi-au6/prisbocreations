@@ -34,26 +34,26 @@ export default async function HomePage() {
         <HomeDeletedToast />
       </Suspense>
       {/* Hero */}
-      <section className="relative isolate min-h-[400px] overflow-hidden rounded-2xl sm:min-h-[520px]">
+      <section className="relative isolate min-h-[360px] overflow-hidden rounded-2xl md:min-h-[420px] lg:min-h-[520px]">
         <Image src={HERO_IMG} alt="" fill priority className="object-cover" sizes="100vw" />
         <div className="absolute inset-0 bg-[rgba(20,15,10,0.45)]" aria-hidden />
-        <div className="relative z-10 flex min-h-[400px] max-w-[540px] flex-col justify-center px-6 py-12 sm:min-h-[520px] sm:px-10">
+        <div className="relative z-10 flex min-h-[360px] max-w-[540px] flex-col justify-center px-5 py-10 md:min-h-[420px] md:max-w-[420px] md:px-8 lg:min-h-[520px] lg:max-w-[540px] lg:px-10">
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--brand-amber-light)] sm:text-sm">
             Prisbo Creations
           </p>
-          <h1 className="mt-3 font-display text-3xl font-bold leading-tight text-white sm:text-[40px] sm:leading-snug md:text-[48px]">
+          <h1 className="mt-3 font-display text-[28px] font-bold leading-tight text-white md:text-[40px] md:leading-snug lg:text-[48px]">
             We craft personalised gifts and keepsakes — in our studio, not from a faceless warehouse.
           </h1>
           <p className="mt-4 max-w-xl text-base text-white/85 sm:text-base">
             Laser-cut acrylic, careful print finishing, and packaging you&apos;ll be proud to hand over.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/products" className="btn-primary min-h-12 px-8">
+          <div className="mt-6 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Link href="/products" className="btn-primary min-h-12 w-full justify-center px-8 sm:w-auto">
               Shop the catalog
             </Link>
             <Link
               href="/register"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border-[1.5px] border-white bg-transparent px-8 text-sm font-medium tracking-wide text-white transition duration-150 hover:bg-white/10"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-full border-[1.5px] border-white bg-transparent px-8 text-sm font-medium tracking-wide text-white transition duration-150 hover:bg-white/10 sm:w-auto"
             >
               Create account
             </Link>
@@ -62,7 +62,7 @@ export default async function HomePage() {
       </section>
 
       {/* Trust */}
-      <section className="grid gap-6 rounded-2xl bg-[#f5f0ea] px-6 py-6 sm:grid-cols-3 sm:px-8 sm:py-8">
+      <section className="grid gap-4 rounded-2xl bg-[#f5f0ea] px-4 py-6 sm:grid-cols-3 sm:gap-6 sm:px-8 sm:py-8">
         {[
           {
             t: "Free shipping over ₹1,499",
@@ -80,11 +80,11 @@ export default async function HomePage() {
             Icon: TrustIconHeart,
           },
         ].map((x) => (
-          <div key={x.t} className="flex gap-3">
+          <div key={x.t} className="flex flex-col items-center gap-2 text-center sm:flex-row sm:items-start sm:gap-3 sm:text-left">
             <x.Icon className="shrink-0" />
             <div>
-              <p className="font-semibold text-[var(--brand-ink)]">{x.t}</p>
-              <p className="mt-1 text-sm text-[var(--brand-muted)]">{x.s}</p>
+              <p className="text-xs font-semibold text-[var(--brand-ink)] sm:text-base">{x.t}</p>
+              <p className="mt-1 text-[12px] text-[var(--brand-muted)] sm:text-sm">{x.s}</p>
             </div>
           </div>
         ))}
@@ -96,22 +96,22 @@ export default async function HomePage() {
         <p className="mt-1 text-sm text-[var(--brand-muted)] sm:text-base">
           Explore our full range of personalised creations.
         </p>
-        <div className="mt-6 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-5 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+        <div className="mt-6 flex max-md:scroll-row gap-3 md:grid md:grid-cols-3 md:gap-3 md:overflow-visible lg:grid-cols-5">
           {catCards.map((c) => {
             const placeholder = categoryCardPlaceholderImage(c.slug, c.name);
             return (
               <Link
                 key={String(c._id)}
                 href={`/category/${c.slug}`}
-                className="group relative w-[140px] shrink-0 overflow-hidden rounded-2xl sm:w-auto"
+                className="group relative h-[160px] w-[160px] shrink-0 overflow-hidden rounded-2xl md:h-[160px] md:w-auto"
               >
-                <div className="relative aspect-square">
+                <div className="relative aspect-square h-full md:aspect-auto md:min-h-[160px]">
                   <Image
                     src={placeholder}
                     alt={c.name}
                     fill
                     className="object-cover transition duration-150 group-hover:scale-[1.03]"
-                    sizes="(max-width:640px) 140px, 20vw"
+                    sizes="(max-width: 767px) 160px, (max-width: 1023px) 30vw, 20vw"
                   />
                   <div className="absolute inset-0 bg-[rgba(0,0,0,0.35)]" />
                   <p className="absolute inset-x-0 bottom-0 flex items-end justify-center p-3 text-center text-sm font-bold text-white">
@@ -136,9 +136,12 @@ export default async function HomePage() {
               View all →
             </Link>
           </div>
-          <div className="mt-6 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-4 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+          <div className="mt-6 flex max-md:scroll-row gap-3 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible lg:grid-cols-4">
             {featured.map((p) => (
-              <div key={p.id} className="w-[45vw] shrink-0 sm:w-auto">
+              <div
+                key={p.id}
+                className="w-[calc(50vw-24px)] min-w-[160px] max-w-[280px] shrink-0 sm:w-auto sm:min-w-0 sm:max-w-none"
+              >
                 <ProductCard product={p} />
               </div>
             ))}
@@ -150,7 +153,7 @@ export default async function HomePage() {
       <section>
         <h2 className="font-display text-2xl text-[var(--brand-ink)] sm:text-3xl">Shop by recipient</h2>
         <p className="mt-1 text-sm text-[var(--brand-muted)]">Jump in by who you&apos;re shopping for.</p>
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {(
             [
               ["him", "#1a2234", "For him"],
@@ -163,10 +166,10 @@ export default async function HomePage() {
             <Link
               key={slug}
               href={`/for/${slug}`}
-              className="group relative overflow-hidden rounded-2xl p-8 text-white transition duration-150 hover:scale-[1.02]"
+              className="group relative flex min-h-[160px] flex-col justify-end overflow-hidden rounded-2xl p-5 text-white transition duration-150 hover:scale-[1.02] md:min-h-[200px] md:p-8 lg:min-h-[300px]"
               style={{ backgroundColor: bg }}
             >
-              <p className="font-display text-xl font-semibold">{label}</p>
+              <p className="font-display text-lg font-semibold md:text-xl lg:text-[28px]">{label}</p>
               <p className="mt-2 text-sm text-white/85">Browse</p>
             </Link>
           ))}

@@ -73,7 +73,11 @@ export function StoreSearchOverlayFull({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[220] flex flex-col bg-[var(--brand-card)]" role="dialog" aria-label="Search">
+    <div
+      className="fixed inset-0 z-[220] flex min-h-[100dvh] flex-col bg-[var(--brand-card)]"
+      role="dialog"
+      aria-label="Search"
+    >
       <div className="flex items-center gap-2 border-b border-[var(--brand-border)] px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <input
           ref={inputRef}
@@ -83,7 +87,7 @@ export function StoreSearchOverlayFull({ onClose }: { onClose: () => void }) {
             if (e.key === "Enter") goResults();
           }}
           placeholder="Search products, categories, occasions…"
-          className="min-h-[48px] flex-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 text-[18px] text-[var(--brand-ink)] outline-none ring-[var(--brand-amber)] focus:ring-2"
+          className="min-h-[48px] flex-1 rounded-lg border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 text-base text-[var(--brand-ink)] outline-none ring-[var(--brand-amber)] focus:ring-2"
           aria-label="Search query"
         />
         {q ? (
@@ -106,13 +110,13 @@ export function StoreSearchOverlayFull({ onClose }: { onClose: () => void }) {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
         {data && q.trim() ? (
-          <div className="mx-auto max-w-2xl space-y-8">
+          <div className="mx-auto max-w-6xl space-y-8">
             {data.products.length > 0 ? (
               <section>
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--brand-muted)]">
                   Products
                 </h2>
-                <ul className="mt-3 space-y-2">
+                <ul className="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-3">
                   {data.products.map((p) => (
                     <li key={p.slug}>
                       <Link

@@ -21,7 +21,7 @@ export const resetSchema = z
     path: ["confirmPassword"],
   });
 
-export function safeRedirectPath(redirect: string | null | undefined, fallback = "/account/orders"): string {
+export function safeRedirectPath(redirect: string | null | undefined, fallback = "/"): string {
   const p = redirect?.trim() ?? "";
   if (!p.startsWith("/") || p.startsWith("//")) return fallback;
   return p;

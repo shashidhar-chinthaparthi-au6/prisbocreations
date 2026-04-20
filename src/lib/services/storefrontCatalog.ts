@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Product } from "@/lib/models/Product";
 import { Category } from "@/lib/models/Category";
 import { Subcategory } from "@/lib/models/Subcategory";
+import { Review } from "@/lib/models/Review";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import type { ProductDoc } from "@/lib/models/Product";
@@ -37,12 +38,22 @@ export type StorefrontListParams = {
   inStockOnly?: boolean;
   featured?: boolean;
   ids?: string[];
+  /** Exclude one product (e.g. “You might also like”). */
+  excludeProductId?: string;
+  /** Matches `specValues.occasion` (normalized string). */
+  occasion?: string;
+  /** Matches `specValues.material` (normalized string). */
+  material?: string;
+  /** When set (e.g. 4), only products whose approved reviews average ≥ this value. */
+  minAverageRating?: number;
   /** Matches `tags` (case-insensitive) for recipient collections, e.g. him, her, kids. */
   recipient?: string;
   q?: string;
   sort?: StorefrontSort;
   page?: number;
   pageSize?: number;
+  /** When set, slice starts at this index instead of `(page - 1) * pageSize` (for “load more” append). */
+  skip?: number;
 };
 
 function effectivePricePaise(p: Pick<ProductDoc, "pricePaise" | "options">): number {
@@ -71,6 +82,9 @@ export type StorefrontProductCard = {
   featured: boolean;
   isNew: boolean;
   tags: string[];
+  /** Present when reviews exist for this product. */
+  avgRating?: number;
+  reviewCount?: number;
 };
 
 function daysSince(date: Date | undefined): number {
@@ -78,9 +92,59 @@ function daysSince(date: Date | undefined): number {
   return (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
 }
 
+function specValuesString(doc: ProductDoc, key: string): string {
+  const raw = doc.specValues;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return "";
+  const v = (raw as Record<string, unknown>)[key];
+  if (v === undefined || v === null) return "";
+  return String(v).trim();
+}
+
+async function productIdsMeetingMinAverageRating(min: number): Promise<Set<string>> {
+  const rows = await Review.aggregate<{ _id: mongoose.Types.ObjectId }>([
+    { $match: { isApproved: true } },
+    { $group: { _id: "$productId", avg: { $avg: "$rating" } } },
+    { $match: { avg: { $gte: min } } },
+  ]);
+  return new Set(rows.map((r) => String(r._id)));
+}
+
+async function reviewStatsForProductIds(
+  ids: string[],
+): Promise<Map<string, { avg: number; count: number }>> {
+  const oids = ids.filter((id) => mongoose.isValidObjectId(id)).map((id) => new mongoose.Types.ObjectId(id));
+  if (!oids.length) return new Map();
+  const rows = await Review.aggregate<{
+    _id: mongoose.Types.ObjectId;
+    avg: number;
+    count: number;
+  }>([
+    { $match: { productId: { $in: oids }, isApproved: true } },
+    {
+      $group: {
+        _id: "$productId",
+        avg: { $avg: "$rating" },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  const map = new Map<string, { avg: number; count: number }>();
+  for (const r of rows) {
+    map.set(String(r._id), {
+      avg: Math.round(r.avg * 10) / 10,
+      count: r.count,
+    });
+  }
+  return map;
+}
+
 export function productToStorefrontCard(
   p: ProductDoc,
-  extras?: { subcategoryName?: string },
+  extras?: {
+    subcategoryName?: string;
+    avgRating?: number;
+    reviewCount?: number;
+  },
 ): StorefrontProductCard {
   const colorVariants = colorVariantsFromDoc(p);
   const defaultImages = Array.isArray(p.images) ? p.images : [];
@@ -97,7 +161,7 @@ export function productToStorefrontCard(
       ? p.compareAtPaise
       : undefined;
   const created = p.createdAt instanceof Date ? p.createdAt : undefined;
-  const isNew = daysSince(created) <= 45;
+  const isNew = daysSince(created) <= 14;
 
   return {
     id: String(p._id),
@@ -114,6 +178,9 @@ export function productToStorefrontCard(
     featured: Boolean(p.featured),
     isNew,
     tags: Array.isArray(p.tags) ? p.tags : [],
+    ...(extras?.avgRating != null && extras.reviewCount != null && extras.reviewCount > 0
+      ? { avgRating: extras.avgRating, reviewCount: extras.reviewCount }
+      : {}),
   };
 }
 
@@ -149,13 +216,21 @@ const RECIPIENT_TAG_MAP: Record<string, string[]> = {
   corporate: ["corporate", "business", "bulk", "corporate-gifts"],
 };
 
-export async function listStorefrontProducts(
-  params: StorefrontListParams,
-): Promise<{ items: StorefrontProductCard[]; total: number; page: number; pageSize: number }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.min(48, Math.max(1, params.pageSize ?? 12));
-  const skip = (page - 1) * pageSize;
+type BrowseMatchParams = Pick<
+  StorefrontListParams,
+  | "categorySlugs"
+  | "subcategorySlug"
+  | "subcategoryCategorySlug"
+  | "q"
+  | "recipient"
+  | "featured"
+  | "ids"
+>;
 
+/** Shared Mongo match for storefront browse / filter facets (before price & post-filters). */
+async function buildStorefrontBrowseMatch(
+  params: BrowseMatchParams,
+): Promise<{ match: Record<string, unknown> } | { empty: true }> {
   const match: Record<string, unknown> = { ...storefrontPublishedMatch() };
 
   if (params.featured) {
@@ -165,7 +240,7 @@ export async function listStorefrontProducts(
   if (params.ids?.length) {
     const oids = params.ids.filter((id) => mongoose.isValidObjectId(id));
     if (!oids.length) {
-      return { items: [], total: 0, page, pageSize };
+      return { empty: true };
     }
     match._id = { $in: oids.map((id) => new mongoose.Types.ObjectId(id)) };
   }
@@ -177,7 +252,7 @@ export async function listStorefrontProducts(
       .lean();
     const catIds = cats.map((c) => c._id);
     if (!catIds.length) {
-      return { items: [], total: 0, page, pageSize };
+      return { empty: true };
     }
     const subs = await Subcategory.find({ categoryId: { $in: catIds } }).select("_id").lean();
     const subIds = subs.map((s) => s._id);
@@ -192,7 +267,7 @@ export async function listStorefrontProducts(
       params.subcategoryCategorySlug,
     );
     if (!subOid) {
-      return { items: [], total: 0, page, pageSize };
+      return { empty: true };
     }
     match.subcategoryId = subOid;
   }
@@ -230,16 +305,85 @@ export async function listStorefrontProducts(
     match.$and = [...(Array.isArray(match.$and) ? match.$and : []), { $or: tagOr }];
   }
 
+  return { match };
+}
+
+/** Distinct non-empty `specValues.occasion` / `specValues.material` for the given catalog scope. */
+export async function listStorefrontFilterFacets(params: {
+  categorySlugs?: string[];
+  subcategorySlug?: string;
+  subcategoryCategorySlug?: string;
+}): Promise<{ occasions: string[]; materials: string[] }> {
+  const built = await buildStorefrontBrowseMatch({
+    categorySlugs: params.categorySlugs,
+    subcategorySlug: params.subcategorySlug,
+    subcategoryCategorySlug: params.subcategoryCategorySlug,
+  });
+  if ("empty" in built) return { occasions: [], materials: [] };
+  const rows = await Product.find(built.match).select("specValues").lean();
+  const occ = new Set<string>();
+  const mat = new Set<string>();
+  for (const row of rows) {
+    const o = specValuesString(row as ProductDoc, "occasion");
+    const m = specValuesString(row as ProductDoc, "material");
+    if (o) occ.add(o);
+    if (m) mat.add(m);
+  }
+  return {
+    occasions: [...occ].sort((a, b) => a.localeCompare(b)),
+    materials: [...mat].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
+export async function listStorefrontProducts(
+  params: StorefrontListParams,
+): Promise<{ items: StorefrontProductCard[]; total: number; page: number; pageSize: number }> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(48, Math.max(1, params.pageSize ?? 12));
+  const skip =
+    params.skip != null && Number.isFinite(params.skip)
+      ? Math.max(0, Math.floor(Number(params.skip)))
+      : (page - 1) * pageSize;
+
+  const built = await buildStorefrontBrowseMatch({
+    categorySlugs: params.categorySlugs,
+    subcategorySlug: params.subcategorySlug,
+    subcategoryCategorySlug: params.subcategoryCategorySlug,
+    q: params.q,
+    recipient: params.recipient,
+    featured: params.featured,
+    ids: params.ids,
+  });
+  if ("empty" in built) {
+    const logicalPage =
+      params.skip != null && Number.isFinite(params.skip)
+        ? Math.floor(Math.max(0, Number(params.skip)) / pageSize) + 1
+        : page;
+    return { items: [], total: 0, page: logicalPage, pageSize };
+  }
+  const match = built.match;
+
   const allForFilter = await Product.find(match).lean();
   const priceMin = params.priceMinPaise;
   const priceMax = params.priceMaxPaise;
+
+  const ratingOk =
+    params.minAverageRating != null && params.minAverageRating > 0
+      ? await productIdsMeetingMinAverageRating(params.minAverageRating)
+      : null;
 
   let filtered = allForFilter.filter((p) => {
     const doc = p as ProductDoc;
     const price = effectivePricePaise(doc);
     if (priceMin != null && price < priceMin) return false;
     if (priceMax != null && price > priceMax) return false;
-    if (params.inStockOnly && effectiveStock(doc) <= 0) return false;
+    if (params.inStockOnly !== false && effectiveStock(doc) <= 0) return false;
+    if (params.excludeProductId && String(doc._id) === params.excludeProductId) return false;
+    if (ratingOk && !ratingOk.has(String(doc._id))) return false;
+    const occ = params.occasion?.trim().toLowerCase();
+    if (occ && specValuesString(doc, "occasion").toLowerCase() !== occ) return false;
+    const mat = params.material?.trim().toLowerCase();
+    if (mat && specValuesString(doc, "material").toLowerCase() !== mat) return false;
     return true;
   });
 
@@ -269,6 +413,12 @@ export async function listStorefrontProducts(
       const ub = new Date((b as { updatedAt?: Date }).updatedAt ?? 0).getTime();
       return ub - ua;
     });
+  } else if (sort === "relevance") {
+    filtered.sort((a, b) => {
+      const ta = new Date((a as { createdAt?: Date }).createdAt ?? 0).getTime();
+      const tb = new Date((b as { createdAt?: Date }).createdAt ?? 0).getTime();
+      return tb - ta;
+    });
   } else {
     filtered.sort((a, b) => String(a.name).localeCompare(String(b.name)));
   }
@@ -290,13 +440,63 @@ export async function listStorefrontProducts(
       : [];
   const subNameById = new Map(subDocs.map((s) => [String(s._id), s.name]));
 
-  const items = pageRows.map((p) =>
-    productToStorefrontCard(p as ProductDoc, {
-      subcategoryName: p.subcategoryId ? subNameById.get(String(p.subcategoryId)) : undefined,
-    }),
-  );
+  const pageIds = pageRows.map((p) => String(p._id));
+  const reviewMap = await reviewStatsForProductIds(pageIds);
 
-  return { items, total, page, pageSize };
+  const items = pageRows.map((p) => {
+    const st = reviewMap.get(String(p._id));
+    return productToStorefrontCard(p as ProductDoc, {
+      subcategoryName: p.subcategoryId ? subNameById.get(String(p.subcategoryId)) : undefined,
+      ...(st && st.count > 0 ? { avgRating: st.avg, reviewCount: st.count } : {}),
+    });
+  });
+
+  const logicalPage =
+    params.skip != null && Number.isFinite(params.skip)
+      ? Math.floor(skip / pageSize) + 1
+      : page;
+
+  return { items, total, page: logicalPage, pageSize };
+}
+
+/** Categories with published product counts (for filter sidebar). */
+export async function listStorefrontCategoryRows(): Promise<
+  { slug: string; name: string; count: number }[]
+> {
+  const cats = await Category.find().sort({ sortOrder: 1, name: 1 }).lean();
+  const pub = storefrontPublishedMatch();
+  const out: { slug: string; name: string; count: number }[] = [];
+  for (const c of cats) {
+    const subs = await Subcategory.find({ categoryId: c._id }).select("_id").lean();
+    const subIds = subs.map((s) => s._id);
+    const n = await Product.countDocuments({
+      ...pub,
+      $or: [
+        { categoryId: c._id },
+        ...(subIds.length ? [{ subcategoryId: { $in: subIds } }] : []),
+      ],
+    });
+    out.push({ slug: c.slug, name: c.name, count: n });
+  }
+  return out;
+}
+
+/** Subcategories in a category with product counts. */
+export async function listStorefrontSubcategoryRowsForCategory(
+  categorySlug: string,
+): Promise<{ slug: string; name: string; count: number }[]> {
+  const cat = await Category.findOne({ slug: categorySlug.trim().toLowerCase() }).lean();
+  if (!cat) return [];
+  const subs = await Subcategory.find({ categoryId: cat._id })
+    .sort({ sortOrder: 1, name: 1 })
+    .lean();
+  const pub = storefrontPublishedMatch();
+  const out: { slug: string; name: string; count: number }[] = [];
+  for (const s of subs) {
+    const n = await Product.countDocuments({ ...pub, subcategoryId: s._id });
+    out.push({ slug: s.slug, name: s.name, count: n });
+  }
+  return out;
 }
 
 export async function getStorefrontProductDetailBySlug(slug: string) {

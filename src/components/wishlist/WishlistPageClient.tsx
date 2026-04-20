@@ -9,6 +9,7 @@ import { dispatchStoreToast } from "@/components/store/StoreToaster";
 import type { StorefrontProductCard } from "@/lib/services/storefrontCatalog";
 import { readGuestWishlistIds } from "@/lib/wishlist-guest";
 import { useWishlistStore } from "@/lib/store/wishlist-store";
+import { StoreEmptyState } from "@/components/ui/StoreEmptyState";
 
 function WishlistGuestBanner() {
   return (
@@ -37,32 +38,6 @@ function WishlistGuestBanner() {
           Sign in →
         </Link>
       </div>
-    </div>
-  );
-}
-
-function WishlistEmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#E8E0D6] bg-[var(--brand-surface)] px-6 py-16 text-center">
-      <svg
-        width="72"
-        height="72"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#A8A29E"
-        strokeWidth="1.2"
-        className="mb-4"
-        aria-hidden
-      >
-        <path d="M12 21s-6.716-4.196-9-8.5C.8 8.236 2.28 4 6.5 4c2.28 0 3.866 1.582 5.5 3.5C13.634 5.582 15.22 4 17.5 4 21.72 4 23.2 8.236 21 12.5 18.716 16.804 12 21 12 21Z" />
-      </svg>
-      <h2 className="font-display text-xl text-[var(--brand-ink)]">Your wishlist is empty</h2>
-      <p className="mt-2 max-w-sm text-sm text-[var(--brand-muted)]">
-        Save items you love and come back to them anytime.
-      </p>
-      <Link href="/products" className="btn-primary mt-6 inline-flex">
-        Browse products →
-      </Link>
     </div>
   );
 }
@@ -222,7 +197,12 @@ export function WishlistPageClient() {
       {showSkeleton ? (
         <WishlistSkeletonGrid />
       ) : items.length === 0 ? (
-        <WishlistEmptyState />
+        <StoreEmptyState
+          illustration="heart"
+          title="Your wishlist is empty"
+          description="Tap the heart on any product to save it here — perfect for gifts you’re still deciding on."
+          primary={{ label: "Browse products →", href: "/products" }}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p) => (

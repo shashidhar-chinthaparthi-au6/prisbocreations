@@ -8,18 +8,23 @@ const display = Playfair_Display({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-display",
+  display: "swap",
+  preload: true,
 });
 
 const sans = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-sans",
+  display: "swap",
+  preload: true,
 });
 
 const mono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -32,11 +37,19 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Prisbo Creations",
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover" as const,
+  themeColor: "#c47a2b",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

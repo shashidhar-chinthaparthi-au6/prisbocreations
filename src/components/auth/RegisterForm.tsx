@@ -29,9 +29,9 @@ export function RegisterForm({ redirectTo }: { redirectTo?: string }) {
   const qpEmail = searchParams.get("email")?.trim() ?? "";
   const qpName = searchParams.get("name")?.trim() ?? "";
   const source = searchParams.get("source")?.trim() ?? "";
-  const dest = safeRedirectPath(redirectTo ?? qpRedirect, "/account/orders");
+  const dest = safeRedirectPath(redirectTo ?? qpRedirect, "/");
   const signInDest =
-    dest !== "/account/orders" ? `/login?redirect=${encodeURIComponent(dest)}` : "/login";
+    dest !== "/" ? `/login?redirect=${encodeURIComponent(dest)}` : "/login";
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");

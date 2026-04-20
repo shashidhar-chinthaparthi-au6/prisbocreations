@@ -26,7 +26,8 @@ export async function GET(req: Request) {
     ...category,
     ...(categoryCsv ? categoryCsv.split(",").map((s) => s.trim()).filter(Boolean) : []),
   ];
-  const subcategorySlug = url.searchParams.get("subcategory") ?? undefined;
+  const subcategorySlug =
+    url.searchParams.get("subcategory") ?? url.searchParams.get("sub") ?? undefined;
   const subcategoryCategorySlug = url.searchParams.get("subcategoryCategory") ?? undefined;
   const featured = url.searchParams.get("featured") === "true";
   const idsRaw = url.searchParams.get("ids");
@@ -41,7 +42,13 @@ export async function GET(req: Request) {
   const sort = parseSort(url.searchParams.get("sort"));
   const page = Number(url.searchParams.get("page") ?? "1") || 1;
   const limit = Number(url.searchParams.get("limit") ?? url.searchParams.get("pageSize") ?? "12") || 12;
-  const inStockOnly = url.searchParams.get("in_stock") === "1" || url.searchParams.get("in_stock") === "true";
+  const skipRaw = url.searchParams.get("skip");
+  const skip =
+    skipRaw != null && skipRaw !== "" && Number.isFinite(Number(skipRaw))
+      ? Math.max(0, Math.floor(Number(skipRaw)))
+      : undefined;
+  /** Default: in-stock only unless `in_stock=false`. */
+  const inStockOnly = url.searchParams.get("in_stock") !== "false";
 
   const priceMinRupees = url.searchParams.get("price_min");
   const priceMaxRupees = url.searchParams.get("price_max");
@@ -54,6 +61,13 @@ export async function GET(req: Request) {
       ? Math.max(0, Math.round(Number(priceMaxRupees) * 100))
       : undefined;
 
+  const occasion = url.searchParams.get("occasion")?.trim() || undefined;
+  const material = url.searchParams.get("material")?.trim() || undefined;
+  const ratingRaw = url.searchParams.get("rating");
+  const minAverageRating =
+    ratingRaw === "4" || ratingRaw === "4+" ? 4 : undefined;
+  const exclude = url.searchParams.get("exclude")?.trim() || undefined;
+
   const result = await listStorefrontProducts({
     categorySlugs: categorySlugs.length ? categorySlugs : undefined,
     subcategorySlug,
@@ -65,10 +79,16 @@ export async function GET(req: Request) {
     sort,
     page,
     pageSize: limit,
+    skip,
     inStockOnly,
     priceMinPaise,
     priceMaxPaise,
+    occasion,
+    material,
+    minAverageRating,
+    excludeProductId: exclude,
   });
 
-  return jsonOk(result);
+  const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
+  return jsonOk({ ...result, pages });
 }

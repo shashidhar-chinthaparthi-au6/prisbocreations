@@ -9,6 +9,7 @@ import type { CartLine } from "@/components/cart/CartProvider";
 import { useCartStore } from "@/lib/store/cart-store";
 import { computeCartTotals } from "@/lib/store/cart-store";
 import { dispatchStoreToast } from "@/components/store/StoreToaster";
+import { StoreEmptyState } from "@/components/ui/StoreEmptyState";
 import { useEffect, useState } from "react";
 
 export function CartClient() {
@@ -87,12 +88,14 @@ export function CartClient() {
 
   if (!lines.length) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#E8E0D6] bg-white p-12 text-center">
-        <p className="text-[#6B6560]">Your cart is empty.</p>
-        <Link href="/products" className="mt-4 inline-flex rounded-full bg-[#C47A2B] px-6 py-3 text-sm font-semibold text-white">
-          Browse products →
-        </Link>
-      </div>
+      <StoreEmptyState
+        className="border-[#E8E0D6] bg-white"
+        illustration="bag"
+        title="Your cart is empty"
+        description="Add something you love — we’ll hold it here until you’re ready to checkout."
+        primary={{ label: "Browse products →", href: "/products" }}
+        secondary={{ label: "Continue shopping on home", href: "/" }}
+      />
     );
   }
 
