@@ -83,10 +83,11 @@ export function ActiveFilterPills({ categories, subcategories }: Props) {
         onRemove: () => setFilters({ material: null }),
       });
     }
-    if (searchParams.get("in_stock") === "false") {
+    const inRaw = searchParams.get("in_stock");
+    if (inRaw === "true" || inRaw === "1") {
       out.push({
         key: "in_stock",
-        label: "Including out of stock",
+        label: "In stock only",
         onRemove: () => setFilters({ in_stock: null }),
       });
     }

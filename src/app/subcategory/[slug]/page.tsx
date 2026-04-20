@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/db";
 import { Category } from "@/lib/models/Category";
 import { Subcategory } from "@/lib/models/Subcategory";
 import {
+  listingWantsInStockOnly,
   listStorefrontCategoryRows,
   listStorefrontFilterFacets,
   listStorefrontProducts,
@@ -60,7 +61,7 @@ async function SubcategoryListingSection({
     typeof sp.price_min === "string" && sp.price_min !== "" ? Number(sp.price_min) : undefined;
   const priceMax =
     typeof sp.price_max === "string" && sp.price_max !== "" ? Number(sp.price_max) : undefined;
-  const inStockOnly = sp.in_stock === "false" ? false : undefined;
+  const inStockOnly = listingWantsInStockOnly(sp.in_stock) ? true : false;
   const occasion = typeof sp.occasion === "string" ? sp.occasion : undefined;
   const material = typeof sp.material === "string" ? sp.material : undefined;
   const minAverageRating = sp.rating === "4" ? 4 : undefined;

@@ -122,7 +122,7 @@ export function ProductsMobileFilters({
                   />
                 </div>
                 <label className="flex min-h-11 items-center gap-2">
-                  <input type="checkbox" name="in_stock" value="1" defaultChecked={inStockOnly} />
+                  <input type="checkbox" name="in_stock" value="true" defaultChecked={inStockOnly} />
                   In stock only
                 </label>
               </form>

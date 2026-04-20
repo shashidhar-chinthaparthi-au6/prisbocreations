@@ -28,6 +28,15 @@ export type StorefrontSort =
   | "popular"
   | "name_asc";
 
+/** URL: `in_stock=true` or `in_stock=1` (mobile form) narrows to buyable quantity. Default = show all. */
+export function listingWantsInStockOnly(
+  raw: string | string[] | undefined,
+): boolean {
+  if (typeof raw === "string") return raw === "true" || raw === "1";
+  if (Array.isArray(raw)) return raw.some((x) => x === "true" || x === "1");
+  return false;
+}
+
 export type StorefrontListParams = {
   categorySlugs?: string[];
   subcategorySlug?: string;
@@ -35,6 +44,7 @@ export type StorefrontListParams = {
   subcategoryCategorySlug?: string;
   priceMinPaise?: number;
   priceMaxPaise?: number;
+  /** When `true`, exclude zero–effective-stock products. When omitted or `false`, include all. */
   inStockOnly?: boolean;
   featured?: boolean;
   ids?: string[];
@@ -63,6 +73,24 @@ function effectivePricePaise(p: Pick<ProductDoc, "pricePaise" | "options">): num
 function effectiveStock(p: ProductDoc): number {
   if (productHasOptions(p) && p.options?.length) {
     return p.options.reduce((s, o) => s + Math.max(0, Number(o.stock) || 0), 0);
+  }
+  const cvs = p.colourVariants;
+  if (Array.isArray(cvs) && cvs.length > 0) {
+    let sum = 0;
+    for (const v of cvs) {
+      if (!v || typeof v !== "object") continue;
+      const rec = v as { isActive?: boolean; sizeStocks?: unknown };
+      if (rec.isActive === false) continue;
+      const rows = rec.sizeStocks;
+      if (!Array.isArray(rows)) continue;
+      for (const row of rows) {
+        if (!row || typeof row !== "object") continue;
+        const sr = row as { isActive?: boolean; stock?: unknown };
+        if (sr.isActive === false) continue;
+        sum += Math.max(0, Number(sr.stock) || 0);
+      }
+    }
+    return sum;
   }
   return Math.max(0, Number(p.stock) || 0);
 }
@@ -377,7 +405,7 @@ export async function listStorefrontProducts(
     const price = effectivePricePaise(doc);
     if (priceMin != null && price < priceMin) return false;
     if (priceMax != null && price > priceMax) return false;
-    if (params.inStockOnly !== false && effectiveStock(doc) <= 0) return false;
+    if (params.inStockOnly === true && effectiveStock(doc) <= 0) return false;
     if (params.excludeProductId && String(doc._id) === params.excludeProductId) return false;
     if (ratingOk && !ratingOk.has(String(doc._id))) return false;
     const occ = params.occasion?.trim().toLowerCase();

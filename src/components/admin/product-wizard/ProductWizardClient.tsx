@@ -293,22 +293,31 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
   const vIdx = Math.min(activeVariantTab, Math.max(0, variants.length - 1));
   const vCur = variants[vIdx];
 
-  async function uploadFile(file: File) {
+  async function uploadVariantImages(files: FileList | File[] | null) {
     if (!vCur || !w.productId) return;
-    let url: string;
-    try {
-      url = await uploadAdminImageWithProgress(file, () => {});
-    } catch (e) {
-      toast({ type: "error", message: e instanceof Error ? e.message : "Upload failed" });
-      return;
+    const fileArr = files ? Array.from(files) : [];
+    if (!fileArr.length) return;
+    const tempId = vCur.tempId;
+    let list = [...(useProductWizard.getState().variantImages[tempId] ?? [])];
+    for (const file of fileArr) {
+      try {
+        const url = await uploadAdminImageWithProgress(file, () => {});
+        list = [
+          ...list,
+          {
+            url,
+            isPrimary: list.length === 0,
+            displayOrder: list.length,
+          },
+        ];
+        w.setField("variantImages", {
+          ...useProductWizard.getState().variantImages,
+          [tempId]: list,
+        });
+      } catch (e) {
+        toast({ type: "error", message: e instanceof Error ? e.message : "Upload failed" });
+      }
     }
-    const list = [...(w.variantImages[vCur.tempId] ?? [])];
-    list.push({
-      url,
-      isPrimary: list.length === 0,
-      displayOrder: list.length,
-    });
-    w.setField("variantImages", { ...w.variantImages, [vCur.tempId]: list });
   }
 
   if (!hydrated) {
@@ -487,45 +496,51 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
                 onChange={(e) => w.setField("packOf", Math.max(1, Number(e.target.value) || 1))}
               />
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={w.hasColourVariants}
-                onChange={(e) => {
-                  w.setField("hasColourVariants", e.target.checked);
-                  if (!e.target.checked) {
-                    w.setField("variants", [
-                      {
-                        tempId: crypto.randomUUID(),
-                        displayName: "Default",
-                        hexCode: "#111111",
-                        skuSuffix: "DEF",
-                        basePrice: 0,
-                        mrp: 0,
-                        isActive: true,
-                      },
-                    ]);
-                  }
-                }}
-              />
-              Has multiple colour variants
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={w.hasSizePricing}
-                onChange={(e) => w.setField("hasSizePricing", e.target.checked)}
-              />
-              Different price per size
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={w.sizesNotApplicable}
-                onChange={(e) => w.setField("sizesNotApplicable", e.target.checked)}
-              />
-              Sizes not applicable (one size)
-            </label>
+            <div className="max-w-md space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Options</p>
+              <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-800">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 cursor-pointer accent-zinc-900"
+                  checked={w.hasColourVariants}
+                  onChange={(e) => {
+                    w.setField("hasColourVariants", e.target.checked);
+                    if (!e.target.checked) {
+                      w.setField("variants", [
+                        {
+                          tempId: crypto.randomUUID(),
+                          displayName: "Default",
+                          hexCode: "#111111",
+                          skuSuffix: "DEF",
+                          basePrice: 0,
+                          mrp: 0,
+                          isActive: true,
+                        },
+                      ]);
+                    }
+                  }}
+                />
+                <span>Has multiple colour variants</span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-800">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 cursor-pointer accent-zinc-900"
+                  checked={w.hasSizePricing}
+                  onChange={(e) => w.setField("hasSizePricing", e.target.checked)}
+                />
+                <span>Different price per size</span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-800">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 cursor-pointer accent-zinc-900"
+                  checked={w.sizesNotApplicable}
+                  onChange={(e) => w.setField("sizesNotApplicable", e.target.checked)}
+                />
+                <span>Sizes not applicable (one size)</span>
+              </label>
+            </div>
           </div>
         : null}
 
@@ -658,13 +673,16 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
+                multiple
                 className="hidden"
                 onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void uploadFile(f);
+                  void uploadVariantImages(e.target.files);
+                  e.target.value = "";
                 }}
               />
-              Drop or click to upload (JPG/PNG/WebP, max 5MB)
+              <span className="text-center px-2">
+                Click to upload — select multiple images (JPG/PNG/WebP, max 5MB each)
+              </span>
             </label>
             <div className="flex flex-wrap gap-2">
               {(vCur ? w.variantImages[vCur.tempId] ?? [] : []).map((im, idx) => (

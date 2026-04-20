@@ -47,8 +47,9 @@ export async function GET(req: Request) {
     skipRaw != null && skipRaw !== "" && Number.isFinite(Number(skipRaw))
       ? Math.max(0, Math.floor(Number(skipRaw)))
       : undefined;
-  /** Default: in-stock only unless `in_stock=false`. */
-  const inStockOnly = url.searchParams.get("in_stock") !== "false";
+  /** Default: all products. Pass `in_stock=true` or `in_stock=1` to hide zero-stock items. */
+  const inRaw = url.searchParams.get("in_stock");
+  const inStockOnly = inRaw === "true" || inRaw === "1";
 
   const priceMinRupees = url.searchParams.get("price_min");
   const priceMaxRupees = url.searchParams.get("price_max");

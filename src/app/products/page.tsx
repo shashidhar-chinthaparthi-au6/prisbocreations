@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { connectDb } from "@/lib/db";
 import {
+  listingWantsInStockOnly,
   listStorefrontCategoryRows,
   listStorefrontFilterFacets,
   listStorefrontProducts,
@@ -63,7 +64,7 @@ async function ProductsListingLoader({
     typeof sp.price_min === "string" && sp.price_min !== "" ? Number(sp.price_min) : undefined;
   const priceMax =
     typeof sp.price_max === "string" && sp.price_max !== "" ? Number(sp.price_max) : undefined;
-  const inStockOnly = sp.in_stock === "false" ? false : undefined;
+  const inStockOnly = listingWantsInStockOnly(sp.in_stock) ? true : false;
   const occasion = typeof sp.occasion === "string" ? sp.occasion : undefined;
   const material = typeof sp.material === "string" ? sp.material : undefined;
   const minAverageRating = sp.rating === "4" ? 4 : undefined;

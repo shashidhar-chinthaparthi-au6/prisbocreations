@@ -25,7 +25,7 @@ function useFilterActive() {
     if (sp.get("price_min") || sp.get("price_max")) return true;
     if (sp.get("occasion")) return true;
     if (sp.get("material")) return true;
-    if (sp.get("in_stock") === "false") return true;
+    if (sp.get("in_stock") === "true" || sp.get("in_stock") === "1") return true;
     if (sp.get("rating") === "4") return true;
     if (sp.get("q")) return true;
     return false;
@@ -62,7 +62,8 @@ export function FilterSidebar({ mode, categories, subcategories, facets }: Props
     setFilters({ subcategory: slug, sub: null });
   }
 
-  const inStockChecked = searchParams.get("in_stock") !== "false";
+  const inStockRaw = searchParams.get("in_stock");
+  const inStockChecked = inStockRaw === "true" || inStockRaw === "1";
   const ratingChecked = searchParams.get("rating") === "4";
 
   return (
@@ -180,7 +181,7 @@ export function FilterSidebar({ mode, categories, subcategories, facets }: Props
           <input
             type="checkbox"
             checked={inStockChecked}
-            onChange={(e) => setFilters({ in_stock: e.target.checked ? null : "false" })}
+            onChange={(e) => setFilters({ in_stock: e.target.checked ? "true" : null })}
             className="h-3 w-3 shrink-0 rounded border-[var(--bdd)] accent-[var(--am)]"
           />
           <span className="md:hidden">In stock</span>

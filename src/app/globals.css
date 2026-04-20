@@ -77,7 +77,8 @@ textarea {
   font-size: 16px;
 }
 
-input,
+/* Do not strip native checkbox/radio appearance — it hides the control in Chrome/Safari. */
+input:not([type="checkbox"]):not([type="radio"]),
 textarea {
   -webkit-appearance: none;
   border-radius: 8px;

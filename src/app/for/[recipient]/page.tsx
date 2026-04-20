@@ -37,6 +37,7 @@ export default async function ForRecipientPage({
     page: 1,
     pageSize: 24,
     sort: "popular",
+    inStockOnly: true,
   });
 
   return (

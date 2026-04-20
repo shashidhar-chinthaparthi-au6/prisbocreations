@@ -20,11 +20,17 @@ export default async function HomePage() {
   await connectDb();
   const [categories, featuredResult] = await Promise.all([
     listCategories(),
-    listStorefrontProducts({ featured: true, page: 1, pageSize: 8, sort: "newest" }),
+    listStorefrontProducts({
+      featured: true,
+      page: 1,
+      pageSize: 8,
+      sort: "newest",
+      inStockOnly: true,
+    }),
   ]);
   const featured = featuredResult.items.length
     ? featuredResult.items
-    : (await listStorefrontProducts({ page: 1, pageSize: 8, sort: "newest" })).items;
+    : (await listStorefrontProducts({ page: 1, pageSize: 8, sort: "newest", inStockOnly: true })).items;
 
   const catCards = categories.slice(0, 5);
 
