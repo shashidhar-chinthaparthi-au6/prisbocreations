@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { adminFetchJson, AdminApiError } from "@/lib/admin/admin-fetch";
+import { uploadAdminImageWithProgress } from "@/lib/api/upload-progress";
 import { useAdminToast } from "@/components/admin/layout/AdminShell";
 import { AdminBreadcrumb } from "@/components/admin/layout/AdminBreadcrumb";
 import { resolveTemplate, formatInr } from "@/lib/admin/template-resolve";
@@ -294,15 +295,13 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
 
   async function uploadFile(file: File) {
     if (!vCur || !w.productId) return;
-    const fd = new FormData();
-    fd.set("file", file);
-    const res = await fetch("/api/admin/uploads", { method: "POST", body: fd, credentials: "include" });
-    const j = (await res.json()) as { ok?: boolean; data?: { url: string }; error?: string };
-    if (!res.ok || !j.ok || !j.data?.url) {
-      toast({ type: "error", message: j.error ?? "Upload failed" });
+    let url: string;
+    try {
+      url = await uploadAdminImageWithProgress(file, () => {});
+    } catch (e) {
+      toast({ type: "error", message: e instanceof Error ? e.message : "Upload failed" });
       return;
     }
-    const url = j.data.url;
     const list = [...(w.variantImages[vCur.tempId] ?? [])];
     list.push({
       url,

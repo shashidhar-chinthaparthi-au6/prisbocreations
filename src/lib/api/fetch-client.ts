@@ -10,38 +10,6 @@ function shouldHandleAdmin401(path: string, status: number): boolean {
   return status === 401 && path.startsWith("/api/v1/admin");
 }
 
-/** Admin-only multipart upload (images + MP4/WebM/MOV); returns a public path like `/uploads/…`. */
-export async function uploadAdminImage(file: File): Promise<string> {
-  const path = "/api/v1/admin/upload";
-  const fd = new FormData();
-  fd.append("file", file);
-  const res = await fetch(path, {
-    method: "POST",
-    body: fd,
-    credentials: "include",
-  });
-
-  if (shouldHandleAdmin401(path, res.status)) {
-    redirectAdminSessionExpired();
-    throw new Error("Your session ended. Please sign in again.");
-  }
-
-  let json: ApiEnvelope<{ url: string }> & Record<string, unknown>;
-  try {
-    json = (await res.json()) as ApiEnvelope<{ url: string }> & Record<string, unknown>;
-  } catch {
-    throw new Error(`Upload failed (${res.status})`);
-  }
-  if (!res.ok || !json || typeof json !== "object" || !("ok" in json) || !json.ok) {
-    const msg =
-      typeof json === "object" && json && "error" in json && typeof json.error === "string"
-        ? json.error
-        : `Upload failed (${res.status})`;
-    throw new Error(msg);
-  }
-  return (json as { data: { url: string } }).data.url;
-}
-
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const hasBody = init?.body !== undefined && init?.body !== null;
   const headers = new Headers(init?.headers);

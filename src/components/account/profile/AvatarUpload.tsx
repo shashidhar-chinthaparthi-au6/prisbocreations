@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { apiFetch } from "@/lib/api/fetch-client";
+import { uploadCustomerImageToS3 } from "@/lib/api/customer-upload-client";
+import { isS3PublicConfigured } from "@/lib/api/upload-progress";
+import type { MeUserDto } from "@/lib/user-me-dto";
 import { Spinner } from "@/components/ui/Spinner";
 
 export function AvatarUpload({
@@ -22,6 +25,14 @@ export function AvatarUpload({
   const src = avatarUrl?.trim() || null;
 
   async function postAvatar(file: File) {
+    if (isS3PublicConfigured()) {
+      const url = await uploadCustomerImageToS3(file);
+      const data = await apiFetch<{ user: MeUserDto }>("/api/v1/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify({ profileImageUrl: url }),
+      });
+      return data.user.avatarUrl ?? url;
+    }
     const fd = new FormData();
     fd.append("avatar", file);
     const res = await fetch("/api/account/avatar", {
