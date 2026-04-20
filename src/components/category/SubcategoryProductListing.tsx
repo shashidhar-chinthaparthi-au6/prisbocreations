@@ -153,7 +153,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                     <td className="px-3 py-3 sm:px-4">
                       <div className="flex items-center gap-3">
                         <Link
-                          href={`/product/${p.slug}`}
+                          href={`/products/${p.slug}`}
                           className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-sand-deep"
                         >
                           {thumb ? (
@@ -168,7 +168,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
                           ) : null}
                         </Link>
                         <Link
-                          href={`/product/${p.slug}`}
+                          href={`/products/${p.slug}`}
                           className="font-medium text-ink hover:text-accent line-clamp-2"
                         >
                           {p.name}
@@ -249,7 +249,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
               key={p._id}
               className="group/card flex h-full flex-col overflow-hidden rounded-xl border border-sand-deep bg-white shadow-sm sm:rounded-2xl"
             >
-              <Link href={`/product/${p.slug}`} className="block shrink-0">
+              <Link href={`/products/${p.slug}`} className="block shrink-0">
                 <div className="relative aspect-square w-full overflow-hidden bg-sand-deep sm:aspect-[4/3]">
                   {second ? (
                     <>
@@ -294,7 +294,7 @@ export function SubcategoryProductListing({ products }: { products: ListingProdu
               </Link>
               <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
                 <Link
-                  href={`/product/${p.slug}`}
+                  href={`/products/${p.slug}`}
                   className="text-sm font-medium text-ink hover:text-accent line-clamp-2 sm:text-base"
                 >
                   {p.name}

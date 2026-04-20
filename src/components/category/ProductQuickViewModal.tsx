@@ -116,14 +116,14 @@ export function ProductQuickViewModal({ slug, onClose }: { slug: string; onClose
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Link
-                  href={`/product/${slug}`}
+                  href={`/products/${slug}`}
                   onClick={onClose}
                   className="flex flex-1 items-center justify-center rounded-full bg-accent py-3 text-center text-sm font-semibold text-white hover:bg-accent-light"
                 >
                   View details
                 </Link>
                 <Link
-                  href={`/product/${slug}`}
+                  href={`/products/${slug}`}
                   onClick={onClose}
                   className="flex flex-1 items-center justify-center rounded-full border-2 border-sand-deep py-3 text-center text-sm font-semibold text-ink hover:border-accent"
                 >

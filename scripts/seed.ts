@@ -12,6 +12,7 @@ import bcrypt from "bcryptjs";
 import { Category } from "../src/lib/models/Category";
 import { Subcategory } from "../src/lib/models/Subcategory";
 import { Product } from "../src/lib/models/Product";
+import { SchemaField } from "../src/lib/models/SchemaField";
 import { User } from "../src/lib/models/User";
 
 const uri = process.env.MONGODB_URI;
@@ -557,6 +558,7 @@ async function main() {
 
   console.log("Connected. Clearing catalog…");
   await Product.deleteMany({});
+  await SchemaField.deleteMany({});
   await Subcategory.deleteMany({});
   await Category.deleteMany({});
 
@@ -582,6 +584,7 @@ async function main() {
       });
       for (const p of sub.products) {
         await Product.create({
+          categoryId: cid,
           subcategoryId: sdoc._id,
           name: p.name,
           slug: p.slug,
@@ -597,6 +600,84 @@ async function main() {
       }
     }
   }
+
+  const giftSchemaPairs: {
+    categorySlug: string;
+    subSlug: string;
+    fields: {
+      key: string;
+      label: string;
+      fieldType: "text" | "select" | "number" | "boolean";
+      options?: string[];
+      isHighlight?: boolean;
+      isRequired?: boolean;
+    }[];
+  }[] = [
+    {
+      categorySlug: "paper-packaging",
+      subSlug: "confectionery-wraps",
+      fields: [
+        { key: "finish", label: "Finish", fieldType: "select", options: ["Matte", "Gloss"], isHighlight: true, isRequired: true },
+        { key: "bar_size", label: "Bar size", fieldType: "select", options: ["45g", "100g", "Custom"], isHighlight: true },
+        { key: "min_order_qty", label: "Minimum order", fieldType: "number", isRequired: false },
+      ],
+    },
+    {
+      categorySlug: "paper-packaging",
+      subSlug: "stickers-seals",
+      fields: [
+        { key: "material", label: "Material", fieldType: "select", options: ["Paper", "Vinyl"], isHighlight: true, isRequired: true },
+        { key: "shape", label: "Shape", fieldType: "select", options: ["Round", "Square", "Die-cut"], isHighlight: true },
+        { key: "waterproof", label: "Waterproof", fieldType: "boolean", isRequired: false },
+      ],
+    },
+    {
+      categorySlug: "acrylic-resin",
+      subSlug: "travel-carry",
+      fields: [
+        { key: "thickness_mm", label: "Thickness (mm)", fieldType: "select", options: ["3", "4", "5"], isHighlight: true },
+        { key: "hardware", label: "Hardware", fieldType: "select", options: ["Split ring", "Lobster clasp"], isHighlight: true },
+        { key: "double_sided", label: "Double-sided print", fieldType: "boolean", isRequired: false },
+      ],
+    },
+    {
+      categorySlug: "acrylic-resin",
+      subSlug: "desk-office",
+      fields: [
+        { key: "base_type", label: "Base", fieldType: "select", options: ["Wood", "LED", "None"], isHighlight: true, isRequired: true },
+        { key: "size_label", label: "Size", fieldType: "select", options: ["A5", "A4", "Custom"], isHighlight: true },
+        { key: "engraving", label: "Engraving line", fieldType: "text", isRequired: false },
+      ],
+    },
+  ];
+
+  let seededSubs = 0;
+  for (const pair of giftSchemaPairs) {
+    const cat = await Category.findOne({ slug: pair.categorySlug }).select("_id").lean();
+    if (!cat) continue;
+    const sub = await Subcategory.findOne({
+      categoryId: cat._id,
+      slug: pair.subSlug,
+    })
+      .select("_id")
+      .lean();
+    if (!sub) continue;
+    let i = 0;
+    for (const f of pair.fields) {
+      await SchemaField.create({
+        subcategoryId: sub._id,
+        key: f.key,
+        label: f.label,
+        fieldType: f.fieldType,
+        options: f.options ?? [],
+        isHighlight: f.isHighlight ?? false,
+        isRequired: f.isRequired ?? false,
+        displayOrder: i++,
+      });
+    }
+    seededSubs += 1;
+  }
+  console.log(`Seeded schema fields for ${seededSubs} subcategories (gift catalog sample).`);
 
   await seedAdminUser(false);
 

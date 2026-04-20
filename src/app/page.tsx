@@ -1,187 +1,214 @@
+import Image from "next/image";
 import Link from "next/link";
-import { getSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
-import {
-  listCategories,
-  listExploreProductsForHome,
-  listFeaturedProducts,
-} from "@/lib/services/catalogService";
-import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
-import { HomeExploreProducts } from "@/components/store/HomeExploreProducts";
-import { HomeProductCard } from "@/components/store/HomeProductCard";
-import { productToExploreCardDTO, type HomeExploreCardDTO } from "@/lib/home-explore-dto";
-import { RecentlyViewedHome } from "@/components/store/RecentlyViewedHome";
-import { HeroProcessCarousel } from "@/components/store/HeroProcessCarousel";
-import { HomeTrustBar } from "@/components/store/HomeTrustBar";
-import { HomeShopByRecipient } from "@/components/store/HomeShopByRecipient";
-import { HomeBrandBenefits } from "@/components/store/HomeBrandBenefits";
+import { listCategories } from "@/lib/services/catalogService";
+import { listStorefrontProducts } from "@/lib/services/storefrontCatalog";
+import { HomeNewsletter } from "@/components/storefront/HomeNewsletter";
+import { HomeRecentlyViewed } from "@/components/storefront/HomeRecentlyViewed";
+import { ProductCard } from "@/components/storefront/ProductCard";
+import { TrustIconHeart, TrustIconShieldCheck, TrustIconTruck } from "@/components/storefront/HomeTrustIcons";
+import { categoryCardPlaceholderImage } from "@/lib/home-category-placeholder";
 
-/** Public sample MP4 (hotlink-friendly); replace via `NEXT_PUBLIC_HOME_HERO_VIDEO_URL` in production. */
-const DEFAULT_HOME_HERO_VIDEO_PLACEHOLDER = "https://www.w3schools.com/html/mov_bbb.mp4";
+export const revalidate = 120;
 
-function dedupeImageUrls(urls: (string | undefined | null)[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const u of urls) {
-    const s = typeof u === "string" ? u.trim() : "";
-    if (!s || seen.has(s)) continue;
-    seen.add(s);
-    out.push(s);
-  }
-  return out;
-}
+const HERO_IMG =
+  "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=1600&q=85";
 
 export default async function HomePage() {
-  const secret = process.env.JWT_SECRET;
-  const session = secret ? await getSession(secret) : null;
-
   await connectDb();
-  const [categories, featured] = await Promise.all([listCategories(), listFeaturedProducts(12)]);
-  const { rows: exploreRows, mode: exploreFeedMode } = await listExploreProductsForHome(
-    18,
-    featured.map((p) => String(p._id)),
-  );
-  const exploreInitial = exploreRows.map((p) => productToExploreCardDTO(p));
-
-  const heroBackdropUrls = dedupeImageUrls([
-    ...categories.map((c) => c.images?.[0]),
-    ...featured.map((p) => p.images?.[0]),
+  const [categories, featuredResult] = await Promise.all([
+    listCategories(),
+    listStorefrontProducts({ featured: true, page: 1, pageSize: 8, sort: "newest" }),
   ]);
-  /** MP4/WebM/MOV — full-bleed muted loop behind hero stills; env overrides web placeholder. */
-  const heroVideoUrl =
-    process.env.NEXT_PUBLIC_HOME_HERO_VIDEO_URL?.trim() || DEFAULT_HOME_HERO_VIDEO_PLACEHOLDER;
+  const featured = featuredResult.items.length
+    ? featuredResult.items
+    : (await listStorefrontProducts({ page: 1, pageSize: 8, sort: "newest" })).items;
+
+  const catCards = categories.slice(0, 5);
 
   return (
-    <div className="space-y-6 md:space-y-8">
-      <section className="relative overflow-hidden rounded-lg border border-slate-200/90 bg-slate-900 px-5 py-8 text-white shadow-[0_2px_8px_rgba(15,23,42,0.08)] sm:px-7 sm:py-9 md:rounded-xl md:px-10 md:py-10">
-        {heroBackdropUrls.length > 0 || heroVideoUrl ? (
-          <HeroProcessCarousel urls={heroBackdropUrls} videoUrl={heroVideoUrl} />
-        ) : null}
-        {/* Left-heavy washes: keep copy readable; leave the right clearer for hero video / imagery */}
-        <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-gradient-to-r from-rose-950/90 from-0% via-ink/72 via-[36%] via-amber-950/18 via-[58%] to-transparent to-[96%] md:rounded-xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-gradient-to-r from-accent/32 from-0% via-rose-light/14 via-[52%] to-transparent to-[94%] md:rounded-xl"
-          aria-hidden
-        />
-        {/* Readability for copy — strong on the left only */}
-        <div
-          className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-gradient-to-r from-black/72 from-0% via-black/22 via-[44%] to-transparent to-[100%] md:rounded-xl"
-          aria-hidden
-        />
-        <div
-          className="relative z-10 max-w-xl space-y-3 sm:max-w-2xl sm:space-y-4 [text-shadow:0_2px_20px_rgba(0,0,0,0.5),0_1px_3px_rgba(0,0,0,0.75)]"
-        >
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-100/95 sm:text-sm sm:tracking-[0.22em]">
+    <div className="mx-auto max-w-[1400px] space-y-14 sm:space-y-16">
+      {/* Hero */}
+      <section className="relative isolate min-h-[400px] overflow-hidden rounded-2xl sm:min-h-[520px]">
+        <Image src={HERO_IMG} alt="" fill priority className="object-cover" sizes="100vw" />
+        <div className="absolute inset-0 bg-[rgba(20,15,10,0.45)]" aria-hidden />
+        <div className="relative z-10 flex min-h-[400px] max-w-[540px] flex-col justify-center px-6 py-12 sm:min-h-[520px] sm:px-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--brand-amber-light)] sm:text-sm">
             Prisbo Creations
           </p>
-          <h1 className="font-display text-2xl leading-snug text-white sm:text-3xl sm:leading-tight md:text-4xl">
+          <h1 className="mt-3 font-display text-3xl font-bold leading-tight text-white sm:text-[40px] sm:leading-snug md:text-[48px]">
             We craft personalised gifts and keepsakes — in our studio, not from a faceless warehouse.
           </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-sand/95 sm:text-base">
+          <p className="mt-4 max-w-xl text-base text-white/85 sm:text-base">
             Laser-cut acrylic, careful print finishing, and packaging you&apos;ll be proud to hand over.
-            Every piece is made for your story.
           </p>
-          <div className="flex flex-wrap gap-2 pt-1 [text-shadow:none] sm:gap-3">
-            <Link
-              href="/categories"
-              className="inline-flex min-h-10 items-center justify-center rounded-full bg-gradient-to-r from-accent to-accent-light px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(180,83,9,0.45)] ring-2 ring-white/25 transition hover:brightness-110 sm:min-h-11 sm:px-6 sm:py-3"
-            >
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/products" className="btn-primary min-h-12 px-8">
               Shop the catalog
             </Link>
-            {!session ? (
-              <Link
-                href="/register"
-                className="inline-flex min-h-10 items-center justify-center rounded-full border-2 border-amber-100/70 bg-white/12 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(0,0,0,0.25)] backdrop-blur-md transition hover:border-white hover:bg-white/20 sm:min-h-11 sm:px-6 sm:py-3"
-              >
-                Create account
-              </Link>
-            ) : null}
+            <Link
+              href="/register"
+              className="inline-flex min-h-12 items-center justify-center rounded-full border-[1.5px] border-white bg-transparent px-8 text-sm font-medium tracking-wide text-white transition duration-150 hover:bg-white/10"
+            >
+              Create account
+            </Link>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-10 -top-12 z-[2] h-56 w-56 rounded-full bg-gradient-to-br from-accent/50 via-amber-300/35 to-transparent blur-3xl sm:h-64 sm:w-64" />
-        <div className="pointer-events-none absolute -bottom-14 -left-6 z-[2] h-52 w-52 rounded-full bg-gradient-to-tr from-rose-light/45 via-rose/30 to-transparent blur-3xl sm:h-60 sm:w-60" />
       </section>
 
-      <HomeTrustBar />
-
-      <HomeShopByRecipient />
-
-      <HomeBrandBenefits />
-
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
-        <div className="min-w-0 flex-1 space-y-8 rounded-lg border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] sm:p-6 md:space-y-10 md:p-8">
-          {featured.length > 0 ? (
-            <section className="space-y-3">
-              <div className="flex items-end justify-between gap-4">
-                <h2 className="font-display text-xl text-ink md:text-2xl">Featured</h2>
-                <Link href="/search" className="text-sm font-medium text-accent hover:underline">
-                  Search all
-                </Link>
-              </div>
-              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 md:gap-2 md:overflow-visible md:pb-0 lg:grid-cols-6">
-                {featured.map((p) => {
-                  const dto = productToExploreCardDTO(p) as HomeExploreCardDTO;
-                  const multi = productHasOptions(p);
-                  const price = multi ? minOptionPricePaise(p) : p.pricePaise;
-                  return (
-                    <HomeProductCard
-                      key={String(p._id)}
-                      variant="featured"
-                      slug={dto.slug}
-                      name={dto.name}
-                      productId={dto.id}
-                      listPricePaise={price}
-                      compareAtPaise={dto.compareAtPaise}
-                      stock={dto.stock}
-                      imageUrl={dto.imageUrl}
-                      hoverImageUrl={dto.hoverImageUrl}
-                      multi={multi}
-                      hasColorVariants={dto.hasColorVariants}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ) : null}
-
-          <section className="space-y-4">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <h2 className="font-display text-xl text-ink md:text-2xl">Products</h2>
-                <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-                  What is in the catalog right now.
-                </p>
-              </div>
-              <Link href="/categories" className="text-sm font-medium text-accent hover:underline">
-                View all
-              </Link>
+      {/* Trust */}
+      <section className="grid gap-6 rounded-2xl bg-[#f5f0ea] px-6 py-6 sm:grid-cols-3 sm:px-8 sm:py-8">
+        {[
+          {
+            t: "Free shipping over ₹1,499",
+            s: "Pan-India on qualifying cart totals.",
+            Icon: TrustIconTruck,
+          },
+          {
+            t: "Secure payments",
+            s: "UPI, cards, and COD where available.",
+            Icon: TrustIconShieldCheck,
+          },
+          {
+            t: "Personalised in India",
+            s: "Made and packed with care in our studio.",
+            Icon: TrustIconHeart,
+          },
+        ].map((x) => (
+          <div key={x.t} className="flex gap-3">
+            <x.Icon className="shrink-0" />
+            <div>
+              <p className="font-semibold text-[var(--brand-ink)]">{x.t}</p>
+              <p className="mt-1 text-sm text-[var(--brand-muted)]">{x.s}</p>
             </div>
-            {exploreInitial.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-sand-deep bg-white/60 p-8 text-center text-ink-muted sm:p-10">
-                <p className="font-medium text-ink">No products to show yet.</p>
-                <p className="mt-2 text-sm">
-                  Add products in{" "}
-                  <Link href="/admin/products" className="font-medium text-accent hover:underline">
-                    Admin → Products
-                  </Link>{" "}
-                  or open{" "}
-                  <Link href="/categories" className="font-medium text-accent hover:underline">
-                    categories
-                  </Link>{" "}
-                  when they are available.
-                </p>
-              </div>
-            ) : (
-              <HomeExploreProducts initial={exploreInitial} exploreFeedMode={exploreFeedMode} />
-            )}
-          </section>
-        </div>
+          </div>
+        ))}
+      </section>
 
-        <RecentlyViewedHome sidebar />
-      </div>
+      {/* Categories */}
+      <section>
+        <h2 className="font-display text-2xl text-[var(--brand-ink)] sm:text-3xl">Shop by category</h2>
+        <p className="mt-1 text-sm text-[var(--brand-muted)] sm:text-base">
+          Explore our full range of personalised creations.
+        </p>
+        <div className="mt-6 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-5 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+          {catCards.map((c) => {
+            const placeholder = categoryCardPlaceholderImage(c.slug, c.name);
+            return (
+              <Link
+                key={String(c._id)}
+                href={`/category/${c.slug}`}
+                className="group relative w-[140px] shrink-0 overflow-hidden rounded-2xl sm:w-auto"
+              >
+                <div className="relative aspect-square">
+                  <Image
+                    src={placeholder}
+                    alt={c.name}
+                    fill
+                    className="object-cover transition duration-150 group-hover:scale-[1.03]"
+                    sizes="(max-width:640px) 140px, 20vw"
+                  />
+                  <div className="absolute inset-0 bg-[rgba(0,0,0,0.35)]" />
+                  <p className="absolute inset-x-0 bottom-0 flex items-end justify-center p-3 text-center text-sm font-bold text-white">
+                    {c.name}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Featured */}
+      {featured.length > 0 ? (
+        <section>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-2xl text-[var(--brand-ink)] sm:text-3xl">Most loved</h2>
+              <p className="mt-1 text-sm text-[var(--brand-muted)]">What is in the catalog right now.</p>
+            </div>
+            <Link href="/products" className="text-sm font-semibold text-[var(--brand-amber)] hover:underline">
+              View all →
+            </Link>
+          </div>
+          <div className="mt-6 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-4 sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+            {featured.map((p) => (
+              <div key={p.id} className="w-[45vw] shrink-0 sm:w-auto">
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Recipients */}
+      <section>
+        <h2 className="font-display text-2xl text-[var(--brand-ink)] sm:text-3xl">Shop by recipient</h2>
+        <p className="mt-1 text-sm text-[var(--brand-muted)]">Jump in by who you&apos;re shopping for.</p>
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {(
+            [
+              ["him", "#1a2234", "For him"],
+              ["her", "#6b1a2e", "For her"],
+              ["kids", "#8b4a0e", "For kids"],
+              ["couples", "#3d1a6b", "For couples"],
+              ["corporate", "#2d3748", "Corporate"],
+            ] as const
+          ).map(([slug, bg, label]) => (
+            <Link
+              key={slug}
+              href={`/for/${slug}`}
+              className="group relative overflow-hidden rounded-2xl p-8 text-white transition duration-150 hover:scale-[1.02]"
+              style={{ backgroundColor: bg }}
+            >
+              <p className="font-display text-xl font-semibold">{label}</p>
+              <p className="mt-2 text-sm text-white/85">Browse</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Why */}
+      <section>
+        <h2 className="font-display text-2xl text-[var(--brand-ink)] sm:text-3xl">Why Prisbo</h2>
+        <p className="mt-1 text-sm text-[var(--brand-muted)]">
+          Small-batch production with the finish your photos deserve.
+        </p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              t: "Premium acrylic",
+              s: "Crisp edges and depth that reads as luxury, not plastic.",
+              icon: "◆",
+            },
+            {
+              t: "Waterproof prints",
+              s: "Made to survive spills, splashes, and daily handling.",
+              icon: "💧",
+            },
+            {
+              t: "Eco-conscious packaging",
+              s: "Thoughtful wraps and boxes — gift-ready by default.",
+              icon: "🌿",
+            },
+          ].map((x) => (
+            <div
+              key={x.t}
+              className="rounded-2xl border border-[var(--brand-border)] bg-[var(--brand-card)] p-6 shadow-[var(--shadow-card)]"
+            >
+              <span className="text-2xl text-[var(--brand-amber)]" aria-hidden>
+                {x.icon}
+              </span>
+              <p className="mt-3 font-semibold text-[var(--brand-ink)]">{x.t}</p>
+              <p className="mt-2 text-sm text-[var(--brand-muted)]">{x.s}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <HomeRecentlyViewed />
+
+      <HomeNewsletter />
     </div>
   );
 }

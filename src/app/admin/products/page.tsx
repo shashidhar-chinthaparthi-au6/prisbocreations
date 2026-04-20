@@ -1,12 +1,12 @@
-import { AdminProductsClient } from "@/components/admin/AdminProductsClient";
+import { connectDb } from "@/lib/db";
+import { Category } from "@/lib/models/Category";
+import { ProductsPageClient } from "@/components/admin/product-list/ProductsPageClient";
 
-export const metadata = { title: "Admin · Products" };
+export const metadata = { title: "Products · Admin" };
 
-export default function AdminProductsPage() {
-  return (
-    <div className="space-y-6">
-      <h2 className="font-display text-2xl text-ink">Products</h2>
-      <AdminProductsClient />
-    </div>
-  );
+export default async function AdminProductsPage() {
+  await connectDb();
+  const cats = await Category.find().sort({ sortOrder: 1, name: 1 }).select("name").lean();
+  const categoryChips = cats.map((c) => ({ id: String(c._id), name: c.name }));
+  return <ProductsPageClient categoryChips={categoryChips} />;
 }

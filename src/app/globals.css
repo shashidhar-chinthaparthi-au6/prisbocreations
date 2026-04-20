@@ -3,13 +3,54 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8f5f0;
-  --foreground: #0f172a;
+  --brand-amber: #c47a2b;
+  --brand-amber-light: #f5e6d0;
+  --brand-amber-dark: #9a5e1e;
+  --brand-ink: #1a1a1a;
+  --brand-muted: #6b6560;
+  --brand-surface: #fdfaf7;
+  --brand-card: #ffffff;
+  --brand-border: #e8e0d6;
+  --brand-border-dark: #c8bdb0;
+  --brand-success: #2d6a4f;
+  --brand-error: #b91c1c;
+  --brand-info: #1d4ed8;
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.07);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --background: var(--brand-surface);
+  --foreground: var(--brand-ink);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex min-h-[38px] items-center justify-center rounded-full px-6 py-2.5 text-sm font-medium tracking-wide text-white transition duration-150;
+    background-color: var(--brand-amber);
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover {
+    background-color: var(--brand-amber-dark);
+  }
+  .btn-secondary {
+    @apply inline-flex min-h-[38px] items-center justify-center rounded-full border-[1.5px] border-[var(--brand-amber)] bg-transparent px-6 py-2.5 text-sm font-medium tracking-wide text-[var(--brand-amber)] transition duration-150;
+    letter-spacing: 0.02em;
+  }
+  .btn-secondary:hover {
+    background-color: var(--brand-amber-light);
+  }
+  .btn-ghost {
+    @apply inline-flex min-h-[38px] items-center justify-center rounded-full bg-transparent px-6 py-2.5 text-sm font-medium tracking-wide text-[var(--brand-ink)] transition duration-150;
+    letter-spacing: 0.02em;
+  }
+  .btn-ghost:hover {
+    background-color: var(--brand-amber-light);
+  }
 }
 
 .glass {

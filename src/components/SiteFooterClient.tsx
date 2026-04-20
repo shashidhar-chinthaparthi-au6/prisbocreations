@@ -19,8 +19,8 @@ function FooterNav({ isAdmin, loggedIn }: Props) {
           Search
         </Link>
         {isAdmin ? (
-          <Link href="/admin/products" className="text-ink-muted hover:text-accent">
-            Manage products
+          <Link href="/admin" className="text-ink-muted hover:text-accent">
+            Admin catalog
           </Link>
         ) : (
           <Link href="/cart" className="text-ink-muted hover:text-accent">

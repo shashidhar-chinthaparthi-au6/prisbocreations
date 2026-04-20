@@ -14,6 +14,7 @@ const MENU_GAP_PX = 6;
 export function HeaderProfile() {
   const [user, setUser] = useState<MeUserDto | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [avatarReloadToken, setAvatarReloadToken] = useState(0);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -32,9 +33,23 @@ export function HeaderProfile() {
     async function load() {
       try {
         const data = await apiFetch<{ user: MeUserDto }>("/api/v1/auth/me");
-        if (!cancelled) setUser(data.user);
+        if (!cancelled) {
+          setUser(data.user);
+          setErr(null);
+        }
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Could not load profile");
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : "";
+          const guest = /unauthorized|401|not signed|sign in/i.test(msg);
+          if (guest) {
+            setUser(null);
+            setErr(null);
+          } else {
+            setErr(msg || "Could not load profile");
+          }
+        }
+      } finally {
+        if (!cancelled) setReady(true);
       }
     }
     void load();
@@ -115,11 +130,21 @@ export function HeaderProfile() {
   }
 
   if (!user) {
+    if (!ready) {
+      return (
+        <span
+          className="inline-block h-11 w-11 shrink-0 animate-pulse rounded-full bg-sand-deep/40"
+          aria-hidden
+        />
+      );
+    }
     return (
-      <span
-        className="inline-block h-11 w-11 shrink-0 animate-pulse rounded-full bg-sand-deep/40"
-        aria-hidden
-      />
+      <Link
+        href="/login"
+        className="inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-amber-light)]"
+      >
+        Login
+      </Link>
     );
   }
 
@@ -139,12 +164,28 @@ export function HeaderProfile() {
         className="overflow-hidden rounded-xl border border-sand-deep bg-white py-1 shadow-lg ring-1 ring-ink/5"
       >
         <Link
-          href="/account"
+          href="/account/orders"
+          role="menuitem"
+          className="block px-3 py-2.5 text-sm font-medium text-ink hover:bg-sand/60"
+          onClick={() => setOpen(false)}
+        >
+          Orders
+        </Link>
+        <Link
+          href="/account/profile"
           role="menuitem"
           className="block px-3 py-2.5 text-sm font-medium text-ink hover:bg-sand/60"
           onClick={() => setOpen(false)}
         >
           Profile
+        </Link>
+        <Link
+          href="/account/wishlist"
+          role="menuitem"
+          className="block px-3 py-2.5 text-sm font-medium text-ink hover:bg-sand/60"
+          onClick={() => setOpen(false)}
+        >
+          Wishlist
         </Link>
         <div className="mx-2 border-t border-sand-deep/70" />
         <div className="px-1 py-0.5">

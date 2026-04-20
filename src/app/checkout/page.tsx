@@ -1,25 +1,15 @@
-import { getSession } from "@/lib/auth/session";
-import { CheckoutClient } from "@/components/checkout/CheckoutClient";
+import { getStoreSession } from "@/lib/auth/store-session";
+import { CheckoutFlowClient } from "@/components/checkout/CheckoutFlowClient";
 
 export const metadata = { title: "Checkout" };
 
-export default async function CheckoutPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ guest?: string }>;
-}) {
-  const sp = await searchParams;
-  const secret = process.env.JWT_SECRET;
-  const session = secret ? await getSession(secret) : null;
+export default async function CheckoutPage() {
+  const session = await getStoreSession();
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-3xl text-ink">Checkout</h1>
-      <CheckoutClient
-        isAuthenticated={Boolean(session)}
-        defaultEmail={session?.email ?? ""}
-        initialGuestCheckout={sp.guest === "1" || sp.guest === "true"}
-      />
+      <h1 className="font-display text-3xl text-[#3D3835]">Checkout</h1>
+      <CheckoutFlowClient isAuthenticated={Boolean(session)} defaultEmail={session?.email ?? ""} />
     </div>
   );
 }

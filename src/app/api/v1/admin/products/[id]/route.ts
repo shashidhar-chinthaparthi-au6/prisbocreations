@@ -1,11 +1,24 @@
 import { z } from "zod";
+import mongoose from "mongoose";
 import { connectDb } from "@/lib/db";
+import { Subcategory } from "@/lib/models/Subcategory";
 import { requireAdmin } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
 import { zImageRef, zImageRefArray } from "@/lib/api/imageRef";
 import { slugify } from "@/lib/slugify";
 import { adminUpdateProduct, adminDeleteProduct } from "@/lib/services/catalogService";
-import { isHtmlContentEmpty, sanitizeProductDescription } from "@/lib/sanitize-html";
+import {
+  isHtmlContentEmpty,
+  sanitizeAdminProductOption,
+  sanitizePlainField,
+  sanitizePlainLines,
+  sanitizeProductDescription,
+} from "@/lib/sanitize-html";
+
+const specificationRowSchema = z.object({
+  key: z.string().min(1).max(120),
+  value: z.string().min(1).max(2000),
+});
 
 const productOptionSchema = z.object({
   key: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
@@ -14,6 +27,9 @@ const productOptionSchema = z.object({
   stock: z.number().int().min(0),
   sku: z.string().max(80).optional(),
   description: z.string().max(250_000).optional(),
+  specificationRows: z.array(specificationRowSchema).max(80).optional(),
+  featureLines: z.array(z.string().max(500)).max(120).optional(),
+  highlightLines: z.array(z.string().max(500)).max(120).optional(),
 });
 
 const colorVariantSchema = z.object({
@@ -22,11 +38,17 @@ const colorVariantSchema = z.object({
   images: z.array(zImageRef()).max(24).optional().default([]),
 });
 
+const objectIdZ = z.string().refine((s) => mongoose.isValidObjectId(s), "Invalid id");
+
 const patchSchema = z
   .object({
-    subcategoryId: z.string().min(1).optional(),
+    categoryId: objectIdZ.optional(),
+    subcategoryId: z.union([objectIdZ, z.null()]).optional(),
     name: z.string().min(1).optional(),
     description: z.string().min(1).max(250_000).optional(),
+    specificationRows: z.array(specificationRowSchema).max(80).optional(),
+    featureLines: z.array(z.string().max(500)).max(120).optional(),
+    highlightLines: z.array(z.string().max(500)).max(120).optional(),
     pricePaise: z.number().int().positive().optional(),
     compareAtPaise: z.number().int().min(0).nullable().optional(),
     stock: z.number().int().min(0).optional(),
@@ -88,6 +110,12 @@ export async function PATCH(
     await connectDb();
     const { id } = await ctx.params;
     const patch = patchSchema.parse(await req.json());
+    if (patch.subcategoryId && patch.categoryId) {
+      const sub = await Subcategory.findById(patch.subcategoryId).select("categoryId").lean();
+      if (!sub || String(sub.categoryId) !== patch.categoryId) {
+        return jsonError("Subcategory does not belong to the selected category", 400);
+      }
+    }
     let next =
       patch.name !== undefined ? { ...patch, slug: slugify(patch.name) } : patch;
     if (next.description !== undefined) {
@@ -97,13 +125,31 @@ export async function PATCH(
       }
       next = { ...next, description };
     }
+    if (next.specificationRows !== undefined) {
+      next = {
+        ...next,
+        specificationRows: next.specificationRows.map((r) => ({
+          key: sanitizePlainField(r.key, 120),
+          value: sanitizePlainField(r.value, 2000),
+        })),
+      };
+    }
+    if (next.featureLines !== undefined) {
+      next = {
+        ...next,
+        featureLines: sanitizePlainLines(next.featureLines, 500, 120),
+      };
+    }
+    if (next.highlightLines !== undefined) {
+      next = {
+        ...next,
+        highlightLines: sanitizePlainLines(next.highlightLines, 500, 120),
+      };
+    }
     if (next.options !== undefined) {
       next = {
         ...next,
-        options: next.options.map((o) => ({
-          ...o,
-          description: sanitizeProductDescription(o.description ?? ""),
-        })),
+        options: next.options.map((o) => sanitizeAdminProductOption(o)),
       };
     }
     const p = await adminUpdateProduct(id, next);

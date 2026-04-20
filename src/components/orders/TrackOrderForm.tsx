@@ -285,9 +285,12 @@ export function TrackOrderForm() {
     setFound(null);
     setBusy(true);
     try {
-      const order = await apiFetch<LookupOrder>("/api/v1/orders/lookup", {
+      const order = await apiFetch<LookupOrder>("/api/track", {
         method: "POST",
-        body: JSON.stringify({ identifier: identifier.trim(), email: email.trim() }),
+        body: JSON.stringify({
+          orderNumber: identifier.trim(),
+          email: email.trim(),
+        }),
       });
       setFound(order);
     } catch (e) {

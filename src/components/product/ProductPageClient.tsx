@@ -10,6 +10,8 @@ import {
 } from "@/lib/product-color-variants";
 import type { PurchaseProduct } from "@/components/product/ProductPurchaseClient";
 import { recordRecentlyViewed } from "@/lib/recently-viewed";
+import { recordRecentlyViewedProductId } from "@/lib/recently-viewed-ids";
+import { WishlistHeart } from "@/components/ui/WishlistHeart";
 
 type Props = {
   defaultImages: string[];
@@ -20,6 +22,12 @@ type Props = {
   breadcrumb: React.ReactNode;
   backLink: React.ReactNode;
   descriptionHtml: string;
+  specificationRows: { key: string; value: string }[];
+  featureLines: string[];
+  highlightLines: string[];
+  legacySpecificationsHtml: string;
+  legacyFeaturesHtml: string;
+  legacyHighlightsHtml: string;
   tags: string[];
   product: PurchaseProduct;
 };
@@ -33,6 +41,12 @@ export function ProductPageClient({
   breadcrumb,
   backLink,
   descriptionHtml,
+  specificationRows,
+  featureLines,
+  highlightLines,
+  legacySpecificationsHtml,
+  legacyFeaturesHtml,
+  legacyHighlightsHtml,
   tags,
   product,
 }: Props) {
@@ -55,6 +69,7 @@ export function ProductPageClient({
       pricePaise: product.pricePaise,
       image: thumb,
     });
+    recordRecentlyViewedProductId(product.id);
     // Intentionally when navigating to another product (slug), not on every gallery tweak.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.slug]);
@@ -73,7 +88,12 @@ export function ProductPageClient({
 
   return (
     <div className="grid items-start gap-10 pb-24 md:pb-0 lg:grid-cols-2">
-      <ProductGallery images={galleryImages} productName={galleryProductName} />
+      <div className="relative lg:sticky lg:top-24">
+        <div className="absolute right-2 top-2 z-10 md:right-3 md:top-3">
+          <WishlistHeart productId={product.id} productName={product.name} size="md" />
+        </div>
+        <ProductGallery images={galleryImages} productName={galleryProductName} />
+      </div>
       <div className="space-y-6">
         {breadcrumb}
         <div>
@@ -82,6 +102,12 @@ export function ProductPageClient({
           <ProductPurchaseClient
             product={product}
             descriptionHtml={descriptionHtml}
+            specificationRows={specificationRows}
+            featureLines={featureLines}
+            highlightLines={highlightLines}
+            legacySpecificationsHtml={legacySpecificationsHtml}
+            legacyFeaturesHtml={legacyFeaturesHtml}
+            legacyHighlightsHtml={legacyHighlightsHtml}
             tags={tags}
             colorVariants={colorSummaries.length ? colorSummaries : undefined}
             selectedColorKey={colorSummaries.length ? colorKey : undefined}

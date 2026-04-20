@@ -143,7 +143,7 @@ export function SearchSuggestInput({
 
   function goProduct(slug: string) {
     setOpen(false);
-    router.push(`/product/${slug}`);
+    router.push(`/products/${slug}`);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -172,7 +172,7 @@ export function SearchSuggestInput({
       {items.map((item, i) => (
         <li key={item.slug} role="presentation">
           <Link
-            href={`/product/${item.slug}`}
+            href={`/products/${item.slug}`}
             role="option"
             aria-selected={i === highlight}
             className={`flex items-center gap-3 px-3 py-2.5 hover:bg-sand/50 ${

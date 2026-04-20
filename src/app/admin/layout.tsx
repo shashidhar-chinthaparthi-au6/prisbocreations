@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
+import { AdminShell } from "@/components/admin/layout/AdminShell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const secret = process.env.JWT_SECRET;
@@ -9,8 +10,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login?next=/admin");
   }
   if (session.role !== "admin") {
-    redirect("/account?denied=admin");
+    redirect("/account/profile?denied=admin");
   }
 
-  return <div className="space-y-8">{children}</div>;
+  return <AdminShell>{children}</AdminShell>;
 }

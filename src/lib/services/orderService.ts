@@ -1,10 +1,10 @@
-import { randomBytes } from "crypto";
 import mongoose from "mongoose";
 import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
 import { User } from "@/lib/models/User";
-import { getShiprocketConfig, isShiprocketConfigured } from "@/lib/shiprocket-config";
-import { shiprocketServiceability } from "@/lib/services/shiprocketApi";
+import { calcWeight } from "@/lib/shiprocket";
+import { isShiprocketConfigured } from "@/lib/shiprocket-config";
+import { checkServiceability } from "@/lib/serviceability";
 import {
   cancelShiprocketForOrder,
   syncShiprocketForOrder,
@@ -22,6 +22,17 @@ import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
 import { qualifiesForFreeShipping } from "@/lib/free-shipping";
 import { resolveProductLine } from "@/lib/product-options";
 import { colorVariantsFromDoc } from "@/lib/product-color-variants";
+import { incrementCouponUseCount, validateCouponCode } from "@/lib/services/couponService";
+
+/** Thrown when cart lines cannot be fulfilled; API maps to HTTP 409. */
+export class OrderStockConflictError extends Error {
+  constructor(
+    readonly conflictItems: Array<{ productId: string; name: string; message: string }>,
+  ) {
+    super("Some items in your cart need to be updated");
+    this.name = "OrderStockConflictError";
+  }
+}
 
 /** Server-side cart line from checkout API (optionKey when product has purchase options). */
 export type OrderCartLineInput = {
@@ -50,49 +61,69 @@ function normalizeGuestEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-async function allocateInvoiceNumber(): Promise<string> {
-  for (let attempt = 0; attempt < 12; attempt++) {
-    const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const suffix = randomBytes(3).toString("hex").toUpperCase();
-    const invoiceNumber = `PCB-${day}-${suffix}`;
+async function allocatePbOrderNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const start = new Date(year, 0, 1);
+  const end = new Date(year + 1, 0, 1);
+  const countYear = await Order.countDocuments({ createdAt: { $gte: start, $lt: end } });
+  for (let i = 0; i < 32; i++) {
+    const seq = countYear + i + 1;
+    const invoiceNumber = `PB-${year}-${String(seq).padStart(5, "0")}`;
     const clash = await Order.exists({ invoiceNumber });
     if (!clash) return invoiceNumber;
   }
-  throw new Error("Could not allocate invoice number");
+  throw new Error("Could not allocate order number");
 }
 
-async function shippingPaiseForCheckout(input: {
-  shiprocketCourierId?: number;
+async function resolveShippingForOrder(input: {
+  items: Array<{ quantity: number }>;
   shipping: ShippingInput;
   paymentMethod: "online" | "cod";
-}): Promise<number> {
-  if (!isShiprocketConfigured()) return 0;
-  const id = input.shiprocketCourierId;
-  if (typeof id !== "number" || !Number.isFinite(id) || id <= 0) return 0;
+  subtotalPaise: number;
+}): Promise<{
+  shippingPaise: number;
+  actualShippingCostPaise?: number;
+  selectedCourierId?: number;
+  selectedCourierName?: string;
+  estimatedDelivery?: string;
+}> {
   const pin = input.shipping.postalCode.replace(/\D/g, "").slice(0, 6);
   if (pin.length !== 6) {
-    throw new Error("Enter a valid 6-digit postal code when choosing a courier.");
+    throw new Error("Enter a valid 6-digit postal code.");
   }
-  const cfg = getShiprocketConfig();
-  if (!cfg) return 0;
-  const cod = input.paymentMethod === "cod";
-  const quotes = await shiprocketServiceability({
-    deliveryPostcode: pin,
-    weightKg: cfg.defaultWeightKg,
-    cod,
-  });
-  if (!quotes.length) {
-    throw new Error(
-      "Delivery quotes are unavailable right now. Try again in a moment or contact support.",
-    );
+  const weight = calcWeight(input.items.map((it) => ({ quantity: it.quantity })));
+  const subtotalRupees = input.subtotalPaise / 100;
+  const isCOD = input.paymentMethod === "cod";
+
+  if (!isShiprocketConfigured()) {
+    return { shippingPaise: 0 };
   }
-  const row = quotes.find((q) => q.courierId === id);
-  if (!row) {
-    throw new Error(
-      "Selected delivery option is no longer available for this address. Go back to checkout and choose shipping again.",
-    );
+
+  try {
+    const svc = await checkServiceability(pin, weight, subtotalRupees, isCOD);
+    if (!svc.serviceable) {
+      throw new Error("Delivery not available for this pincode");
+    }
+    const shippingPaise = Math.round((svc.customerShippingCharge ?? 0) * 100);
+    return {
+      shippingPaise: Math.max(0, shippingPaise),
+      actualShippingCostPaise:
+        svc._actualCost != null ? Math.round(svc._actualCost * 100) : undefined,
+      selectedCourierId: svc._selectedCourierId,
+      selectedCourierName: svc._selectedCourierName,
+      ...(svc.estimatedDate?.trim() ? { estimatedDelivery: svc.estimatedDate.trim() } : {}),
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("Delivery not available")) {
+      throw e;
+    }
+    console.error("[orderService] Shiprocket serviceability", e);
+    const th = Number(process.env.FREE_DELIVERY_THRESHOLD ?? 1499);
+    const thPaise = Number.isFinite(th) && th > 0 ? Math.round(th * 100) : 149_900;
+    const fallbackPaise = input.subtotalPaise >= thPaise ? 0 : 60 * 100;
+    return { shippingPaise: fallbackPaise };
   }
-  return Math.max(0, Math.round(row.totalCharge * 100));
 }
 
 function customizationFlags(p: Record<string, unknown>) {
@@ -176,11 +207,15 @@ export async function decrementInventoryForOrderItems(
 export async function createOrderFromCart(input: {
   userId?: string;
   guestEmail?: string;
+  guestPhone?: string;
   lines: OrderCartLineInput[];
   shipping: ShippingInput;
   paymentMethod?: "online" | "cod";
   /** Shiprocket serviceability `courier_id` from checkout quote */
   shiprocketCourierId?: number;
+  couponCode?: string;
+  idempotencyKey?: string;
+  notes?: string;
 }) {
   if (!input.lines.length) throw new Error("Cart is empty");
 
@@ -188,6 +223,14 @@ export async function createOrderFromCart(input: {
   const guest = input.guestEmail?.trim();
   if (hasUser === Boolean(guest)) {
     throw new Error("Use a signed-in account or enter an email for guest checkout");
+  }
+
+  const idem = input.idempotencyKey?.trim();
+  if (idem) {
+    const existing = await Order.findOne({ idempotencyKey: idem }).lean();
+    if (existing) {
+      return existing;
+    }
   }
 
   const ids = input.lines.map((l) => l.productId);
@@ -217,32 +260,98 @@ export async function createOrderFromCart(input: {
     giftMessage?: string;
   }> = [];
 
+  const conflicts: Array<{ productId: string; name: string; message: string }> = [];
+
   for (const line of input.lines) {
     const p = byId.get(line.productId);
-    if (!p) throw new Error("Invalid product in cart");
-    if (line.quantity < 1) throw new Error("Invalid quantity");
+    if (!p) {
+      conflicts.push({
+        productId: line.productId,
+        name: "Product",
+        message: "This product is no longer available",
+      });
+      continue;
+    }
+    if (line.quantity < 1) {
+      conflicts.push({
+        productId: line.productId,
+        name: p.name,
+        message: "Invalid quantity",
+      });
+      continue;
+    }
 
-    const resolved = resolveProductLine(p, line.optionKey ?? undefined);
+    let resolved: ReturnType<typeof resolveProductLine>;
+    try {
+      resolved = resolveProductLine(p, line.optionKey ?? undefined);
+    } catch (e) {
+      conflicts.push({
+        productId: line.productId,
+        name: p.name,
+        message: e instanceof Error ? e.message : "Invalid product options",
+      });
+      continue;
+    }
+
     if (resolved.stock < line.quantity) {
-      throw new Error(`Insufficient stock for ${p.name}`);
+      conflicts.push({
+        productId: line.productId,
+        name: p.name,
+        message: `Only ${resolved.stock} left in stock`,
+      });
+      continue;
     }
 
     const colors = colorVariantsFromDoc(p);
     const colorKeyRaw = line.colorKey?.trim() ?? "";
     if (colors.length > 0) {
-      if (!colorKeyRaw) throw new Error(`Choose a color for ${p.name}`);
+      if (!colorKeyRaw) {
+        conflicts.push({
+          productId: line.productId,
+          name: p.name,
+          message: "Choose a colour for this product",
+        });
+        continue;
+      }
       const cv = colors.find((c) => c.key === colorKeyRaw);
-      if (!cv) throw new Error("Invalid color option");
+      if (!cv) {
+        conflicts.push({
+          productId: line.productId,
+          name: p.name,
+          message: "Selected colour is no longer available",
+        });
+        continue;
+      }
     } else if (colorKeyRaw) {
-      throw new Error("Invalid line");
+      conflicts.push({
+        productId: line.productId,
+        name: p.name,
+        message: "Invalid product options",
+      });
+      continue;
     }
 
     const pRec = p as unknown as Record<string, unknown>;
-    const cust = validateLineCustomization(pRec, line);
+    let cust: { customerImageUrl?: string; customerNotes?: string };
+    try {
+      cust = validateLineCustomization(pRec, line);
+    } catch (e) {
+      conflicts.push({
+        productId: line.productId,
+        name: p.name,
+        message: e instanceof Error ? e.message : "Personalisation error",
+      });
+      continue;
+    }
 
     const giftMsg = (line.giftMessage ?? "").trim();
     if (giftMsg.length > 500) {
-      throw new Error(`Gift message is too long for ${p.name}`);
+      conflicts.push({
+        productId: line.productId,
+        name: p.name,
+        message: "Gift message is too long",
+      });
+      continue;
     }
     const giftWrap = Boolean(line.giftWrap);
     const giftWrapPaise = giftWrap ? GIFT_WRAP_PAISE : 0;
@@ -282,37 +391,74 @@ export async function createOrderFromCart(input: {
     });
   }
 
+  if (conflicts.length) {
+    throw new OrderStockConflictError(conflicts);
+  }
+
+  let discountPaise = 0;
+  let appliedCoupon: string | undefined;
+  const rawCoupon = input.couponCode?.trim();
+  if (rawCoupon) {
+    const v = await validateCouponCode(rawCoupon, subtotalPaise);
+    if (!v.valid) {
+      throw new Error(v.message);
+    }
+    discountPaise = v.discountPaise;
+    appliedCoupon = rawCoupon.toUpperCase();
+  }
+
   const paymentMethod = input.paymentMethod ?? "online";
   const status = paymentMethod === "cod" ? "processing" : "pending";
 
-  let shippingPaise = await shippingPaiseForCheckout({
-    shiprocketCourierId: input.shiprocketCourierId,
+  const shipResolved = await resolveShippingForOrder({
+    items: items.map((it) => ({ quantity: it.quantity })),
     shipping: input.shipping,
     paymentMethod,
+    subtotalPaise,
   });
+  let shippingPaise = shipResolved.shippingPaise;
   if (qualifiesForFreeShipping(subtotalPaise)) {
     shippingPaise = 0;
   }
-  const totalPaise = subtotalPaise + shippingPaise;
-  const invoiceNumber = await allocateInvoiceNumber();
+  const totalPaise = Math.max(0, subtotalPaise + shippingPaise - discountPaise);
+  const invoiceNumber = await allocatePbOrderNumber();
+
+  const guestPhone = input.guestPhone?.replace(/\D/g, "").slice(0, 15);
 
   const order = await Order.create({
     ...(hasUser ? { userId: input.userId } : { guestEmail: normalizeGuestEmail(guest!) }),
+    ...(!hasUser && guestPhone ? { guestPhone } : {}),
     invoiceNumber,
     items,
     subtotalPaise,
     shippingPaise,
     totalPaise,
+    ...(appliedCoupon ? { couponCode: appliedCoupon, discountPaise } : {}),
     currency: "INR",
     status,
     paymentMethod,
     shipping: input.shipping,
-    ...(typeof input.shiprocketCourierId === "number" &&
-    Number.isFinite(input.shiprocketCourierId) &&
-    input.shiprocketCourierId > 0
-      ? { shiprocketCourierId: input.shiprocketCourierId }
+    ...(input.notes?.trim() ? { notes: input.notes.trim().slice(0, 2000) } : {}),
+    ...(idem ? { idempotencyKey: idem } : {}),
+    ...(typeof shipResolved.selectedCourierId === "number" &&
+    Number.isFinite(shipResolved.selectedCourierId) &&
+    shipResolved.selectedCourierId > 0
+      ? { shiprocketCourierId: shipResolved.selectedCourierId }
+      : {}),
+    ...(shipResolved.selectedCourierName?.trim()
+      ? { selectedCourierName: shipResolved.selectedCourierName.trim() }
+      : {}),
+    ...(shipResolved.estimatedDelivery?.trim()
+      ? { estimatedDelivery: shipResolved.estimatedDelivery.trim() }
+      : {}),
+    ...(shipResolved.actualShippingCostPaise != null && shipResolved.actualShippingCostPaise >= 0
+      ? { actualShippingCostPaise: shipResolved.actualShippingCostPaise }
       : {}),
   });
+
+  if (appliedCoupon) {
+    void incrementCouponUseCount(appliedCoupon);
+  }
 
   if (paymentMethod === "cod") {
     await decrementInventoryForOrderItems(items);
@@ -332,17 +478,30 @@ export async function listOrdersForUser(userId: string) {
   return Order.find({ userId }).sort({ createdAt: -1 }).lean();
 }
 
-export async function getOrderForUser(orderId: string, userId: string) {
-  return Order.findOne({ _id: orderId, userId }).lean();
+function isOidString(s: string): boolean {
+  return mongoose.Types.ObjectId.isValid(s) && String(new mongoose.Types.ObjectId(s)) === s;
 }
 
-export async function getOrderForGuest(orderId: string, guestEmail: string) {
+export async function getOrderForUser(orderIdOrInvoice: string, userId: string) {
+  const uid = new mongoose.Types.ObjectId(userId);
+  if (isOidString(orderIdOrInvoice)) {
+    return Order.findOne({ _id: orderIdOrInvoice, userId: uid }).lean();
+  }
+  const inv = orderIdOrInvoice.toUpperCase().replace(/\s+/g, "");
+  return Order.findOne({ invoiceNumber: inv, userId: uid }).lean();
+}
+
+export async function getOrderForGuest(orderIdOrInvoice: string, guestEmail: string) {
   const normalized = normalizeGuestEmail(guestEmail);
-  return Order.findOne({
-    _id: orderId,
+  const guestQ = {
     guestEmail: normalized,
     $or: [{ userId: { $exists: false } }, { userId: null }],
-  }).lean();
+  };
+  if (isOidString(orderIdOrInvoice)) {
+    return Order.findOne({ _id: orderIdOrInvoice, ...guestQ }).lean();
+  }
+  const inv = orderIdOrInvoice.toUpperCase().replace(/\s+/g, "");
+  return Order.findOne({ invoiceNumber: inv, ...guestQ }).lean();
 }
 
 export async function listOrdersAdmin() {

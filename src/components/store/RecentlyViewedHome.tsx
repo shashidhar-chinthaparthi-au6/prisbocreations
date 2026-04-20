@@ -31,7 +31,7 @@ export function RecentlyViewedHome({ sidebar = false }: Props) {
           {rail.map((p) => (
             <li key={p.slug}>
               <Link
-                href={`/product/${p.slug}`}
+                href={`/products/${p.slug}`}
                 className="group flex gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm transition hover:border-accent"
               >
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-sand-deep sm:h-12 sm:w-12">
@@ -75,7 +75,7 @@ export function RecentlyViewedHome({ sidebar = false }: Props) {
         {items.map((p) => (
           <Link
             key={p.slug}
-            href={`/product/${p.slug}`}
+            href={`/products/${p.slug}`}
             className="group w-[26vw] max-w-[5.75rem] shrink-0 overflow-hidden rounded-md border border-sand-deep bg-white shadow-sm transition hover:border-accent sm:w-24 md:max-w-none"
           >
             <div className="relative aspect-square w-full bg-sand-deep">

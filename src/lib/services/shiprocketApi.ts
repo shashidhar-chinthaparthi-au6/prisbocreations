@@ -1,80 +1,10 @@
+import { getDefaultDimensions, shiprocketFetch } from "@/lib/shiprocket";
 import { getShiprocketConfig } from "@/lib/shiprocket-config";
 
-const BASE = "https://apiv2.shiprocket.in";
-
-let cached: { token: string; expiresAtMs: number } | null = null;
-
-async function login(): Promise<string> {
-  const cfg = getShiprocketConfig();
-  if (!cfg) throw new Error("Shiprocket is not configured");
-  if (!cfg.email || !cfg.password) {
-    throw new Error("Shiprocket: set SHIPROCKET_EMAIL + SHIPROCKET_PASSWORD or SHIPROCKET_BEARER_TOKEN");
-  }
-
-  const res = await fetch(`${BASE}/v1/external/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: cfg.email, password: cfg.password }),
-  });
-  const text = await res.text();
-  let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    throw new Error(`Shiprocket auth: invalid JSON (${res.status})`);
-  }
-  if (!res.ok) {
-    throw new Error(`Shiprocket auth ${res.status}: ${text.slice(0, 400)}`);
-  }
-  const token = body.token as string | undefined;
-  if (!token) throw new Error("Shiprocket auth: missing token");
-  // Token valid ~10 days; refresh early
-  cached = { token, expiresAtMs: Date.now() + 9 * 24 * 60 * 60 * 1000 };
-  return token;
-}
-
-export async function shiprocketToken(): Promise<string | null> {
-  const cfg = getShiprocketConfig();
-  if (!cfg) return null;
-  if (cfg.bearerToken) return cfg.bearerToken;
-  if (cached && Date.now() < cached.expiresAtMs) return cached.token;
-  return login();
-}
-
-async function srFetch(path: string, init?: RequestInit): Promise<Record<string, unknown>> {
-  const token = await shiprocketToken();
-  if (!token) throw new Error("Shiprocket is not configured");
-
-  const method = (init?.method ?? "GET").toUpperCase();
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-    ...(init?.headers as Record<string, string> | undefined),
-  };
-  if (method !== "GET" && method !== "HEAD") {
-    headers["Content-Type"] = headers["Content-Type"] ?? "application/json";
-  }
-
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers,
-  });
-  const text = await res.text();
-  let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    throw new Error(`Shiprocket ${path}: non-JSON (${res.status}) ${text.slice(0, 200)}`);
-  }
-  if (!res.ok) {
-    const msg =
-      typeof body.message === "string"
-        ? body.message
-        : Array.isArray(body.errors)
-          ? JSON.stringify(body.errors).slice(0, 400)
-          : text.slice(0, 400);
-    throw new Error(`Shiprocket ${res.status} ${path}: ${msg}`);
-  }
-  return body;
+/** Normalize paths to `/v1/external`-relative segments used by `shiprocketFetch`. */
+function srFetch(path: string, init?: RequestInit): Promise<Record<string, unknown>> {
+  const ep = path.replace(/^\/v1\/external/, "");
+  return shiprocketFetch(ep || "/", init) as Promise<Record<string, unknown>>;
 }
 
 export type ShiprocketCourierQuote = {
@@ -178,11 +108,18 @@ export type CreateAdhocInput = {
   subTotalRupees: number;
   /** Delivery fee charged to the customer at checkout, rupees (COD collect = sub_total + shipping_charges). */
   shippingChargesRupees?: number;
+  /** Overrides defaults from env when omitted. */
+  weightKg?: number;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
 };
 
 export async function shiprocketCreateAdhoc(input: CreateAdhocInput): Promise<Record<string, unknown>> {
   const cfg = getShiprocketConfig();
   if (!cfg) throw new Error("Shiprocket not configured");
+
+  const dims = getDefaultDimensions();
 
   const { first, last } = splitName(input.billing.fullName);
   const now = new Date();
@@ -211,10 +148,10 @@ export async function shiprocketCreateAdhoc(input: CreateAdhocInput): Promise<Re
     })),
     payment_method: input.paymentMethod,
     sub_total: Math.round(input.subTotalRupees * 100) / 100,
-    length: cfg.defaultLengthCm,
-    breadth: cfg.defaultBreadthCm,
-    height: cfg.defaultHeightCm,
-    weight: cfg.defaultWeightKg,
+    length: input.lengthCm ?? dims.length,
+    breadth: input.breadthCm ?? dims.breadth,
+    height: input.heightCm ?? dims.height,
+    weight: input.weightKg ?? dims.weight,
   };
 
   const shipRupee = input.shippingChargesRupees ?? 0;

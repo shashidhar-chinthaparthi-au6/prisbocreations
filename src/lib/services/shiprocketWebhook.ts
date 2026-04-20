@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { resolveCustomerTrackingUrl } from "@/lib/courier-tracking-url";
 import { connectDb } from "@/lib/db";
 import { Order } from "@/lib/models/Order";
+import { TrackingEvent } from "@/lib/models/TrackingEvent";
 
 function awbString(v: unknown): string | undefined {
   if (v == null) return undefined;
@@ -77,6 +78,14 @@ export async function applyShiprocketShipmentWebhook(rawBody: Record<string, unk
   }
 
   if (!mongoId) {
+    const awbLookup = awbString(body.awb ?? body.awb_code);
+    if (awbLookup) {
+      const o = await Order.findOne({ "shiprocket.awb": awbLookup }).select("_id").lean();
+      if (o?._id) mongoId = String(o._id);
+    }
+  }
+
+  if (!mongoId) {
     return { ok: true, matched: false };
   }
 
@@ -137,6 +146,49 @@ export async function applyShiprocketShipmentWebhook(rawBody: Record<string, unk
   }
 
   await Order.findByIdAndUpdate(mongoId, { $set: $set });
+
+  const oid = new mongoose.Types.ObjectId(mongoId);
+  const eventBaseTime = (() => {
+    const raw = body.updated_at ?? body.shipped_at ?? body.date ?? body.timestamp;
+    if (raw != null) {
+      const d = new Date(String(raw));
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  })();
+
+  const loc =
+    typeof body.location === "string" && body.location.trim() ? body.location.trim() : undefined;
+
+  if (statusText) {
+    await TrackingEvent.updateOne(
+      { orderId: oid, status: statusText, eventAt: eventBaseTime },
+      {
+        $set: { location: loc ?? null, description: statusText },
+        $setOnInsert: { orderId: oid, status: statusText, eventAt: eventBaseTime },
+      },
+      { upsert: true },
+    );
+  }
+
+  for (const s of scans) {
+    const eventAt = s.date ? new Date(String(s.date)) : eventBaseTime;
+    if (Number.isNaN(eventAt.getTime())) continue;
+    const st = (s.activity ?? "").trim() || statusText;
+    if (!st) continue;
+    await TrackingEvent.updateOne(
+      { orderId: oid, status: st, eventAt },
+      {
+        $set: { location: s.location?.trim() || null, description: st },
+        $setOnInsert: { orderId: oid, status: st, eventAt },
+      },
+      { upsert: true },
+    );
+  }
+
+  void import("@/lib/notify/tracking-stage")
+    .then((m) => m.maybeNotifyTrackingStage(mongoId))
+    .catch(() => {});
 
   return { ok: true, matched: true, orderId: mongoId };
 }

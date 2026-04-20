@@ -20,7 +20,7 @@ export default async function CategoriesPage() {
           <p className="mt-2 text-sm">
             With MongoDB configured, run{" "}
             <code className="rounded bg-sand px-1.5 py-0.5 text-ink">npm run seed</code> or create
-            categories in <Link href="/admin/categories" className="font-medium text-accent hover:underline">Admin → Categories</Link>.
+            categories in <Link href="/admin" className="font-medium text-accent hover:underline">Admin</Link>.
           </p>
         </div>
       ) : (

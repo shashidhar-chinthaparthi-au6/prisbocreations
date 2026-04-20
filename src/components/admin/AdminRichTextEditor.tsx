@@ -39,12 +39,15 @@ export function AdminRichTextEditor({
   onChange,
   placeholder = "Describe the product…",
   id,
+  onRegisterInsertTarget,
 }: {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   /** Associates the field with a label for accessibility. */
   id?: string;
+  /** When the editor is focused, registers `insert` so parents can insert snippets at the cursor (e.g. `{{name}}`). */
+  onRegisterInsertTarget?: (insert: (snippet: string) => void) => void;
 }) {
   const editor = useEditor({
       immediatelyRender: false,
@@ -91,6 +94,18 @@ export function AdminRichTextEditor({
       parseOptions: { preserveWhitespace: "full" },
     });
   }, [value, editor]);
+
+  useEffect(() => {
+    if (!editor || !onRegisterInsertTarget) return;
+    const insert = (snippet: string) => {
+      editor.chain().focus().insertContent(snippet).run();
+    };
+    const onFocus = () => onRegisterInsertTarget(insert);
+    editor.on("focus", onFocus);
+    return () => {
+      editor.off("focus", onFocus);
+    };
+  }, [editor, onRegisterInsertTarget]);
 
   const setLink = useCallback(() => {
     if (!editor) return;

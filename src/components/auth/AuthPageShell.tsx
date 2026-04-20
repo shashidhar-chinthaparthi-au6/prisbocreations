@@ -148,7 +148,7 @@ export function AuthPageShell({
                     Your password was updated. Sign in with your new password.
                   </p>
                 ) : null}
-                <LoginForm nextPath={nextPath} />
+                <LoginForm redirectTo={nextPath} />
               </>
             ) : (
               <>
@@ -158,7 +158,7 @@ export function AuthPageShell({
                     Create an account to save addresses and see your order history in one place.
                   </p>
                 </div>
-                <RegisterForm nextPath={nextPath} />
+                <RegisterForm redirectTo={nextPath} />
               </>
             )}
           </div>

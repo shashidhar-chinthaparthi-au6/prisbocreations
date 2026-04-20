@@ -49,16 +49,7 @@ export async function SiteHeader() {
           {isAdmin ? (
             <>
               <Link href="/admin" className="shrink-0 font-semibold text-ink hover:text-accent">
-                Overview
-              </Link>
-              <Link href="/admin/products" className="shrink-0 hover:text-accent">
-                Products
-              </Link>
-              <Link href="/admin/categories" className="shrink-0 hover:text-accent">
-                Categories
-              </Link>
-              <Link href="/admin/subcategories" className="shrink-0 hover:text-accent">
-                Subcategories
+                Catalog
               </Link>
               <Link href="/admin/orders" className="shrink-0 hover:text-accent">
                 Orders

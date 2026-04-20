@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { QuickAddToCart } from "@/components/category/QuickAddToCart";
+import { WishlistHeart } from "@/components/ui/WishlistHeart";
 import { StoreMedia } from "@/components/store/StoreMedia";
 import { formatInrFromPaise } from "@/lib/format";
 
@@ -56,8 +57,11 @@ export function HomeProductCard({
 
   return (
     <div className={outer}>
-      <Link href={`/product/${slug}`} className="block min-w-0 shrink-0">
+      <Link href={`/products/${slug}`} className="block min-w-0 shrink-0">
         <div className="relative aspect-square w-full bg-sand-deep">
+          <span className="absolute right-1.5 top-1.5 z-[3]">
+            <WishlistHeart productId={productId} productName={name} size="sm" />
+          </span>
           {!imageUrl ? (
             <div className="flex h-full items-center justify-center text-[10px] text-ink-muted">
               No image
@@ -114,7 +118,7 @@ export function HomeProductCard({
         </div>
       </Link>
       <div className={`flex min-h-0 min-w-0 flex-1 flex-col ${bodyPad}`}>
-        <Link href={`/product/${slug}`} className={`mb-1 block min-h-0 min-w-0 ${titleClass}`}>
+        <Link href={`/products/${slug}`} className={`mb-1 block min-h-0 min-w-0 ${titleClass}`}>
           {name}
         </Link>
         <div

@@ -35,17 +35,14 @@ export function QuickAddToCart({
     e.preventDefault();
     e.stopPropagation();
     if (requiresOptionChoice) return;
-    add(
-      {
-        productId: product.id,
-        slug: product.slug,
-        name: product.name,
-        pricePaise: product.pricePaise,
-        image: product.image,
-        quantity: 1,
-      },
-      { openDrawer: true },
-    );
+    add({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      pricePaise: product.pricePaise,
+      image: product.image,
+      quantity: 1,
+    });
   }
 
   function onDec(e: React.MouseEvent) {
@@ -73,7 +70,7 @@ export function QuickAddToCart({
   if (requiresOptionChoice) {
     return wrap(
       <Link
-        href={`/product/${product.slug}`}
+        href={`/products/${product.slug}`}
         className={`rounded-full border border-sand-deep bg-white font-medium text-accent hover:bg-sand/50 ${inline ? "whitespace-nowrap px-2 py-1 text-[10px] sm:px-2.5 sm:py-1.5 sm:text-xs" : "px-3 py-1.5 text-xs sm:text-sm"}`}
       >
         Choose options →

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { resolveCustomerTrackingUrl } from "@/lib/courier-tracking-url";
 import { Order } from "@/lib/models/Order";
+import { calcWeight } from "@/lib/shiprocket";
 import { getShiprocketConfig, isShiprocketConfigured } from "@/lib/shiprocket-config";
 import {
   shiprocketAssignAwb,
@@ -167,9 +168,10 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
       return;
     }
 
+    const weightKg = calcWeight(order.items.map((i) => ({ quantity: i.quantity })));
     const quotes = await shiprocketServiceability({
       deliveryPostcode: deliveryPin,
-      weightKg: cfg.defaultWeightKg,
+      weightKg,
       cod,
     });
     if (!quotes.length) {
@@ -193,6 +195,7 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
 
     const createBody = await shiprocketCreateAdhoc({
       channelOrderId,
+      weightKg,
       billing: {
         fullName: order.shipping.fullName,
         email: guestEmailForSr(order),

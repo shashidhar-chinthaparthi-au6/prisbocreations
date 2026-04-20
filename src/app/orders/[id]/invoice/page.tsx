@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { getOptionalAuth } from "@/lib/api/auth";
 import { connectDb } from "@/lib/db";
 import { getOrderForGuest, getOrderForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
@@ -20,11 +20,8 @@ export default async function OrderInvoicePage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const secret = process.env.JWT_SECRET;
-  if (!secret) redirect("/login");
-
   await connectDb();
-  const session = await getSession(secret);
+  const session = await getOptionalAuth();
 
   let order = session ? await getOrderForUser(id, session.sub) : null;
   if (!order && !session && sp.email?.trim()) {

@@ -1,117 +1,123 @@
 "use client";
 
 import Link from "next/link";
+import { CartItem } from "@/components/cart/CartItem";
+import { CartSummary } from "@/components/cart/CartSummary";
+import { CartRelatedStrip } from "@/components/cart/CartRelatedStrip";
 import { useCart } from "@/components/cart/CartProvider";
-import { StoreMedia } from "@/components/store/StoreMedia";
-import { formatInrFromPaise } from "@/lib/format";
-import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
-import { freeShippingMinRupeesWhole, qualifiesForFreeShipping } from "@/lib/free-shipping";
+import type { CartLine } from "@/components/cart/CartProvider";
+import { useCartStore } from "@/lib/store/cart-store";
+import { computeCartTotals } from "@/lib/store/cart-store";
+import { dispatchStoreToast } from "@/components/store/StoreToaster";
+import { useEffect, useState } from "react";
 
 export function CartClient() {
   const { lines, setQty, remove, subtotalPaise } = useCart();
-  const freeShip = qualifiesForFreeShipping(subtotalPaise);
+  const [caps, setCaps] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!lines.length) {
+      setCaps({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const r = await fetch("/api/cart/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lines: lines.map((l) => ({
+              productId: l.productId,
+              quantity: l.quantity,
+              ...(l.optionKey ? { optionKey: l.optionKey } : {}),
+              ...(l.colorKey ? { colorKey: l.colorKey } : {}),
+            })),
+          }),
+        });
+        const j = (await r.json()) as {
+          ok?: boolean;
+          data?: { lines?: Array<{ maxQty: number }> };
+        };
+        if (cancelled || !j.ok || !j.data?.lines) return;
+        const next: Record<string, number> = {};
+        j.data.lines.forEach((row, i) => {
+          const l = lines[i];
+          if (l) next[l.id] = row.maxQty;
+        });
+        setCaps(next);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [lines]);
+
+  function removeWithUndo(line: CartLine) {
+    remove(line.id);
+    dispatchStoreToast("Removed from cart", {
+      duration: 5000,
+      actionLabel: "Undo",
+      onAction: () => {
+        useCartStore.getState().add(
+          {
+            productId: line.productId,
+            slug: line.slug,
+            name: line.name,
+            image: line.image,
+            pricePaise: line.pricePaise,
+            quantity: line.quantity,
+            optionKey: line.optionKey,
+            optionLabel: line.optionLabel,
+            colorKey: line.colorKey,
+            colorLabel: line.colorLabel,
+            customerImageUrl: line.customerImageUrl,
+            customerNotes: line.customerNotes,
+            giftWrap: line.giftWrap,
+            giftMessage: line.giftMessage,
+          },
+          { openDrawer: false },
+        );
+        useCartStore.setState((s) => ({ ...computeCartTotals(s.lines) }));
+      },
+    });
+  }
 
   if (!lines.length) {
     return (
-      <p className="rounded-2xl border border-dashed border-sand-deep bg-white p-10 text-center text-ink-muted">
-        Your cart is empty.
-      </p>
+      <div className="rounded-2xl border border-dashed border-[#E8E0D6] bg-white p-12 text-center">
+        <p className="text-[#6B6560]">Your cart is empty.</p>
+        <Link href="/products" className="mt-4 inline-flex rounded-full bg-[#C47A2B] px-6 py-3 text-sm font-semibold text-white">
+          Browse products →
+        </Link>
+      </div>
     );
   }
 
+  const firstPid = lines[0]?.productId ?? null;
+
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
-      <div className="space-y-4 lg:col-span-2">
-        {lines.map((l) => (
-          <div
-            key={l.id}
-            className="flex gap-4 rounded-2xl border border-sand-deep bg-white p-4 shadow-sm"
-          >
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-sand-deep">
-              {l.image ? (
-                <StoreMedia
-                  src={l.image}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="96px"
-                  fetchPriority="low"
-                  videoControls={false}
-                />
-              ) : null}
-            </div>
-            <div className="flex flex-1 flex-col justify-between">
-              <div>
-                <Link href={`/product/${l.slug}`} className="font-medium text-ink hover:text-accent">
-                  {l.name}
-                </Link>
-                {l.colorLabel ? (
-                  <p className="text-xs text-accent">{l.colorLabel}</p>
-                ) : null}
-                {l.optionLabel ? (
-                  <p className="text-xs text-accent">{l.optionLabel}</p>
-                ) : null}
-                {l.giftWrap ? (
-                  <p className="mt-1 text-xs font-medium text-accent">
-                    Gift wrap +{formatInrFromPaise(GIFT_WRAP_PAISE)} / unit
-                  </p>
-                ) : null}
-                {l.giftMessage?.trim() ? (
-                  <p className="mt-1 line-clamp-2 text-xs text-ink-muted">
-                    Gift note: {l.giftMessage}
-                  </p>
-                ) : null}
-                {l.customerNotes?.trim() ? (
-                  <p className="mt-1 line-clamp-2 text-xs text-ink-muted">{l.customerNotes}</p>
-                ) : null}
-                {l.customerImageUrl ? (
-                  <div className="relative mt-2 h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-sand-deep bg-sand">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={l.customerImageUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : null}
-                <p className="text-sm text-ink-muted">{formatInrFromPaise(l.pricePaise)} each</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  type="number"
-                  min={1}
-                  value={l.quantity}
-                  onChange={(e) => setQty(l.id, Math.max(1, Number(e.target.value) || 1))}
-                  className="w-16 rounded border border-sand-deep px-2 py-1 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => remove(l.id)}
-                  className="text-sm text-rose hover:underline"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+    <div>
+      <Link href="/products" className="mb-6 inline-flex text-sm font-medium text-[#C47A2B] hover:underline">
+        ← Continue shopping
+      </Link>
+      <div className="grid gap-8 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          {lines.map((l) => (
+            <CartItem
+              key={l.id}
+              line={l}
+              maxQty={caps[l.id]}
+              onQty={setQty}
+              onRemove={removeWithUndo}
+            />
+          ))}
+        </div>
+        <CartSummary />
       </div>
-      <div className="h-fit rounded-2xl border border-sand-deep bg-white p-6 shadow-sm">
-        {freeShip ? (
-          <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/90 px-3 py-2 text-xs font-medium text-emerald-950">
-            Free delivery unlocked — over ₹{freeShippingMinRupeesWhole().toLocaleString("en-IN")}.
-          </p>
-        ) : null}
-        <p className="text-sm text-ink-muted">Subtotal</p>
-        <p className="font-display text-2xl text-ink">{formatInrFromPaise(subtotalPaise)}</p>
-        <p className="mt-2 text-xs text-ink-muted">Taxes & shipping calculated at checkout.</p>
-        <Link
-          href="/checkout"
-          className="mt-6 block w-full rounded-full bg-accent py-3 text-center text-sm font-semibold text-white shadow-sm hover:bg-accent-light"
-        >
-          Checkout
-        </Link>
-      </div>
+      <CartRelatedStrip productId={firstPid} />
     </div>
   );
 }

@@ -2,7 +2,12 @@ import { z, ZodError } from "zod";
 import { connectDb } from "@/lib/db";
 import { getOptionalAuth, requireAuth } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
-import { createOrderFromCart, listOrdersForUser } from "@/lib/services/orderService";
+import {
+  createOrderFromCart,
+  listOrdersForUser,
+  OrderStockConflictError,
+} from "@/lib/services/orderService";
+import { estimateZone } from "@/lib/data/pincode-zones";
 
 /** Treat "", null as undefined so optional .min(1) fields do not fail on empty string. */
 function emptyToUndefined<V>(schema: z.ZodType<V>) {
@@ -36,8 +41,11 @@ const createSchema = z.object({
   lines: z.array(lineSchema).min(1),
   shipping: shipSchema,
   guestEmail: emptyToUndefined(z.string().trim().email().optional()),
+  guestPhone: emptyToUndefined(z.string().trim().min(10).max(15).optional()),
   paymentMethod: z.enum(["online", "cod"]).optional().default("online"),
   shiprocketCourierId: emptyToUndefined(z.coerce.number().int().positive().optional()),
+  couponCode: emptyToUndefined(z.string().min(1).max(40).optional()),
+  notes: emptyToUndefined(z.string().max(2000).optional()),
 });
 
 function zodMessage(err: ZodError): string {
@@ -58,35 +66,80 @@ export async function GET() {
   return jsonOk(orders);
 }
 
+function serializeOrder(order: Record<string, unknown>) {
+  const id = String(order._id);
+  const inv = typeof order.invoiceNumber === "string" ? order.invoiceNumber : id;
+  return {
+    ...order,
+    _id: id,
+    orderId: id,
+    orderNumber: inv,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     await connectDb();
     const body = createSchema.parse(await req.json());
+    const idempotencyKey = req.headers.get("x-idempotency-key")?.trim() ?? undefined;
     const session = await getOptionalAuth();
+    const pin = body.shipping.postalCode.replace(/\D/g, "").slice(0, 6);
+    const zone = pin.length === 6 ? estimateZone(pin) : { days: "5-7", isCODAvailable: true };
+
+    const payload = {
+      lines: body.lines,
+      shipping: body.shipping,
+      paymentMethod: body.paymentMethod,
+      shiprocketCourierId: body.shiprocketCourierId,
+      couponCode: body.couponCode,
+      notes: body.notes,
+      idempotencyKey,
+    };
+
     if (session) {
       const order = await createOrderFromCart({
+        ...payload,
         userId: session.sub,
-        lines: body.lines,
-        shipping: body.shipping,
-        paymentMethod: body.paymentMethod,
-        shiprocketCourierId: body.shiprocketCourierId,
       });
-      return jsonOk(order);
+      const plain =
+        order &&
+        typeof order === "object" &&
+        "toObject" in order &&
+        typeof (order as { toObject?: () => object }).toObject === "function"
+          ? (order as { toObject: () => object }).toObject()
+          : order;
+      return jsonOk({
+        ...serializeOrder({ ...(plain as Record<string, unknown>) }),
+        estimatedDelivery: zone.days,
+        codAvailable: zone.isCODAvailable,
+      });
     }
     if (!body.guestEmail?.trim()) {
       return jsonError("Email is required for guest checkout", 400);
     }
     const order = await createOrderFromCart({
+      ...payload,
       guestEmail: body.guestEmail,
-      lines: body.lines,
-      shipping: body.shipping,
-      paymentMethod: body.paymentMethod,
-      shiprocketCourierId: body.shiprocketCourierId,
+      guestPhone: body.guestPhone,
     });
-    return jsonOk(order);
+    const plain =
+      order &&
+      typeof order === "object" &&
+      "toObject" in order &&
+      typeof (order as { toObject?: () => object }).toObject === "function"
+        ? (order as { toObject: () => object }).toObject()
+        : order;
+    return jsonOk({
+      ...serializeOrder({ ...(plain as Record<string, unknown>) }),
+      estimatedDelivery: zone.days,
+      codAvailable: zone.isCODAvailable,
+    });
   } catch (e) {
     if (e instanceof z.ZodError) {
       return jsonError(zodMessage(e), 400, { issues: e.flatten() });
+    }
+    if (e instanceof OrderStockConflictError) {
+      return jsonError(e.message, 409, { conflictItems: e.conflictItems });
     }
     const msg = e instanceof Error ? e.message : "Order failed";
     return jsonError(msg, 400);

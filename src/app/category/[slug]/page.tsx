@@ -50,8 +50,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
           <p className="mt-2 text-sm">
             Run <code className="rounded bg-sand px-1.5 py-0.5 text-ink">npm run seed</code> or add
             subcategories in{" "}
-            <Link href="/admin/subcategories" className="font-medium text-accent hover:underline">
-              Admin → Subcategories
+            <Link href="/admin" className="font-medium text-accent hover:underline">
+              Admin
             </Link>
             .
           </p>

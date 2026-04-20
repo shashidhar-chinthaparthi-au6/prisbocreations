@@ -6,6 +6,10 @@ export type ProductOption = {
   sku?: string;
   /** Sanitized HTML; optional — empty uses product-level description on storefront. */
   description?: string;
+  /** Per-pack specs/features/highlights when product has multiple packs. */
+  specificationRows?: { key: string; value: string }[];
+  featureLines?: string[];
+  highlightLines?: string[];
 };
 
 type ProductLike = {

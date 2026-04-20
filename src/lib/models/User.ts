@@ -21,6 +21,10 @@ const UserSchema = new Schema(
     name: { type: String, required: true, trim: true },
     phone: { type: String, trim: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    emailVerified: { type: Boolean, default: false },
+    emailVerifyToken: { type: String, select: false },
+    /** Storefront cart persisted when signed in (guest cart merges here on login). */
+    savedCartLines: { type: [Schema.Types.Mixed], default: [] },
     /** Public HTTPS URL (e.g. S3) for header / profile. */
     profileImageUrl: { type: String, trim: true },
     addresses: { type: [AddressSchema], default: [] },

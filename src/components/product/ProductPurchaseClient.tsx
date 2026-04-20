@@ -17,6 +17,10 @@ export type PurchaseProductOption = {
   stock: number;
   /** Sanitized HTML; when set and non-empty, replaces base description for this pack. */
   descriptionHtml?: string;
+  /** Per-pack structured content when product has multiple packs. */
+  specificationRows?: { key: string; value: string }[];
+  featureLines?: string[];
+  highlightLines?: string[];
 };
 
 export type PurchaseColorVariant = {
@@ -60,9 +64,18 @@ function deliveryHintForPincode(pin: string): string | null {
   return "Orders usually leave our studio in 1–2 business days. After dispatch, most metros arrive in roughly 4–6 business days; other pincodes can take a little longer. You’ll get tracking by email.";
 }
 
+const SECTION_PROSE =
+  "prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent";
+
 export function ProductPurchaseClient({
   product,
   descriptionHtml,
+  specificationRows = [],
+  featureLines = [],
+  highlightLines = [],
+  legacySpecificationsHtml = "",
+  legacyFeaturesHtml = "",
+  legacyHighlightsHtml = "",
   tags = [],
   colorVariants,
   selectedColorKey,
@@ -72,6 +85,13 @@ export function ProductPurchaseClient({
   product: PurchaseProduct;
   /** Sanitized HTML from the server (TipTap output). */
   descriptionHtml: string;
+  specificationRows?: { key: string; value: string }[];
+  featureLines?: string[];
+  highlightLines?: string[];
+  /** Legacy rich HTML when structured fields are empty (older products). */
+  legacySpecificationsHtml?: string;
+  legacyFeaturesHtml?: string;
+  legacyHighlightsHtml?: string;
   tags?: string[];
   /** When set with handlers, shopper must pick a colour (gallery driven by parent). */
   colorVariants?: PurchaseColorVariant[];
@@ -84,7 +104,13 @@ export function ProductPurchaseClient({
   const { add } = useCart();
   const colors = useMemo(() => colorVariants ?? [], [colorVariants]);
   const options = useMemo(() => product.options ?? [], [product.options]);
-  const [selectedKey, setSelectedKey] = useState(options[0]?.key ?? "");
+  const visibleOptions = useMemo(() => {
+    if (!colors.length || !selectedColorKey || !options.length) return options;
+    const prefix = `${selectedColorKey}__`;
+    const filtered = options.filter((o) => o.key.startsWith(prefix));
+    return filtered.length ? filtered : options;
+  }, [colors.length, selectedColorKey, options]);
+  const [selectedKey, setSelectedKey] = useState(visibleOptions[0]?.key ?? "");
   const [qtyStr, setQtyStr] = useState("1");
   const [cartMsg, setCartMsg] = useState<string | null>(null);
 
@@ -112,9 +138,11 @@ export function ProductPurchaseClient({
   const [giftWrap, setGiftWrap] = useState(false);
 
   useEffect(() => {
-    if (!options.length) return;
-    setSelectedKey((k) => (options.some((o) => o.key === k) ? k : options[0].key));
-  }, [options]);
+    if (!visibleOptions.length) return;
+    setSelectedKey((k) =>
+      visibleOptions.some((o) => o.key === k) ? k : visibleOptions[0].key,
+    );
+  }, [visibleOptions]);
 
   useEffect(() => {
     return () => {
@@ -123,16 +151,37 @@ export function ProductPurchaseClient({
   }, [filePreview]);
 
   const selected = useMemo(
-    () => options.find((o) => o.key === selectedKey),
-    [options, selectedKey],
+    () => visibleOptions.find((o) => o.key === selectedKey),
+    [visibleOptions, selectedKey],
   );
 
+  const displaySpecificationRows = useMemo(() => {
+    if (visibleOptions.length === 0) return specificationRows;
+    const ov = selected?.specificationRows;
+    if (ov && ov.length > 0) return ov;
+    return specificationRows;
+  }, [visibleOptions.length, selected?.specificationRows, specificationRows]);
+
+  const displayFeatureLines = useMemo(() => {
+    if (visibleOptions.length === 0) return featureLines;
+    const ov = selected?.featureLines;
+    if (ov && ov.length > 0) return ov;
+    return featureLines;
+  }, [visibleOptions.length, selected?.featureLines, featureLines]);
+
+  const displayHighlightLines = useMemo(() => {
+    if (visibleOptions.length === 0) return highlightLines;
+    const ov = selected?.highlightLines;
+    if (ov && ov.length > 0) return ov;
+    return highlightLines;
+  }, [visibleOptions.length, selected?.highlightLines, highlightLines]);
+
   const displayDescriptionHtml = useMemo(() => {
-    if (options.length === 0) return descriptionHtml;
+    if (visibleOptions.length === 0) return descriptionHtml;
     const ov = selected?.descriptionHtml;
     if (ov && !isHtmlContentEmpty(ov)) return ov;
     return descriptionHtml;
-  }, [descriptionHtml, options.length, selected?.descriptionHtml]);
+  }, [descriptionHtml, visibleOptions.length, selected?.descriptionHtml]);
 
   const unitPricePaise = selected ? selected.pricePaise : product.pricePaise;
   const maxStock = selected ? selected.stock : product.stock;
@@ -267,7 +316,7 @@ export function ProductPurchaseClient({
   ]);
 
   function tryAddToCart(opts: { openDrawer: boolean; buyNow?: boolean }) {
-    if (options.length > 0 && !selected) return;
+    if (visibleOptions.length > 0 && !selected) return;
     if (qtyInvalid || qtyNum === null) return;
     if (customize) {
       const msg = customizationMessage();
@@ -292,13 +341,13 @@ export function ProductPurchaseClient({
   return (
     <>
       <p className="mt-3 text-2xl font-semibold text-ink">
-        {options.length > 0 ? (
+        {visibleOptions.length > 0 ? (
           formatInrFromPaise(unitPricePaise)
         ) : (
           formatInrFromPaise(product.pricePaise)
         )}
       </p>
-      {options.length === 0 ? (
+      {visibleOptions.length === 0 ? (
         <p className="mt-2 text-sm text-ink-muted">In stock: {product.stock}</p>
       ) : null}
 
@@ -330,11 +379,11 @@ export function ProductPurchaseClient({
         </fieldset>
       ) : null}
 
-      {options.length > 0 ? (
+      {visibleOptions.length > 0 ? (
         <fieldset className="mt-6 space-y-2">
           <legend className="text-sm font-medium text-ink">Choose option</legend>
           <div className="flex flex-col gap-2">
-            {options.map((o) => (
+            {visibleOptions.map((o) => (
               <label
                 key={o.key}
                 className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm ${
@@ -561,11 +610,92 @@ export function ProductPurchaseClient({
       </div>
 
       <div
-        key={options.length > 0 ? `${selectedKey}-desc` : "product-desc"}
+        key={visibleOptions.length > 0 ? `${selectedKey}-desc` : "product-desc"}
         suppressHydrationWarning
         className="product-description prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
         dangerouslySetInnerHTML={{ __html: displayDescriptionHtml }}
       />
+      {displayFeatureLines.length > 0 ? (
+        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-features-heading">
+          <h2 id="product-features-heading" className="font-display text-xl text-ink">
+            Features
+          </h2>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted marker:text-ink-muted">
+            {displayFeatureLines.map((line, i) => (
+              <li key={`f-${i}`}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      ) : !isHtmlContentEmpty(legacyFeaturesHtml) ? (
+        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-features-heading">
+          <h2 id="product-features-heading" className="font-display text-xl text-ink">
+            Features
+          </h2>
+          <div
+            suppressHydrationWarning
+            className={SECTION_PROSE}
+            dangerouslySetInnerHTML={{ __html: legacyFeaturesHtml }}
+          />
+        </section>
+      ) : null}
+      {displaySpecificationRows.length > 0 ? (
+        <section
+          className="border-t border-sand-deep/80 pt-8"
+          aria-labelledby="product-specifications-heading"
+        >
+          <h2 id="product-specifications-heading" className="font-display text-xl text-ink">
+            Specifications
+          </h2>
+          <dl className="mt-3 divide-y divide-sand-deep/80 rounded-lg border border-sand-deep/80 bg-white/60 text-sm">
+            {displaySpecificationRows.map((row, i) => (
+              <div
+                key={`spec-${i}-${row.key}`}
+                className="grid gap-0.5 px-3 py-2.5 sm:grid-cols-[minmax(0,10rem)_1fr] sm:gap-4"
+              >
+                <dt className="font-medium text-ink">{row.key}</dt>
+                <dd className="text-ink-muted">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : !isHtmlContentEmpty(legacySpecificationsHtml) ? (
+        <section
+          className="border-t border-sand-deep/80 pt-8"
+          aria-labelledby="product-specifications-heading"
+        >
+          <h2 id="product-specifications-heading" className="font-display text-xl text-ink">
+            Specifications
+          </h2>
+          <div
+            suppressHydrationWarning
+            className={SECTION_PROSE}
+            dangerouslySetInnerHTML={{ __html: legacySpecificationsHtml }}
+          />
+        </section>
+      ) : null}
+      {displayHighlightLines.length > 0 ? (
+        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-highlights-heading">
+          <h2 id="product-highlights-heading" className="font-display text-xl text-ink">
+            Highlights
+          </h2>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted marker:text-ink-muted">
+            {displayHighlightLines.map((line, i) => (
+              <li key={`h-${i}`}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      ) : !isHtmlContentEmpty(legacyHighlightsHtml) ? (
+        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-highlights-heading">
+          <h2 id="product-highlights-heading" className="font-display text-xl text-ink">
+            Highlights
+          </h2>
+          <div
+            suppressHydrationWarning
+            className={SECTION_PROSE}
+            dangerouslySetInnerHTML={{ __html: legacyHighlightsHtml }}
+          />
+        </section>
+      ) : null}
       {tags.length > 0 ? (
         <div className="mt-6 flex flex-wrap gap-2">
           {tags.map((t) => (
@@ -609,7 +739,7 @@ export function ProductPurchaseClient({
           <button
             type="button"
             disabled={maxStock < 1 || qtyInvalid || uploadBusy}
-            onClick={() => tryAddToCart({ openDrawer: true })}
+            onClick={() => tryAddToCart({ openDrawer: false })}
             className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add to cart
@@ -672,7 +802,7 @@ export function ProductPurchaseClient({
           <button
             type="button"
             disabled={maxStock < 1 || qtyInvalid || uploadBusy}
-            onClick={() => tryAddToCart({ openDrawer: true })}
+            onClick={() => tryAddToCart({ openDrawer: false })}
             className="shrink-0 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:opacity-50"
           >
             Add to cart

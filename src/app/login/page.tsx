@@ -1,31 +1,67 @@
 import { Suspense } from "react";
-import { getSession } from "@/lib/auth/session";
-import { AuthPageShell, AuthPageShellFallback } from "@/components/auth/AuthPageShell";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getStoreSession } from "@/lib/auth/store-session";
+import { safeRedirectPath } from "@/lib/auth/auth-schemas";
+import { AuthCard } from "@/components/auth/AuthCard";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { AdminJwtLoginForm } from "@/components/auth/AdminJwtLoginForm";
 
 export const metadata = { title: "Login" };
+
+function LoginFallback() {
+  return <div className="h-64 w-full max-w-[440px] animate-pulse rounded-2xl bg-white/70" aria-hidden />;
+}
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; reset?: string; reason?: string; tab?: string; register?: string }>;
+  searchParams: Promise<{
+    next?: string;
+    redirect?: string;
+    reset?: string;
+    reason?: string;
+    tab?: string;
+    register?: string;
+  }>;
 }) {
   const sp = await searchParams;
-  const secret = process.env.JWT_SECRET;
-  const session = secret ? await getSession(secret) : null;
+  const next = sp.next ?? "";
+  const session = await getStoreSession();
 
-  const showRegister =
-    sp.tab === "register" || sp.register === "1" || sp.register === "true";
+  // Only send admins to the dashboard when they opened admin login (?next=/admin).
+  // Storefront "Sign in" uses plain /login — those users should see customer Auth.js, not /admin.
+  if (session?.role === "admin" && next.startsWith("/admin")) {
+    redirect(next);
+  }
+  if (session && session.role === "customer") {
+    redirect(safeRedirectPath(sp.redirect, "/account/orders"));
+  }
+
+  const isAdminLogin = next.startsWith("/admin");
 
   return (
-    <Suspense fallback={<AuthPageShellFallback />}>
-      <AuthPageShell
-        mode="login"
-        nextPath={sp.next ?? "/account"}
-        initialTab={session ? "login" : showRegister ? "register" : "login"}
-        sessionExpired={sp.reason === "session_expired"}
-        passwordReset={Boolean(sp.reset)}
-        suppressRegisterTab={Boolean(session)}
-      />
-    </Suspense>
+    <div className="flex min-h-[calc(100dvh-10rem)] items-center justify-center bg-[#FDFAF7] py-8">
+      {isAdminLogin ? (
+        <Suspense fallback={<LoginFallback />}>
+          <AdminJwtLoginForm nextPath={next || "/admin"} />
+        </Suspense>
+      ) : (
+        <AuthCard>
+          <Suspense fallback={<LoginFallback />}>
+            <LoginForm />
+          </Suspense>
+          {sp.tab === "register" || sp.register === "1" || sp.register === "true" ? (
+            <p className="mt-6 text-center text-sm text-[#6B6560]">
+              Registration has moved to{" "}
+              <Link href="/register" className="font-medium text-[#C47A2B] hover:underline">
+                Create account
+              </Link>
+              .
+            </p>
+          ) : null}
+        </AuthCard>
+      )}
+    </div>
   );
 }

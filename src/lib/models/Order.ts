@@ -75,12 +75,26 @@ const OrderSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: false, index: true },
     guestEmail: { type: String, lowercase: true, trim: true },
+    guestPhone: { type: String, trim: true },
     /** Human-readable id for invoices and guest lookup (sparse for legacy docs). */
     invoiceNumber: { type: String, trim: true, uppercase: true, sparse: true, unique: true },
+    /** Applied coupon snapshot */
+    couponCode: { type: String, trim: true, uppercase: true },
+    discountPaise: { type: Number, default: 0, min: 0 },
+    /** Client-generated UUID from review step to prevent duplicate submissions */
+    idempotencyKey: { type: String, trim: true, sparse: true, unique: true },
     items: { type: [OrderItemSchema], required: true },
     subtotalPaise: { type: Number, required: true },
-    /** Delivery (Shiprocket quote at order time), paise. */
+    /** Delivery charged to customer at order time, paise. */
     shippingPaise: { type: Number, default: 0, min: 0 },
+    /** Landed shipping cost from Shiprocket quote at order time (merchant), paise. */
+    actualShippingCostPaise: { type: Number, min: 0 },
+    /** Courier display name from Shiprocket serviceability at order time. */
+    selectedCourierName: { type: String, trim: true },
+    /** Customer-facing ETA range set at checkout, e.g. "By 24 Apr–26 Apr". */
+    estimatedDelivery: { type: String, trim: true },
+    /** Last tracking notification stage sent (TrackingStage) to avoid duplicate emails/SMS. */
+    lastNotifiedTrackingStage: { type: String, trim: true },
     totalPaise: { type: Number, required: true },
     currency: { type: String, default: "INR" },
     status: {

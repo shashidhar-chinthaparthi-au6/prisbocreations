@@ -24,14 +24,15 @@ const config: Config = {
         "hero-marquee-r": "hero-marquee-r 62s linear infinite",
       },
       colors: {
-        ink: { DEFAULT: "#0f172a", muted: "#475569" },
-        sand: { DEFAULT: "#f8f5f0", deep: "#ebe4d8" },
-        accent: { DEFAULT: "#b45309", light: "#d97706" },
+        ink: { DEFAULT: "#1a1a1a", muted: "#6b6560" },
+        sand: { DEFAULT: "#fdfaf7", deep: "#e8e0d6" },
+        accent: { DEFAULT: "#c47a2b", light: "#f5e6d0" },
         rose: { DEFAULT: "#9f1239", light: "#be185d" },
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
     },
   },
