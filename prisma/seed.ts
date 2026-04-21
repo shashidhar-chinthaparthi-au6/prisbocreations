@@ -2,7 +2,7 @@
  * Full catalog wipe + reseed for Prisbo Creations (MongoDB / Mongoose).
  * Run: npx tsx prisma/seed.ts
  *
- * Note: This codebase uses Mongoose, not Prisma ORM (there is no `npx prisma migrate` for schema).
+ * Note: This codebase uses Mongoose for products (there is no Prisma `migrate` for this schema).
  * Product `recipients` (string[] of shop-by-recipient slugs) is defined on the
  * Mongoose model in `src/lib/models/Product.ts`. Re-run this seed to repopulate.
  * Deletion order matches the relational layout from the original spec.
@@ -104,6 +104,13 @@ type SeedVariant = {
   sizes?: { size: string; stock: number }[];
 };
 
+type SeedPackageDims = {
+  weightKg: number;
+  lengthCm: number;
+  breadthCm: number;
+  heightCm: number;
+};
+
 type SeedProduct = {
   name: string;
   brand: string;
@@ -119,6 +126,36 @@ type SeedProduct = {
   specValues: Record<string, string | number | boolean>;
   /** When set, overrides automatic recipient tagging from subcategory + name rules. */
   recipients?: RecipientSlug[];
+  /** Override default packed dimensions for this subcategory (see SUBCAT_PKG). */
+  pkgOverride?: SeedPackageDims;
+};
+
+/** Default packed dimensions by subcategory name (matches `seed-catalog-blocks.ts`). */
+const SUBCAT_PKG: Record<string, SeedPackageDims> = {
+  "Chocolate Wrappers": { weightKg: 0.3, lengthCm: 25, breadthCm: 20, heightCm: 3 },
+  "Custom Stickers & Labels": { weightKg: 0.2, lengthCm: 20, breadthCm: 15, heightCm: 2 },
+  "Branded Tissue Paper": { weightKg: 0.5, lengthCm: 30, breadthCm: 25, heightCm: 5 },
+  "Custom Bottle Labels": { weightKg: 0.2, lengthCm: 20, breadthCm: 15, heightCm: 2 },
+  "Tear-off Calendars": { weightKg: 0.4, lengthCm: 22, breadthCm: 16, heightCm: 3 },
+  "Photo Keychains": { weightKg: 0.1, lengthCm: 12, breadthCm: 10, heightCm: 3 },
+  "Desk Plaques": { weightKg: 0.6, lengthCm: 30, breadthCm: 25, heightCm: 8 },
+  "Cake Toppers": { weightKg: 0.1, lengthCm: 25, breadthCm: 5, heightCm: 3 },
+  "Custom Bag Tags": { weightKg: 0.1, lengthCm: 15, breadthCm: 8, heightCm: 2 },
+  "Acrylic Name Plates": { weightKg: 0.5, lengthCm: 28, breadthCm: 20, heightCm: 6 },
+  "Acrylic Fridge Magnets": { weightKg: 0.1, lengthCm: 15, breadthCm: 10, heightCm: 2 },
+  "Journals & Notebooks": { weightKg: 0.5, lengthCm: 22, breadthCm: 16, heightCm: 3 },
+  "Custom Bookmarks": { weightKg: 0.1, lengthCm: 22, breadthCm: 8, heightCm: 2 },
+  "Desk Organizers": { weightKg: 1.2, lengthCm: 35, breadthCm: 20, heightCm: 15 },
+  Mousepads: { weightKg: 0.4, lengthCm: 32, breadthCm: 28, heightCm: 4 },
+  "Custom Pens": { weightKg: 0.1, lengthCm: 18, breadthCm: 5, heightCm: 3 },
+  "Photo Fridge Magnets": { weightKg: 0.2, lengthCm: 20, breadthCm: 15, heightCm: 2 },
+  "Polaroid-Style Prints": { weightKg: 0.3, lengthCm: 15, breadthCm: 12, heightCm: 4 },
+  "Customised Coasters": { weightKg: 0.5, lengthCm: 20, breadthCm: 20, heightCm: 5 },
+  "Personalised Cushions": { weightKg: 0.8, lengthCm: 45, breadthCm: 45, heightCm: 12 },
+  /** Default: ceramic / magic mug 325ml; override sipper & conical in seed data. */
+  "Custom Mugs & Sippers": { weightKg: 0.5, lengthCm: 14, breadthCm: 11, heightCm: 11 },
+  "Branded Caps": { weightKg: 0.2, lengthCm: 30, breadthCm: 25, heightCm: 15 },
+  "Branded T-Shirts": { weightKg: 0.3, lengthCm: 35, breadthCm: 28, heightCm: 3 },
 };
 
 async function clearAll(): Promise<void> {
@@ -180,6 +217,10 @@ async function seedSubcategory(data: {
   for (const p of data.products) {
     const base = skuBase(p.brand, p.name);
     const slugStr = await uniqueProductSlug(p.name);
+    const pkg = p.pkgOverride ?? SUBCAT_PKG[data.name];
+    if (!pkg) {
+      throw new Error(`SUBCAT_PKG missing for subcategory: ${data.name}`);
+    }
 
     const colourVariants = p.variants.map((v, vi) => {
       const images: {
@@ -250,6 +291,10 @@ async function seedSubcategory(data: {
       hasColourVariants: p.hasColourVariants,
       hasSizePricing: p.hasSizePricing,
       sizesNotApplicable: p.sizesNotApplicable,
+      weightKg: pkg.weightKg,
+      lengthCm: pkg.lengthCm,
+      breadthCm: pkg.breadthCm,
+      heightCm: pkg.heightCm,
       description: "",
       descriptionTemplate: p.description,
       specValues: p.specValues,

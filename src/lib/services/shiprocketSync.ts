@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 import { resolveCustomerTrackingUrl } from "@/lib/courier-tracking-url";
 import { Order } from "@/lib/models/Order";
+import { Product } from "@/lib/models/Product";
 import { calcWeight } from "@/lib/shiprocket";
+import { resolveLineItemShippingPhys } from "@/lib/shipping-phys";
 import { getShiprocketConfig, isShiprocketConfigured } from "@/lib/shiprocket-config";
 import {
   shiprocketAssignAwb,
@@ -29,10 +31,12 @@ export type ShiprocketOrderLean = {
     country: string;
   };
   items: Array<{
+    productId: mongoose.Types.ObjectId;
     name: string;
     sku: string;
     quantity: number;
     unitPricePaise: number;
+    colorKey?: string;
   }>;
   guestEmail?: string;
   userId?: mongoose.Types.ObjectId;
@@ -168,7 +172,33 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
       return;
     }
 
-    const weightKg = calcWeight(order.items.map((i) => ({ quantity: i.quantity })));
+    const productIds = [
+      ...new Set(
+        order.items
+          .map((i) => i.productId)
+          .filter((id) => mongoose.isValidObjectId(id))
+          .map((id) => new mongoose.Types.ObjectId(String(id))),
+      ),
+    ];
+    const products = await Product.find({ _id: { $in: productIds } })
+      .select("weightKg lengthCm breadthCm heightCm colourVariants")
+      .lean();
+    const byProductId = new Map(products.map((p) => [String(p._id), p]));
+
+    const itemsWithPhys = order.items.map((i) => {
+      const p = byProductId.get(String(i.productId));
+      return resolveLineItemShippingPhys(p, i.colorKey);
+    });
+    const weightKg = calcWeight(
+      order.items.map((i, idx) => ({
+        quantity: i.quantity,
+        weightKg: itemsWithPhys[idx]!.weightKg,
+      })),
+    );
+    const maxLength = Math.max(...itemsWithPhys.map((x) => x.lengthCm), 1);
+    const maxBreadth = Math.max(...itemsWithPhys.map((x) => x.breadthCm), 1);
+    const maxHeight = Math.max(...itemsWithPhys.map((x) => x.heightCm), 1);
+
     const quotes = await shiprocketServiceability({
       deliveryPostcode: deliveryPin,
       weightKg,
@@ -196,6 +226,9 @@ export async function syncShiprocketForOrder(orderId: string): Promise<void> {
     const createBody = await shiprocketCreateAdhoc({
       channelOrderId,
       weightKg,
+      lengthCm: maxLength,
+      breadthCm: maxBreadth,
+      heightCm: maxHeight,
       billing: {
         fullName: order.shipping.fullName,
         email: guestEmailForSr(order),

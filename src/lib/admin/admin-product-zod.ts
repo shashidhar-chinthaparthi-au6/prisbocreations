@@ -31,6 +31,10 @@ export const colourVariantInputZ = z.object({
   displayOrder: z.number().optional(),
   images: z.array(variantImageZ).optional(),
   sizeStocks: z.array(sizeStockZ).optional(),
+  weightKg: z.number().min(0).optional(),
+  lengthCm: z.number().min(0).optional(),
+  breadthCm: z.number().min(0).optional(),
+  heightCm: z.number().min(0).optional(),
 });
 
 export const adminProductPatchZ = z
@@ -61,6 +65,10 @@ export const adminProductPatchZ = z
     featured: z.boolean().optional(),
     tags: z.array(z.string()).optional(),
     recipients: z.array(recipientSlugZ).max(5).optional(),
+    weightKg: z.number().min(0).optional(),
+    lengthCm: z.number().min(0).optional(),
+    breadthCm: z.number().min(0).optional(),
+    heightCm: z.number().min(0).optional(),
   })
   .strict();
 

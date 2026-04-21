@@ -11,6 +11,13 @@ type SeedVariant = {
   sizes?: { size: string; stock: number }[];
 };
 
+type SeedPackageDims = {
+  weightKg: number;
+  lengthCm: number;
+  breadthCm: number;
+  heightCm: number;
+};
+
 /** Image keys must match `IMG` in prisma/seed.ts */
 type ImgKey =
   | "chocolate"
@@ -50,6 +57,7 @@ type SeedProduct = {
   sizesNotApplicable: boolean;
   variants: SeedVariant[];
   specValues: Record<string, string | number | boolean>;
+  pkgOverride?: SeedPackageDims;
 };
 
 type SeedSubInput = {
@@ -1847,6 +1855,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: false,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 1, lengthCm: 95, breadthCm: 45, heightCm: 5 },
         variants: [{ displayName: "Default", hexCode: "#FFFFFF", skuSuffix: "DEF", stock: 80 }],
         specValues: {
           size: "XL desk mat 90×40cm",
@@ -1974,6 +1983,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: false,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 0.3, lengthCm: 22, breadthCm: 10, heightCm: 5 },
         variants: [{ displayName: "Natural Bamboo", hexCode: "#C4A265", skuSuffix: "DEF", stock: 60 }],
         specValues: {
           material: "Bamboo",
@@ -2198,6 +2208,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: false,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 0.4, lengthCm: 15, breadthCm: 12, heightCm: 5 },
         variants: [{ displayName: "Default", hexCode: "#FFC0CB", skuSuffix: "DEF", stock: 120 }],
         specValues: {
           print_size: "Instax mini 5.4×8.6cm",
@@ -2219,6 +2230,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: false,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 0.2, lengthCm: 15, breadthCm: 12, heightCm: 3 },
         variants: [{ displayName: "Default", hexCode: "#1A1A1A", skuSuffix: "DEF", stock: 200 }],
         specValues: {
           print_size: "Square 6.2×6.2cm",
@@ -2325,6 +2337,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: false,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 0.7, lengthCm: 20, breadthCm: 20, heightCm: 7 },
         variants: [{ displayName: "Default", hexCode: "#D4A07A", skuSuffix: "DEF", stock: 100 }],
         specValues: {
           material: "MDF wood",
@@ -2466,6 +2479,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: true,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 0.5, lengthCm: 35, breadthCm: 35, heightCm: 10 },
         variants: [
           { displayName: "Deep Red", hexCode: "#8B0000", skuSuffix: "RED", stock: 50 },
           { displayName: "Dusty Rose", hexCode: "#C17A8A", skuSuffix: "RSE", stock: 50 },
@@ -2602,6 +2616,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: true,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 0.4, lengthCm: 10, breadthCm: 10, heightCm: 22 },
         variants: [
           { displayName: "Silver", hexCode: "#C0C0C0", skuSuffix: "SLV", stock: 80 },
           { displayName: "Black", hexCode: "#1A1A1A", skuSuffix: "BLK", stock: 80 },
@@ -2627,6 +2642,7 @@ export async function runCatalogBlocks(args: {
         hasColourVariants: false,
         hasSizePricing: false,
         sizesNotApplicable: true,
+        pkgOverride: { weightKg: 0.5, lengthCm: 14, breadthCm: 11, heightCm: 13 },
         variants: [{ displayName: "White", hexCode: "#FFFFFF", skuSuffix: "DEF", stock: 120 }],
         specValues: {
           type: "Conical mug",

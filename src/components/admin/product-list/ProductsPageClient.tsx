@@ -148,6 +148,19 @@ export function ProductsPageClient({
     }
   }
 
+  async function unarchiveProduct(id: string) {
+    try {
+      await adminFetchJson(`/api/admin/products/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      await mutate();
+      toast({ type: "success", message: "Restored — product is published again" });
+    } catch (e) {
+      toast({ type: "error", message: e instanceof AdminApiError ? e.message : "Failed" });
+    }
+  }
+
   async function removeProduct(id: string) {
     if (!confirm("Permanently delete this product?")) return;
     try {
@@ -324,7 +337,7 @@ export function ProductsPageClient({
             </thead>
             <tbody>
               {items.map((r) => {
-                const id = String(r._id ?? "");
+                const id = String(r._id ?? (r as { id?: string }).id ?? "");
                 const cvs = (r.colourVariants ?? []).filter((v) => v.isActive !== false);
                 const swatches = cvs.slice(0, 6);
                 const sizes = new Set<string>();
@@ -346,7 +359,7 @@ export function ProductsPageClient({
                   (x): x is RecipientSlug => parseRecipientSlug(x) !== null,
                 );
                 return (
-                  <tr key={id} className="group border-b border-zinc-100 hover:bg-zinc-50/80">
+                  <tr key={id} className="border-b border-zinc-100 hover:bg-zinc-50/80">
                     <td className="px-3 py-3">
                       <p className="text-sm font-semibold text-zinc-900">{r.name}</p>
                       <p className="text-xs text-zinc-500">
@@ -410,7 +423,7 @@ export function ProductsPageClient({
                       </span>
                     </td>
                     <td className="px-3 py-3">
-                      <div className="flex gap-2 opacity-0 transition group-hover:opacity-100">
+                      <div className="flex flex-wrap gap-x-2 gap-y-1">
                         <Link
                           href={`/admin/products/${id}/edit`}
                           className="text-xs text-accent hover:underline"
@@ -430,13 +443,22 @@ export function ProductsPageClient({
                         >
                           Duplicate
                         </button>
-                        <button
-                          type="button"
-                          className="text-xs text-zinc-600 hover:underline"
-                          onClick={() => archiveProduct(id)}
-                        >
-                          Archive
-                        </button>
+                        {st === "ARCHIVED" ?
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-emerald-700 hover:underline"
+                            onClick={() => unarchiveProduct(id)}
+                          >
+                            Unarchive
+                          </button>
+                        : <button
+                            type="button"
+                            className="text-xs text-zinc-600 hover:underline"
+                            onClick={() => archiveProduct(id)}
+                          >
+                            Archive
+                          </button>
+                        }
                         <button
                           type="button"
                           className="text-xs text-rose-600 hover:underline"

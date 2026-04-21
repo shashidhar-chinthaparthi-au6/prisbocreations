@@ -3,6 +3,7 @@ import { Order } from "@/lib/models/Order";
 import { Product } from "@/lib/models/Product";
 import { User } from "@/lib/models/User";
 import { calcWeight } from "@/lib/shiprocket";
+import { resolveLineItemShippingPhys } from "@/lib/shipping-phys";
 import { isShiprocketConfigured } from "@/lib/shiprocket-config";
 import { checkServiceability } from "@/lib/serviceability";
 import {
@@ -85,7 +86,8 @@ async function allocatePbOrderNumber(): Promise<string> {
 }
 
 async function resolveShippingForOrder(input: {
-  items: Array<{ quantity: number }>;
+  items: Array<{ quantity: number; productId: mongoose.Types.ObjectId; colorKey?: string }>;
+  productsById: Map<string, unknown>;
   shipping: ShippingInput;
   paymentMethod: "online" | "cod";
   subtotalPaise: number;
@@ -100,7 +102,17 @@ async function resolveShippingForOrder(input: {
   if (pin.length !== 6) {
     throw new Error("Enter a valid 6-digit postal code.");
   }
-  const weight = calcWeight(input.items.map((it) => ({ quantity: it.quantity })));
+  const itemsPhys = input.items.map((it) => {
+    const p = input.productsById.get(it.productId.toString()) as Parameters<
+      typeof resolveLineItemShippingPhys
+    >[0];
+    return resolveLineItemShippingPhys(p, it.colorKey);
+  });
+  const linesForWeight = input.items.map((it, i) => ({
+    quantity: it.quantity,
+    weightKg: itemsPhys[i]!.weightKg,
+  }));
+  const weight = calcWeight(linesForWeight);
   const subtotalRupees = input.subtotalPaise / 100;
   const isCOD = input.paymentMethod === "cod";
 
@@ -445,7 +457,12 @@ export async function createOrderFromCart(input: {
   const status = paymentMethod === "cod" ? "processing" : "pending";
 
   const shipResolved = await resolveShippingForOrder({
-    items: items.map((it) => ({ quantity: it.quantity })),
+    items: items.map((it) => ({
+      quantity: it.quantity,
+      productId: it.productId,
+      colorKey: it.colorKey,
+    })),
+    productsById: byId as Map<string, unknown>,
     shipping: input.shipping,
     paymentMethod,
     subtotalPaise,

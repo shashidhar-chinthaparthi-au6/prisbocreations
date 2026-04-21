@@ -110,7 +110,9 @@ export function getDefaultDimensions() {
 }
 
 export function calcWeight(items: { quantity: number; weightKg?: number }[]): number {
-  const def = Number(process.env.SHIPROCKET_DEFAULT_WEIGHT_KG ?? 0.5);
-  const total = items.reduce((sum, item) => sum + (item.weightKg ?? def) * item.quantity, 0);
-  return Math.max(0.1, Math.round(total * 10) / 10);
+  const defaultWeight = Number(process.env.SHIPROCKET_DEFAULT_WEIGHT_KG ?? 0.5);
+  const total = items.reduce((sum, item) => {
+    return sum + (item.weightKg ?? defaultWeight) * item.quantity;
+  }, 0);
+  return Math.max(0.1, Math.round(total * 100) / 100);
 }

@@ -2,6 +2,10 @@ export type ProductColorVariant = {
   key: string;
   label: string;
   images: string[];
+  weightKg?: number;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
 };
 
 type DocLike = { colorVariants?: unknown };
@@ -13,14 +17,32 @@ export function colorVariantsFromDoc(doc: DocLike | null | undefined): ProductCo
   const out: ProductColorVariant[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
-    const r = item as { key?: unknown; label?: unknown; images?: unknown };
+    const r = item as {
+      key?: unknown;
+      label?: unknown;
+      images?: unknown;
+      weightKg?: unknown;
+      lengthCm?: unknown;
+      breadthCm?: unknown;
+      heightCm?: unknown;
+    };
     const key = typeof r.key === "string" ? r.key.trim() : "";
     const label = typeof r.label === "string" ? r.label.trim() : "";
     if (!key || !label) continue;
     const images = Array.isArray(r.images)
       ? r.images.filter((u): u is string => typeof u === "string" && u.trim().length > 0)
       : [];
-    out.push({ key, label, images });
+    const num = (x: unknown) =>
+      typeof x === "number" && Number.isFinite(x) && x > 0 ? x : undefined;
+    out.push({
+      key,
+      label,
+      images,
+      ...(num(r.weightKg) !== undefined ? { weightKg: num(r.weightKg) } : {}),
+      ...(num(r.lengthCm) !== undefined ? { lengthCm: num(r.lengthCm) } : {}),
+      ...(num(r.breadthCm) !== undefined ? { breadthCm: num(r.breadthCm) } : {}),
+      ...(num(r.heightCm) !== undefined ? { heightCm: num(r.heightCm) } : {}),
+    });
   }
   return out;
 }

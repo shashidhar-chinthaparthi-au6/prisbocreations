@@ -560,6 +560,10 @@ export async function applyAdminProductPatch(
   if (patch.featured !== undefined) p.featured = patch.featured;
   if (patch.tags !== undefined) p.tags = patch.tags;
   if (patch.recipients !== undefined) p.recipients = patch.recipients;
+  if (patch.weightKg !== undefined) p.weightKg = patch.weightKg;
+  if (patch.lengthCm !== undefined) p.lengthCm = patch.lengthCm;
+  if (patch.breadthCm !== undefined) p.breadthCm = patch.breadthCm;
+  if (patch.heightCm !== undefined) p.heightCm = patch.heightCm;
 
   if (patch.colourVariants !== undefined) {
     p.colourVariants = patch.colourVariants.map((cv) => ({
@@ -587,6 +591,10 @@ export async function applyAdminProductPatch(
             isActive: ss.isActive ?? true,
           }))
         : [{ size: "OS", stock: 0, priceOverride: null, isActive: true }],
+      ...(cv.weightKg != null && Number.isFinite(cv.weightKg) ? { weightKg: cv.weightKg } : {}),
+      ...(cv.lengthCm != null && Number.isFinite(cv.lengthCm) ? { lengthCm: cv.lengthCm } : {}),
+      ...(cv.breadthCm != null && Number.isFinite(cv.breadthCm) ? { breadthCm: cv.breadthCm } : {}),
+      ...(cv.heightCm != null && Number.isFinite(cv.heightCm) ? { heightCm: cv.heightCm } : {}),
     })) as unknown as typeof p.colourVariants;
   }
 

@@ -96,7 +96,7 @@ function buildPatch(state: ReturnType<typeof useProductWizard.getState>) {
         });
       }
     }
-    return {
+    const row: Record<string, unknown> = {
       ...(isOid(v.tempId) ? { _id: v.tempId } : {}),
       displayName: v.displayName,
       hexCode: v.hexCode,
@@ -112,6 +112,19 @@ function buildPatch(state: ReturnType<typeof useProductWizard.getState>) {
       })),
       sizeStocks,
     };
+    if (v.weightKg != null && Number.isFinite(v.weightKg) && v.weightKg > 0) {
+      row.weightKg = v.weightKg;
+    }
+    if (v.lengthCm != null && Number.isFinite(v.lengthCm) && v.lengthCm > 0) {
+      row.lengthCm = v.lengthCm;
+    }
+    if (v.breadthCm != null && Number.isFinite(v.breadthCm) && v.breadthCm > 0) {
+      row.breadthCm = v.breadthCm;
+    }
+    if (v.heightCm != null && Number.isFinite(v.heightCm) && v.heightCm > 0) {
+      row.heightCm = v.heightCm;
+    }
+    return row;
   });
 
   return {
@@ -132,6 +145,10 @@ function buildPatch(state: ReturnType<typeof useProductWizard.getState>) {
     manufacturerAddress: state.manufacturerAddress || undefined,
     packerSameAsMfr: state.packerSameAsMfr,
     packerAddress: state.packerSameAsMfr ? undefined : state.packerAddress || undefined,
+    weightKg: state.weightKg,
+    lengthCm: state.lengthCm,
+    breadthCm: state.breadthCm,
+    heightCm: state.heightCm,
     colourVariants,
     recipients: state.recipients,
   };
@@ -696,6 +713,70 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
                 <span>Sizes not applicable (one size)</span>
               </label>
             </div>
+            <div className="max-w-4xl space-y-3 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-zinc-900">Package dimensions &amp; weight</p>
+                <p className="text-xs text-zinc-500">(Used for shipping cost calculation)</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="block text-sm text-zinc-800">
+                  Weight (kg)
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={0.1}
+                    className="mt-1 h-9 w-full rounded-lg border border-zinc-200 px-3"
+                    value={w.weightKg}
+                    onChange={(e) =>
+                      w.setField("weightKg", Math.max(0.1, Number(e.target.value) || 0.1))
+                    }
+                  />
+                </label>
+                <label className="block text-sm text-zinc-800">
+                  Length (cm)
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={0.1}
+                    className="mt-1 h-9 w-full rounded-lg border border-zinc-200 px-3"
+                    value={w.lengthCm}
+                    onChange={(e) =>
+                      w.setField("lengthCm", Math.max(0.1, Number(e.target.value) || 0.1))
+                    }
+                  />
+                </label>
+                <label className="block text-sm text-zinc-800">
+                  Breadth (cm)
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={0.1}
+                    className="mt-1 h-9 w-full rounded-lg border border-zinc-200 px-3"
+                    value={w.breadthCm}
+                    onChange={(e) =>
+                      w.setField("breadthCm", Math.max(0.1, Number(e.target.value) || 0.1))
+                    }
+                  />
+                </label>
+                <label className="block text-sm text-zinc-800">
+                  Height (cm)
+                  <input
+                    type="number"
+                    step={0.1}
+                    min={0.1}
+                    className="mt-1 h-9 w-full rounded-lg border border-zinc-200 px-3"
+                    value={w.heightCm}
+                    onChange={(e) =>
+                      w.setField("heightCm", Math.max(0.1, Number(e.target.value) || 0.1))
+                    }
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-zinc-500">
+                These are the packed dimensions including packaging. Used to calculate accurate
+                shipping rates.
+              </p>
+            </div>
             <div className="max-w-md space-y-2 rounded-xl border border-zinc-200 bg-white px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Recipient tags</p>
               <p className="text-xs text-zinc-500">
@@ -828,6 +909,89 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
                     }}
                   />
                 </label>
+                <details className="md:col-span-2 rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2">
+                  <summary className="cursor-pointer text-sm font-medium text-zinc-800">
+                    Override dimensions for this variant
+                  </summary>
+                  <p className="mt-2 text-xs text-zinc-600">
+                    Different size/weight from the main product? (e.g. larger variant of cushion)
+                    Override below — leave blank to use product defaults.
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <label className="block text-xs text-zinc-800">
+                      Weight (kg)
+                      <input
+                        type="number"
+                        step={0.1}
+                        min={0.1}
+                        placeholder="—"
+                        className="mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm"
+                        value={vCur.weightKg ?? ""}
+                        onChange={(e) => {
+                          const t = e.target.value;
+                          const next = [...w.variants];
+                          const n = t === "" ? undefined : Math.max(0.1, Number(t) || 0.1);
+                          next[vIdx] = { ...vCur, weightKg: n };
+                          w.setField("variants", next);
+                        }}
+                      />
+                    </label>
+                    <label className="block text-xs text-zinc-800">
+                      Length (cm)
+                      <input
+                        type="number"
+                        step={0.1}
+                        min={0.1}
+                        placeholder="—"
+                        className="mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm"
+                        value={vCur.lengthCm ?? ""}
+                        onChange={(e) => {
+                          const t = e.target.value;
+                          const next = [...w.variants];
+                          const n = t === "" ? undefined : Math.max(0.1, Number(t) || 0.1);
+                          next[vIdx] = { ...vCur, lengthCm: n };
+                          w.setField("variants", next);
+                        }}
+                      />
+                    </label>
+                    <label className="block text-xs text-zinc-800">
+                      Breadth (cm)
+                      <input
+                        type="number"
+                        step={0.1}
+                        min={0.1}
+                        placeholder="—"
+                        className="mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm"
+                        value={vCur.breadthCm ?? ""}
+                        onChange={(e) => {
+                          const t = e.target.value;
+                          const next = [...w.variants];
+                          const n = t === "" ? undefined : Math.max(0.1, Number(t) || 0.1);
+                          next[vIdx] = { ...vCur, breadthCm: n };
+                          w.setField("variants", next);
+                        }}
+                      />
+                    </label>
+                    <label className="block text-xs text-zinc-800">
+                      Height (cm)
+                      <input
+                        type="number"
+                        step={0.1}
+                        min={0.1}
+                        placeholder="—"
+                        className="mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm"
+                        value={vCur.heightCm ?? ""}
+                        onChange={(e) => {
+                          const t = e.target.value;
+                          const next = [...w.variants];
+                          const n = t === "" ? undefined : Math.max(0.1, Number(t) || 0.1);
+                          next[vIdx] = { ...vCur, heightCm: n };
+                          w.setField("variants", next);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </details>
               </div>
             : null}
           </div>

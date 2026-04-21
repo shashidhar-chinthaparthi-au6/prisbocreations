@@ -28,6 +28,10 @@ const LegacyProductColorVariantSchema = new Schema(
     key: { type: String, required: true, trim: true },
     label: { type: String, required: true, trim: true },
     images: { type: [String], default: [] },
+    weightKg: { type: Number, min: 0 },
+    lengthCm: { type: Number, min: 0 },
+    breadthCm: { type: Number, min: 0 },
+    heightCm: { type: Number, min: 0 },
   },
   { _id: false },
 );
@@ -63,6 +67,11 @@ const ColourVariantSchema = new Schema(
     displayOrder: { type: Number, default: 0 },
     images: { type: [VariantImageSchema], default: [] },
     sizeStocks: { type: [SizeStockSchema], default: [] },
+    /** Override product packed weight/dims when this variant ships differently */
+    weightKg: { type: Number, min: 0 },
+    lengthCm: { type: Number, min: 0 },
+    breadthCm: { type: Number, min: 0 },
+    heightCm: { type: Number, min: 0 },
   },
   { _id: true },
 );
@@ -78,6 +87,11 @@ const ProductSchema = new Schema(
     hasSizePricing: { type: Boolean, default: false },
     sizesNotApplicable: { type: Boolean, default: false },
     packOf: { type: Number, default: 1, min: 1 },
+    /** Packed shipping weight (kg) including packaging */
+    weightKg: { type: Number, default: 0.3, min: 0 },
+    lengthCm: { type: Number, default: 20, min: 0 },
+    breadthCm: { type: Number, default: 15, min: 0 },
+    heightCm: { type: Number, default: 5, min: 0 },
     descriptionTemplate: { type: String, default: "" },
     specValues: { type: Schema.Types.Mixed, default: {} },
     manufacturerName: { type: String },

@@ -1,6 +1,27 @@
 import type { NextConfig } from "next";
 
+/** Expose Shiprocket defaults to the admin product wizard (client bundle). */
+const shiprocketPublicDefaults = {
+  NEXT_PUBLIC_SHIPROCKET_DEFAULT_WEIGHT_KG:
+    process.env.SHIPROCKET_DEFAULT_WEIGHT_KG ??
+    process.env.NEXT_PUBLIC_SHIPROCKET_DEFAULT_WEIGHT_KG ??
+    "0.3",
+  NEXT_PUBLIC_SHIPROCKET_DEFAULT_LENGTH_CM:
+    process.env.SHIPROCKET_DEFAULT_LENGTH_CM ??
+    process.env.NEXT_PUBLIC_SHIPROCKET_DEFAULT_LENGTH_CM ??
+    "20",
+  NEXT_PUBLIC_SHIPROCKET_DEFAULT_BREADTH_CM:
+    process.env.SHIPROCKET_DEFAULT_BREADTH_CM ??
+    process.env.NEXT_PUBLIC_SHIPROCKET_DEFAULT_BREADTH_CM ??
+    "15",
+  NEXT_PUBLIC_SHIPROCKET_DEFAULT_HEIGHT_CM:
+    process.env.SHIPROCKET_DEFAULT_HEIGHT_CM ??
+    process.env.NEXT_PUBLIC_SHIPROCKET_DEFAULT_HEIGHT_CM ??
+    "5",
+} as const;
+
 const nextConfig: NextConfig = {
+  env: { ...shiprocketPublicDefaults },
   serverExternalPackages: ["sharp"],
   async redirects() {
     return [{ source: "/product/:slug", destination: "/products/:slug", permanent: true }];

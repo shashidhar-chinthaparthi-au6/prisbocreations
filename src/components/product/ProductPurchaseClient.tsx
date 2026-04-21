@@ -16,6 +16,8 @@ import type {
   CustomizationDataMap,
   CustomizationFilesMap,
 } from "@/lib/customization-types";
+import type { ProductColorVariant } from "@/lib/product-color-variants";
+import { formatPackedWeightKg } from "@/lib/product-package-display";
 
 export type PurchaseProductOption = {
   key: string;
@@ -30,11 +32,6 @@ export type PurchaseProductOption = {
   highlightLines?: string[];
 };
 
-export type PurchaseColorVariant = {
-  key: string;
-  label: string;
-};
-
 export type PurchaseProduct = {
   id: string;
   slug: string;
@@ -42,6 +39,11 @@ export type PurchaseProduct = {
   pricePaise: number;
   stock: number;
   image?: string;
+  /** Packed shipping — defaults align with catalog / Shiprocket env */
+  weightKg?: number;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
   options?: PurchaseProductOption[];
   allowCustomerCustomization?: boolean;
   customizationInstructions?: string;
@@ -66,7 +68,7 @@ function parseQty(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function deliveryHintForPincode(pin: string): string | null {
+function deliveryFallbackHint(pin: string): string | null {
   const p = pin.replace(/\D/g, "");
   if (p.length !== 6) return null;
   return "Orders usually leave our studio in 1–2 business days. After dispatch, most metros arrive in roughly 4–6 business days; other pincodes can take a little longer. You’ll get tracking by email.";
@@ -89,6 +91,12 @@ export function ProductPurchaseClient({
   selectedColorKey,
   onColorKeyChange,
   cartThumbnailUrl,
+  /** When set with onSelectedPackKeyChange, pack choice is controlled by the parent (e.g. for split detail layout). */
+  selectedPackKey: controlledPackKey,
+  onSelectedPackKeyChange,
+  /** Shown at bottom of specifications (packed weight & box size). */
+  packageDimensionsRows,
+  detailSections = "inline",
 }: {
   product: PurchaseProduct;
   /** Sanitized HTML from the server (TipTap output). */
@@ -102,11 +110,15 @@ export function ProductPurchaseClient({
   legacyHighlightsHtml?: string;
   tags?: string[];
   /** When set with handlers, shopper must pick a colour (gallery driven by parent). */
-  colorVariants?: PurchaseColorVariant[];
+  colorVariants?: ProductColorVariant[];
   selectedColorKey?: string;
   onColorKeyChange?: (key: string) => void;
   /** Hero image for cart row when colour changes visible gallery. */
   cartThumbnailUrl?: string;
+  selectedPackKey?: string;
+  onSelectedPackKeyChange?: (key: string) => void;
+  packageDimensionsRows?: { key: string; value: string }[];
+  detailSections?: "inline" | "none";
 }) {
   const router = useRouter();
   const { add } = useCart();
@@ -118,7 +130,18 @@ export function ProductPurchaseClient({
     const filtered = options.filter((o) => o.key.startsWith(prefix));
     return filtered.length ? filtered : options;
   }, [colors.length, selectedColorKey, options]);
-  const [selectedKey, setSelectedKey] = useState(visibleOptions[0]?.key ?? "");
+  const packControlled =
+    controlledPackKey !== undefined && typeof onSelectedPackKeyChange === "function";
+  const [internalPackKey, setInternalPackKey] = useState(visibleOptions[0]?.key ?? "");
+  const selectedKey = packControlled ? controlledPackKey! : internalPackKey;
+
+  const setPackKey = useCallback(
+    (k: string) => {
+      if (packControlled) onSelectedPackKeyChange!(k);
+      else setInternalPackKey(k);
+    },
+    [packControlled, onSelectedPackKeyChange],
+  );
   const [qtyStr, setQtyStr] = useState("1");
   const [cartMsg, setCartMsg] = useState<string | null>(null);
 
@@ -168,11 +191,11 @@ export function ProductPurchaseClient({
   }, []);
 
   useEffect(() => {
-    if (!visibleOptions.length) return;
-    setSelectedKey((k) =>
+    if (!visibleOptions.length || packControlled) return;
+    setInternalPackKey((k) =>
       visibleOptions.some((o) => o.key === k) ? k : visibleOptions[0].key,
     );
-  }, [visibleOptions]);
+  }, [visibleOptions, packControlled]);
 
   useEffect(() => {
     return () => {
@@ -186,11 +209,28 @@ export function ProductPurchaseClient({
   );
 
   const displaySpecificationRows = useMemo(() => {
-    if (visibleOptions.length === 0) return specificationRows;
-    const ov = selected?.specificationRows;
-    if (ov && ov.length > 0) return ov;
-    return specificationRows;
-  }, [visibleOptions.length, selected?.specificationRows, specificationRows]);
+    let base = specificationRows;
+    if (visibleOptions.length > 0) {
+      const ov = selected?.specificationRows;
+      if (ov && ov.length > 0) base = ov;
+    }
+    const tail = packageDimensionsRows ?? [];
+    return tail.length ? [...base, ...tail] : base;
+  }, [
+    visibleOptions.length,
+    selected?.specificationRows,
+    specificationRows,
+    packageDimensionsRows,
+  ]);
+
+  const shippingWeightKg = useMemo(() => {
+    const v = colors.find((c) => c.key === selectedColorKey);
+    const vw = v?.weightKg;
+    const pw = product.weightKg;
+    if (vw != null && Number.isFinite(vw) && vw > 0) return vw;
+    if (pw != null && Number.isFinite(pw) && pw > 0) return pw;
+    return 0.5;
+  }, [colors, selectedColorKey, product.weightKg]);
 
   const displayFeatureLines = useMemo(() => {
     if (visibleOptions.length === 0) return featureLines;
@@ -302,7 +342,58 @@ export function ProductPurchaseClient({
     setFilePreview(null);
   }
 
-  const deliveryHint = useMemo(() => deliveryHintForPincode(deliveryPin), [deliveryPin]);
+  const [deliveryHint, setDeliveryHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    const pin = deliveryPin.replace(/\D/g, "").slice(0, 6);
+    if (pin.length !== 6) {
+      setDeliveryHint(null);
+      return;
+    }
+    const priceRupees = unitPricePaise / 100;
+    const qs = new URLSearchParams({
+      pincode: pin,
+      cartTotal: String(priceRupees),
+      weight: String(shippingWeightKg),
+      isCOD: "true",
+    });
+    let cancelled = false;
+    void (async () => {
+      try {
+        const r = await fetch(`/api/delivery-estimate?${qs.toString()}`);
+        const j = (await r.json()) as {
+          ok?: boolean;
+          data?: {
+            serviceable?: boolean;
+            customerShippingCharge?: number;
+            estimatedDays?: string;
+            days?: string;
+          };
+        };
+        if (cancelled) return;
+        const d = j?.data;
+        if (!d?.serviceable) {
+          setDeliveryHint(
+            "We couldn’t confirm serviceability for this PIN. You can still proceed — we’ll confirm at checkout.",
+          );
+          return;
+        }
+        const charge = d.customerShippingCharge;
+        const days = (d.estimatedDays ?? d.days ?? "").trim();
+        const bits: string[] = [];
+        if (typeof charge === "number") bits.push(`Est. delivery from ₹${charge}`);
+        if (days) bits.push(String(days));
+        setDeliveryHint(
+          bits.length > 0 ? bits.join(" · ") : (deliveryFallbackHint(pin) ?? ""),
+        );
+      } catch {
+        if (!cancelled) setDeliveryHint(deliveryFallbackHint(pin));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [deliveryPin, unitPricePaise, shippingWeightKg]);
 
   const buildPayload = useCallback(() => {
     const colorLabel =
@@ -473,7 +564,7 @@ export function ProductPurchaseClient({
                     name="pack"
                     value={o.key}
                     checked={selectedKey === o.key}
-                    onChange={() => setSelectedKey(o.key)}
+                    onChange={() => setPackKey(o.key)}
                     className="accent-accent"
                   />
                   <span className="text-ink">{o.label}</span>
@@ -653,6 +744,9 @@ export function ProductPurchaseClient({
         ) : (
           <p className="mt-2 text-xs text-ink-muted">Use the 6-digit pincode you&apos;ll ship to.</p>
         )}
+        <p className="mt-2 text-[11px] leading-snug text-ink-muted">
+          Estimated shipping weight: {formatPackedWeightKg(shippingWeightKg)}
+        </p>
       </div>
 
       <div className="mt-6 rounded-2xl border border-sand-deep bg-sand/25 p-4">
@@ -709,104 +803,108 @@ export function ProductPurchaseClient({
         ) : null}
       </div>
 
-      <div
-        key={visibleOptions.length > 0 ? `${selectedKey}-desc` : "product-desc"}
-        suppressHydrationWarning
-        className="product-description prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
-        dangerouslySetInnerHTML={{ __html: displayDescriptionHtml }}
-      />
-      {displayFeatureLines.length > 0 ? (
-        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-features-heading">
-          <h2 id="product-features-heading" className="font-display text-xl text-ink">
-            Features
-          </h2>
-          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted marker:text-ink-muted">
-            {displayFeatureLines.map((line, i) => (
-              <li key={`f-${i}`}>{line}</li>
-            ))}
-          </ul>
-        </section>
-      ) : !isHtmlContentEmpty(legacyFeaturesHtml) ? (
-        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-features-heading">
-          <h2 id="product-features-heading" className="font-display text-xl text-ink">
-            Features
-          </h2>
+      {detailSections === "inline" ? (
+        <>
           <div
+            key={visibleOptions.length > 0 ? `${selectedKey}-desc` : "product-desc"}
             suppressHydrationWarning
-            className={SECTION_PROSE}
-            dangerouslySetInnerHTML={{ __html: legacyFeaturesHtml }}
+            className="product-description prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
+            dangerouslySetInnerHTML={{ __html: displayDescriptionHtml }}
           />
-        </section>
-      ) : null}
-      {displaySpecificationRows.length > 0 ? (
-        <section
-          className="border-t border-sand-deep/80 pt-8"
-          aria-labelledby="product-specifications-heading"
-        >
-          <h2 id="product-specifications-heading" className="font-display text-xl text-ink">
-            Specifications
-          </h2>
-          <dl className="mt-3 divide-y divide-sand-deep/80 rounded-lg border border-sand-deep/80 bg-white/60 text-sm">
-            {displaySpecificationRows.map((row, i) => (
+          {displayFeatureLines.length > 0 ? (
+            <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-features-heading">
+              <h2 id="product-features-heading" className="font-display text-xl text-ink">
+                Features
+              </h2>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted marker:text-ink-muted">
+                {displayFeatureLines.map((line, i) => (
+                  <li key={`f-${i}`}>{line}</li>
+                ))}
+              </ul>
+            </section>
+          ) : !isHtmlContentEmpty(legacyFeaturesHtml) ? (
+            <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-features-heading">
+              <h2 id="product-features-heading" className="font-display text-xl text-ink">
+                Features
+              </h2>
               <div
-                key={`spec-${i}-${row.key}`}
-                className="grid gap-0.5 px-3 py-2.5 sm:grid-cols-[minmax(0,10rem)_1fr] sm:gap-4"
-              >
-                <dt className="font-medium text-ink">{row.key}</dt>
-                <dd className="text-ink-muted">{row.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ) : !isHtmlContentEmpty(legacySpecificationsHtml) ? (
-        <section
-          className="border-t border-sand-deep/80 pt-8"
-          aria-labelledby="product-specifications-heading"
-        >
-          <h2 id="product-specifications-heading" className="font-display text-xl text-ink">
-            Specifications
-          </h2>
-          <div
-            suppressHydrationWarning
-            className={SECTION_PROSE}
-            dangerouslySetInnerHTML={{ __html: legacySpecificationsHtml }}
-          />
-        </section>
-      ) : null}
-      {displayHighlightLines.length > 0 ? (
-        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-highlights-heading">
-          <h2 id="product-highlights-heading" className="font-display text-xl text-ink">
-            Highlights
-          </h2>
-          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted marker:text-ink-muted">
-            {displayHighlightLines.map((line, i) => (
-              <li key={`h-${i}`}>{line}</li>
-            ))}
-          </ul>
-        </section>
-      ) : !isHtmlContentEmpty(legacyHighlightsHtml) ? (
-        <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-highlights-heading">
-          <h2 id="product-highlights-heading" className="font-display text-xl text-ink">
-            Highlights
-          </h2>
-          <div
-            suppressHydrationWarning
-            className={SECTION_PROSE}
-            dangerouslySetInnerHTML={{ __html: legacyHighlightsHtml }}
-          />
-        </section>
-      ) : null}
-      {tags.length > 0 ? (
-        <div className="mt-6 flex flex-wrap gap-2">
-          {tags.map((t) => (
-            <span
-              key={t}
-              className="rounded-full bg-sand-deep px-3 py-1 text-xs text-ink-muted"
+                suppressHydrationWarning
+                className={SECTION_PROSE}
+                dangerouslySetInnerHTML={{ __html: legacyFeaturesHtml }}
+              />
+            </section>
+          ) : null}
+          {displaySpecificationRows.length > 0 ? (
+            <section
+              className="border-t border-sand-deep/80 pt-8"
+              aria-labelledby="product-specifications-heading"
             >
-              {t}
-            </span>
-          ))}
-        </div>
+              <h2 id="product-specifications-heading" className="font-display text-xl text-ink">
+                Specifications
+              </h2>
+              <dl className="mt-3 divide-y divide-sand-deep/80 rounded-lg border border-sand-deep/80 bg-white/60 text-sm">
+                {displaySpecificationRows.map((row, i) => (
+                  <div
+                    key={`spec-${i}-${row.key}`}
+                    className="grid gap-0.5 px-3 py-2.5 sm:grid-cols-[minmax(0,10rem)_1fr] sm:gap-4"
+                  >
+                    <dt className="font-medium text-ink">{row.key}</dt>
+                    <dd className="text-ink-muted">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : !isHtmlContentEmpty(legacySpecificationsHtml) ? (
+            <section
+              className="border-t border-sand-deep/80 pt-8"
+              aria-labelledby="product-specifications-heading"
+            >
+              <h2 id="product-specifications-heading" className="font-display text-xl text-ink">
+                Specifications
+              </h2>
+              <div
+                suppressHydrationWarning
+                className={SECTION_PROSE}
+                dangerouslySetInnerHTML={{ __html: legacySpecificationsHtml }}
+              />
+            </section>
+          ) : null}
+          {displayHighlightLines.length > 0 ? (
+            <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-highlights-heading">
+              <h2 id="product-highlights-heading" className="font-display text-xl text-ink">
+                Highlights
+              </h2>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted marker:text-ink-muted">
+                {displayHighlightLines.map((line, i) => (
+                  <li key={`h-${i}`}>{line}</li>
+                ))}
+              </ul>
+            </section>
+          ) : !isHtmlContentEmpty(legacyHighlightsHtml) ? (
+            <section className="border-t border-sand-deep/80 pt-8" aria-labelledby="product-highlights-heading">
+              <h2 id="product-highlights-heading" className="font-display text-xl text-ink">
+                Highlights
+              </h2>
+              <div
+                suppressHydrationWarning
+                className={SECTION_PROSE}
+                dangerouslySetInnerHTML={{ __html: legacyHighlightsHtml }}
+              />
+            </section>
+          ) : null}
+          {tags.length > 0 ? (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-sand-deep px-3 py-1 text-xs text-ink-muted"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       <div ref={purchaseCtaRef}>

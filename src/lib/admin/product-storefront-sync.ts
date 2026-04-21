@@ -82,11 +82,32 @@ export async function syncStorefrontFromAdminProduct(productId: string): Promise
   );
   const activeVariants = variants.filter((v) => v.isActive !== false);
 
-  const legacyColorVariants = activeVariants.map((v) => ({
-    key: String(v.skuSuffix).trim().toUpperCase(),
-    label: v.displayName,
-    images: sortedImages(v),
-  }));
+  const legacyColorVariants = activeVariants.map((v) => {
+    const row: {
+      key: string;
+      label: string;
+      images: string[];
+      weightKg?: number;
+      lengthCm?: number;
+      breadthCm?: number;
+      heightCm?: number;
+    } = {
+      key: String(v.skuSuffix).trim().toUpperCase(),
+      label: v.displayName,
+      images: sortedImages(v),
+    };
+    const pick = (x: unknown) =>
+      typeof x === "number" && Number.isFinite(x) && x > 0 ? x : undefined;
+    const w = pick(v.weightKg);
+    const l = pick(v.lengthCm);
+    const b = pick(v.breadthCm);
+    const h = pick(v.heightCm);
+    if (w !== undefined) row.weightKg = w;
+    if (l !== undefined) row.lengthCm = l;
+    if (b !== undefined) row.breadthCm = b;
+    if (h !== undefined) row.heightCm = h;
+    return row;
+  });
 
   const firstVariant = activeVariants[0];
   const description =
