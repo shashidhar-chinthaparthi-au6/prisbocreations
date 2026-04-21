@@ -21,6 +21,7 @@ import useSWR from "swr";
 import { adminFetchJson, AdminApiError } from "@/lib/admin/admin-fetch";
 import { slugify } from "@/lib/slugify";
 import { useAdminToast } from "@/components/admin/layout/AdminShell";
+import { AdminCatalogImageField } from "@/components/admin/categories/AdminCatalogImageField";
 
 type SubRow = {
   _id: string;
@@ -29,6 +30,7 @@ type SubRow = {
   categoryId: string;
   schemaFieldCount: number;
   displayOrder: number;
+  imageUrl?: string | null;
 };
 
 type CatRow = {
@@ -38,6 +40,7 @@ type CatRow = {
   sortOrder: number;
   displayOrder: number;
   productCount: number;
+  imageUrl?: string | null;
   subcategories: SubRow[];
 };
 
@@ -92,13 +95,19 @@ export function CategoriesPageClient() {
   const [selCat, setSelCat] = useState<string | null>(null);
   const [selSub, setSelSub] = useState<string | null>(null);
 
-  const [catForm, setCatForm] = useState({ name: "", slug: "", displayOrder: 0 });
-  const [subForm, setSubForm] = useState({
-    categoryId: "",
-    name: "",
-    slug: "",
-    displayOrder: 0,
-  });
+  const [catForm, setCatForm] = useState<{
+    name: string;
+    slug: string;
+    displayOrder: number;
+    imageUrl: string | null;
+  }>({ name: "", slug: "", displayOrder: 0, imageUrl: null });
+  const [subForm, setSubForm] = useState<{
+    categoryId: string;
+    name: string;
+    slug: string;
+    displayOrder: number;
+    imageUrl: string | null;
+  }>({ categoryId: "", name: "", slug: "", displayOrder: 0, imageUrl: null });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -165,6 +174,7 @@ export function CategoriesPageClient() {
             name: catForm.name,
             slug: catForm.slug,
             displayOrder: catForm.displayOrder,
+            imageUrl: catForm.imageUrl,
           }),
         });
       } else {
@@ -174,13 +184,14 @@ export function CategoriesPageClient() {
             name: catForm.name,
             slug: catForm.slug,
             displayOrder: catForm.displayOrder,
+            imageUrl: catForm.imageUrl,
           }),
         });
       }
       await mutate();
       toast({ type: "success", message: "Category saved" });
       setSelCat(null);
-      setCatForm({ name: "", slug: "", displayOrder: 0 });
+      setCatForm({ name: "", slug: "", displayOrder: 0, imageUrl: null });
     } catch (err) {
       toast({
         type: "error",
@@ -199,6 +210,7 @@ export function CategoriesPageClient() {
             name: subForm.name,
             slug: subForm.slug,
             displayOrder: subForm.displayOrder,
+            imageUrl: subForm.imageUrl,
           }),
         });
       } else {
@@ -271,20 +283,39 @@ export function CategoriesPageClient() {
                       <div className="flex items-center justify-between gap-2 rounded-r-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2">
                         <button
                           type="button"
-                          className="text-left text-sm font-medium text-zinc-900"
+                          className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm font-medium text-zinc-900"
                           onClick={() => {
                             setExpanded((s) => ({ ...s, [String(cat._id)]: !open }));
                           }}
                         >
-                          {open ? "▼" : "▶"} {cat.name}
-                          <span className="ml-2 rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-normal text-zinc-700">
-                            {cat.subcategories.length} subs
-                          </span>
-                          {cat.productCount > 0 ?
-                            <span className="ml-2 text-xs text-amber-700">
-                              {cat.productCount} products
+                          {cat.imageUrl ?
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={cat.imageUrl}
+                              alt=""
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 shrink-0 rounded-[6px] object-cover"
+                            />
+                          : <span
+                              className="h-8 w-8 shrink-0 rounded-[6px]"
+                              style={{
+                                background: "var(--color-background-secondary, #e4e4e7)",
+                              }}
+                              aria-hidden
+                            />
+                          }
+                          <span className="min-w-0">
+                            {open ? "▼" : "▶"} {cat.name}
+                            <span className="ml-2 rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-normal text-zinc-700">
+                              {cat.subcategories.length} subs
                             </span>
-                          : null}
+                            {cat.productCount > 0 ?
+                              <span className="ml-2 text-xs text-amber-700">
+                                {cat.productCount} products
+                              </span>
+                            : null}
+                          </span>
                         </button>
                         <div className="flex gap-1">
                           <button
@@ -297,6 +328,7 @@ export function CategoriesPageClient() {
                                 name: cat.name,
                                 slug: cat.slug,
                                 displayOrder: cat.displayOrder ?? cat.sortOrder ?? 0,
+                                imageUrl: cat.imageUrl ?? null,
                               });
                             }}
                           >
@@ -357,6 +389,7 @@ export function CategoriesPageClient() {
                                             name: sub.name,
                                             slug: sub.slug,
                                             displayOrder: sub.displayOrder ?? 0,
+                                            imageUrl: sub.imageUrl ?? null,
                                           });
                                         }}
                                       >
@@ -417,7 +450,7 @@ export function CategoriesPageClient() {
                 className="text-sm text-accent hover:underline"
                 onClick={() => {
                   setSelCat(null);
-                  setCatForm({ name: "", slug: "", displayOrder: 0 });
+                  setCatForm({ name: "", slug: "", displayOrder: 0, imageUrl: null });
                 }}
               >
                 Clear
@@ -457,6 +490,11 @@ export function CategoriesPageClient() {
                 }
               />
             </label>
+            <AdminCatalogImageField
+              label="Category image"
+              value={catForm.imageUrl}
+              onChange={(url) => setCatForm((f) => ({ ...f, imageUrl: url }))}
+            />
             <button
               type="button"
               className="h-9 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800"
@@ -473,7 +511,13 @@ export function CategoriesPageClient() {
                 className="text-sm text-accent hover:underline"
                 onClick={() => {
                   setSelSub(null);
-                  setSubForm({ categoryId: "", name: "", slug: "", displayOrder: 0 });
+                  setSubForm({
+                    categoryId: "",
+                    name: "",
+                    slug: "",
+                    displayOrder: 0,
+                    imageUrl: null,
+                  });
                 }}
               >
                 Clear
@@ -528,6 +572,11 @@ export function CategoriesPageClient() {
                 }
               />
             </label>
+            <AdminCatalogImageField
+              label="Subcategory image"
+              value={subForm.imageUrl}
+              onChange={(url) => setSubForm((f) => ({ ...f, imageUrl: url }))}
+            />
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"

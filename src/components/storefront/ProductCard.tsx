@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { StoreMedia } from "@/components/store/StoreMedia";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { cartLineId } from "@/lib/cart-line-id";
 import { formatInrFromPaise } from "@/lib/format";
@@ -24,6 +24,13 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
   const { add, lines, setQty } = useCart();
   const [hover, setHover] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [primaryImgError, setPrimaryImgError] = useState(false);
+  const [secondaryImgError, setSecondaryImgError] = useState(false);
+
+  useEffect(() => {
+    setPrimaryImgError(false);
+    setSecondaryImgError(false);
+  }, [product.id, product.imageUrl, product.hoverImageUrl]);
 
   const lineId = useMemo(
     () => cartLineId(product.id, defaultOptionKey, {}),
@@ -91,19 +98,20 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
     >
       <Link href={`/products/${product.slug}`} className="card-img block overflow-hidden rounded-t-[9px]">
         <div className="relative aspect-square overflow-hidden rounded-t-[9px] bg-[var(--sf)]">
-          {product.imageUrl ? (
+          {product.imageUrl && !primaryImgError ? (
             <>
               <StoreMedia
                 src={product.imageUrl}
                 alt={product.name}
                 fill
                 className={`object-cover transition duration-300 ${
-                  secondaryImg && hover ? "opacity-0" : "opacity-100"
+                  secondaryImg && !secondaryImgError && hover ? "opacity-0" : "opacity-100"
                 } ${out ? "grayscale-[30%]" : ""}`}
                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 fetchPriority="low"
+                onMediaError={() => setPrimaryImgError(true)}
               />
-              {secondaryImg ? (
+              {secondaryImg && !secondaryImgError ? (
                 <StoreMedia
                   src={secondaryImg}
                   alt=""
@@ -113,12 +121,21 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
                   }`}
                   sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   fetchPriority="low"
+                  onMediaError={() => setSecondaryImgError(true)}
                 />
               ) : null}
             </>
           ) : (
-            <div className="flex h-full items-center justify-center bg-[var(--brand-surface)] text-sm text-[var(--brand-muted)]">
-              No image
+            <div
+              className="flex h-full w-full items-center justify-center font-semibold"
+              style={{
+                background: "#F5F0EA",
+                fontSize: 32,
+                color: "#C47A2B",
+              }}
+              aria-hidden
+            >
+              {(product.name.trim()[0] ?? "?").toUpperCase()}
             </div>
           )}
           {out ? (

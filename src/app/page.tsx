@@ -1,15 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { HomeCategoryCard } from "@/components/store/HomeCategoryCard";
 import { HomeDeletedToast } from "@/components/storefront/HomeDeletedToast";
 import { connectDb } from "@/lib/db";
+import { categoryCardPlaceholderImage } from "@/lib/home-category-placeholder";
 import { listCategories } from "@/lib/services/catalogService";
 import { listStorefrontProducts } from "@/lib/services/storefrontCatalog";
 import { HomeNewsletter } from "@/components/storefront/HomeNewsletter";
 import { HomeRecentlyViewed } from "@/components/storefront/HomeRecentlyViewed";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { RecipientCards } from "@/components/storefront/RecipientCards";
 import { TrustIconHeart, TrustIconShieldCheck, TrustIconTruck } from "@/components/storefront/HomeTrustIcons";
-import { categoryCardPlaceholderImage } from "@/lib/home-category-placeholder";
 
 export const revalidate = 120;
 
@@ -104,27 +106,17 @@ export default async function HomePage() {
         </p>
         <div className="mt-6 flex max-md:scroll-row gap-3 md:grid md:grid-cols-3 md:gap-3 md:overflow-visible lg:grid-cols-5">
           {catCards.map((c) => {
-            const placeholder = categoryCardPlaceholderImage(c.slug, c.name);
+            const imageSrc =
+              (c.images?.[0] || c.imageUrl || "").trim() ||
+              categoryCardPlaceholderImage(c.slug, c.name);
             return (
-              <Link
+              <HomeCategoryCard
                 key={String(c._id)}
                 href={`/category/${c.slug}`}
-                className="group relative h-[160px] w-[160px] shrink-0 overflow-hidden rounded-2xl md:h-[160px] md:w-auto"
-              >
-                <div className="relative aspect-square h-full md:aspect-auto md:min-h-[160px]">
-                  <Image
-                    src={placeholder}
-                    alt={c.name}
-                    fill
-                    className="object-cover transition duration-150 group-hover:scale-[1.03]"
-                    sizes="(max-width: 767px) 160px, (max-width: 1023px) 30vw, 20vw"
-                  />
-                  <div className="absolute inset-0 bg-[rgba(0,0,0,0.35)]" />
-                  <p className="absolute inset-x-0 bottom-0 flex items-end justify-center p-3 text-center text-sm font-bold text-white">
-                    {c.name}
-                  </p>
-                </div>
-              </Link>
+                name={c.name}
+                slug={c.slug}
+                imageSrc={imageSrc}
+              />
             );
           })}
         </div>
@@ -159,27 +151,7 @@ export default async function HomePage() {
       <section>
         <h2 className="font-display text-2xl text-[var(--brand-ink)] sm:text-3xl">Shop by recipient</h2>
         <p className="mt-1 text-sm text-[var(--brand-muted)]">Jump in by who you&apos;re shopping for.</p>
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {(
-            [
-              ["him", "#1a2234", "For him"],
-              ["her", "#6b1a2e", "For her"],
-              ["kids", "#8b4a0e", "For kids"],
-              ["couples", "#3d1a6b", "For couples"],
-              ["corporate", "#2d3748", "Corporate"],
-            ] as const
-          ).map(([slug, bg, label]) => (
-            <Link
-              key={slug}
-              href={`/for/${slug}`}
-              className="group relative flex min-h-[160px] flex-col justify-end overflow-hidden rounded-2xl p-5 text-white transition duration-150 hover:scale-[1.02] md:min-h-[200px] md:p-8 lg:min-h-[300px]"
-              style={{ backgroundColor: bg }}
-            >
-              <p className="font-display text-lg font-semibold md:text-xl lg:text-[28px]">{label}</p>
-              <p className="mt-2 text-sm text-white/85">Browse</p>
-            </Link>
-          ))}
-        </div>
+        <RecipientCards />
       </section>
 
       {/* Why */}

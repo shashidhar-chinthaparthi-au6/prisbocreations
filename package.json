@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx scripts/seed.ts",
+    "fix:category-images": "tsx prisma/fix-images.ts",
+    "fix:product-images": "tsx prisma/fix-product-images.ts",
+    "seed": "tsx prisma/seed.ts",
+    "seed:legacy": "tsx scripts/seed.ts",
     "seed:admin": "tsx scripts/seed.ts --admin-only"
   },
   "dependencies": {
@@ -40,6 +43,7 @@
     "react-dom": "^19.0.0",
     "react-easy-crop": "^5.5.7",
     "react-hook-form": "^7.72.1",
+    "sharp": "^0.34.5",
     "swr": "^2.4.1",
     "zod": "^3.23.8",
     "zustand": "^5.0.12"

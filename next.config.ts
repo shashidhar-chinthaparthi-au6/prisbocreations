@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["sharp"],
   async redirects() {
     return [{ source: "/product/:slug", destination: "/products/:slug", permanent: true }];
   },
@@ -18,6 +19,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
       { protocol: "https", hostname: "plus.unsplash.com", pathname: "/**" },
       { protocol: "https", hostname: "source.unsplash.com", pathname: "/**" },
+      /** S3 and CloudFront-style hosts (uploads, buckets, CDNs). */
+      { protocol: "https", hostname: "*.amazonaws.com", pathname: "/**" },
       {
         protocol: "https",
         hostname: "prisbocreations.s3.us-east-1.amazonaws.com",
@@ -28,12 +31,16 @@ const nextConfig: NextConfig = {
         hostname: "prisbocreationsprod.s3.us-east-1.amazonaws.com",
         pathname: "/**",
       },
-      // Virtual-hosted URLs: <bucket>.s3.us-east-1.amazonaws.com
       {
         protocol: "https",
         hostname: "*.s3.us-east-1.amazonaws.com",
         pathname: "/**",
       },
+      /** Local `/public/uploads` via dev server */
+      { protocol: "http", hostname: "localhost", pathname: "/uploads/**" },
+      { protocol: "https", hostname: "localhost", pathname: "/uploads/**" },
+      { protocol: "http", hostname: "127.0.0.1", pathname: "/uploads/**" },
+      { protocol: "https", hostname: "127.0.0.1", pathname: "/uploads/**" },
     ],
   },
   async headers() {

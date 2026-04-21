@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
+import { catalogImageUrlZ } from "@/lib/admin/catalog-image-url-zod";
 import {
   adminDeleteSubcategoryGuarded,
   adminPatchSubcategory,
@@ -14,6 +15,7 @@ const patchZ = z
     name: z.string().min(1).optional(),
     slug: z.string().min(1).optional(),
     displayOrder: z.number().int().optional(),
+    imageUrl: catalogImageUrlZ,
   })
   .strict();
 

@@ -57,6 +57,7 @@ export async function adminCreateCategory(input: {
   name: string;
   slug: string;
   displayOrder?: number;
+  imageUrl?: string | null;
 }) {
   const doc = await Category.create({
     name: input.name.trim(),
@@ -64,19 +65,36 @@ export async function adminCreateCategory(input: {
     sortOrder: input.displayOrder ?? 0,
     description: "",
     images: [],
+    ...(input.imageUrl != null && String(input.imageUrl).trim() !== "" ?
+      { imageUrl: String(input.imageUrl).trim() }
+    : {}),
   });
   return doc.toObject();
 }
 
 export async function adminPatchCategory(
   id: string,
-  patch: Partial<{ name: string; slug: string; displayOrder: number }>,
+  patch: Partial<{ name: string; slug: string; displayOrder: number; imageUrl: string | null }>,
 ) {
-  const next: Record<string, unknown> = {};
-  if (patch.name !== undefined) next.name = patch.name.trim();
-  if (patch.slug !== undefined) next.slug = patch.slug.trim().toLowerCase();
-  if (patch.displayOrder !== undefined) next.sortOrder = patch.displayOrder;
-  const doc = await Category.findByIdAndUpdate(id, next, { new: true }).lean();
+  const $set: Record<string, unknown> = {};
+  const $unset: Record<string, 1> = {};
+  if (patch.name !== undefined) $set.name = patch.name.trim();
+  if (patch.slug !== undefined) $set.slug = patch.slug.trim().toLowerCase();
+  if (patch.displayOrder !== undefined) $set.sortOrder = patch.displayOrder;
+  if (patch.imageUrl !== undefined) {
+    if (patch.imageUrl === null || patch.imageUrl === "") {
+      $unset.imageUrl = 1;
+    } else {
+      $set.imageUrl = patch.imageUrl.trim();
+    }
+  }
+  const update: mongoose.UpdateQuery<Record<string, unknown>> = {};
+  if (Object.keys($set).length) update.$set = $set;
+  if (Object.keys($unset).length) update.$unset = $unset;
+  if (!update.$set && !update.$unset) {
+    return Category.findById(id).lean();
+  }
+  const doc = await Category.findByIdAndUpdate(id, update, { new: true }).lean();
   return doc;
 }
 
@@ -112,6 +130,7 @@ export async function adminCreateSubcategory(input: {
   name: string;
   slug: string;
   displayOrder?: number;
+  imageUrl?: string | null;
 }) {
   const cat = await Category.findById(input.categoryId).select("_id").lean();
   if (!cat) throw new Error("Category not found");
@@ -122,20 +141,43 @@ export async function adminCreateSubcategory(input: {
     sortOrder: input.displayOrder ?? 0,
     description: "",
     images: [],
+    ...(input.imageUrl != null && String(input.imageUrl).trim() !== "" ?
+      { imageUrl: String(input.imageUrl).trim() }
+    : {}),
   });
   return doc.toObject();
 }
 
 export async function adminPatchSubcategory(
   id: string,
-  patch: Partial<{ categoryId: string; name: string; slug: string; displayOrder: number }>,
+  patch: Partial<{
+    categoryId: string;
+    name: string;
+    slug: string;
+    displayOrder: number;
+    imageUrl: string | null;
+  }>,
 ) {
-  const next: Record<string, unknown> = {};
-  if (patch.categoryId !== undefined) next.categoryId = patch.categoryId;
-  if (patch.name !== undefined) next.name = patch.name.trim();
-  if (patch.slug !== undefined) next.slug = patch.slug.trim().toLowerCase();
-  if (patch.displayOrder !== undefined) next.sortOrder = patch.displayOrder;
-  return Subcategory.findByIdAndUpdate(id, next, { new: true }).lean();
+  const $set: Record<string, unknown> = {};
+  const $unset: Record<string, 1> = {};
+  if (patch.categoryId !== undefined) $set.categoryId = patch.categoryId;
+  if (patch.name !== undefined) $set.name = patch.name.trim();
+  if (patch.slug !== undefined) $set.slug = patch.slug.trim().toLowerCase();
+  if (patch.displayOrder !== undefined) $set.sortOrder = patch.displayOrder;
+  if (patch.imageUrl !== undefined) {
+    if (patch.imageUrl === null || patch.imageUrl === "") {
+      $unset.imageUrl = 1;
+    } else {
+      $set.imageUrl = patch.imageUrl.trim();
+    }
+  }
+  const update: mongoose.UpdateQuery<Record<string, unknown>> = {};
+  if (Object.keys($set).length) update.$set = $set;
+  if (Object.keys($unset).length) update.$unset = $unset;
+  if (!update.$set && !update.$unset) {
+    return Subcategory.findById(id).lean();
+  }
+  return Subcategory.findByIdAndUpdate(id, update, { new: true }).lean();
 }
 
 export async function adminDeleteSubcategoryGuarded(

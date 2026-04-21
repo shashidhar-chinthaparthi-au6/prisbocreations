@@ -112,6 +112,25 @@ export function extractCustomerProfileUploadKey(url: string): string | null {
   }
 }
 
+/** Server-side put for admin-processed buffers (e.g. category images). */
+export async function putPublicUploadObject(
+  cfg: S3Config,
+  key: string,
+  body: Buffer,
+  contentType: string,
+): Promise<void> {
+  const s3 = client(cfg);
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: cfg.bucket,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
+  );
+}
+
 export async function deleteObjectByKey(cfg: S3Config, key: string): Promise<void> {
   const s3 = client(cfg);
   await s3.send(

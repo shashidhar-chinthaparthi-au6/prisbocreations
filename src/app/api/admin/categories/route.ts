@@ -2,12 +2,14 @@ import { z } from "zod";
 import { connectDb } from "@/lib/db";
 import { requireAdmin } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
+import { catalogImageUrlZ } from "@/lib/admin/catalog-image-url-zod";
 import { adminCreateCategory, adminListCategoriesTree } from "@/lib/services/adminCatalogBackend";
 
 const postZ = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
   displayOrder: z.number().int().optional(),
+  imageUrl: catalogImageUrlZ,
 });
 
 export async function GET() {
