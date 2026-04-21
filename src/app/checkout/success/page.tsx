@@ -66,6 +66,23 @@ export default async function CheckoutSuccessPage({
   const inv = (order as { invoiceNumber?: string }).invoiceNumber ?? String(order._id);
   const ship = order.shipping;
   const isGuest = !order.userId;
+  const rawItems = (order as { items?: unknown[] }).items ?? [];
+  const hasCustomizationUploads = rawItems.some((it) => {
+    if (!it || typeof it !== "object") return false;
+    const rec = it as Record<string, unknown>;
+    const cf = rec.customizationFiles;
+    return (
+      cf != null &&
+      typeof cf === "object" &&
+      !Array.isArray(cf) &&
+      Object.keys(cf as Record<string, unknown>).length > 0
+    );
+  });
+  const notifyEmail =
+    emailQ ||
+    (typeof (order as { guestEmail?: string }).guestEmail === "string" ?
+      (order as { guestEmail: string }).guestEmail.trim().toLowerCase()
+    : "");
   const placed = order.createdAt ? new Date(order.createdAt as Date) : new Date();
   const estDays = "3-5";
   const windowEnd = addDays(placed, 7);
@@ -96,6 +113,22 @@ export default async function CheckoutSuccessPage({
         <p className="text-sm text-[#6B6560]">By {format(addDays(placed, 5), "d MMMM yyyy")} – {format(windowEnd, "d MMMM yyyy")}</p>
 
         <hr className="my-4 border-[#E8E0D6]" />
+
+        {hasCustomizationUploads ? (
+          <div className="rounded-xl border border-[#E8E0D6] bg-[#FDFAF7] p-4 text-sm leading-relaxed text-[#6B6560]">
+            <p className="font-medium text-[#3D3835]">We&apos;ve received your personalisation details.</p>
+            <p className="mt-2">
+              Our team will review your files and begin production. If anything is unclear, we&apos;ll
+              contact you at{" "}
+              <span className="font-medium text-[#3D3835]">
+                {notifyEmail || "the email on your order"}
+              </span>
+              .
+            </p>
+          </div>
+        ) : null}
+
+        {hasCustomizationUploads ? <hr className="my-4 border-[#E8E0D6]" /> : null}
 
         <div className="flex justify-between text-sm">
           <span className="text-[#6B6560]">Total (COD)</span>

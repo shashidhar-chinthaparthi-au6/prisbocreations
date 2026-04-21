@@ -18,6 +18,8 @@ const OrderItemSchema = new Schema(
     /** Gift wrap add-on per unit (paise), included in line total. */
     giftWrapPaise: { type: Number, default: 0, min: 0 },
     giftMessage: { type: String, trim: true, maxlength: 600 },
+    customizationData: { type: Schema.Types.Mixed },
+    customizationFiles: { type: Schema.Types.Mixed },
   },
   { _id: false }
 );

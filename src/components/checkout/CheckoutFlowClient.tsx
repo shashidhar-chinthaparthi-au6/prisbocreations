@@ -22,6 +22,7 @@ import { INDIAN_STATES, isIndianState } from "@/lib/indian-states";
 import type { MeUserDto } from "@/lib/user-me-dto";
 import { StoreMedia } from "@/components/store/StoreMedia";
 import { registerFieldsSchema } from "@/lib/validators/auth";
+import { validateClientCustomization } from "@/lib/customization-client-validate";
 
 const ACCENT = "bg-[#C47A2B] hover:bg-[#b06d26]";
 
@@ -513,6 +514,20 @@ export function CheckoutFlowClient({
 
   async function placeOrder() {
     setSubmitErr(null);
+    for (const l of lines) {
+      if (!l.customizationSchema?.length) continue;
+      const v = validateClientCustomization(
+        l.customizationSchema,
+        l.customizationData ?? {},
+        l.customizationFiles ?? {},
+      );
+      if (!v.ok) {
+        setSubmitErr(
+          "Some items still need personalisation. Open your cart, complete every required field, then try again.",
+        );
+        return;
+      }
+    }
     const shipErr = validateShipping();
     if (shipErr) {
       setSubmitErr(shipErr);
@@ -546,6 +561,12 @@ export function CheckoutFlowClient({
             ...(l.customerNotes?.trim() ? { customerNotes: l.customerNotes.trim() } : {}),
             ...(l.giftWrap ? { giftWrap: true } : {}),
             ...(l.giftMessage?.trim() ? { giftMessage: l.giftMessage.trim() } : {}),
+            ...(l.customizationData && Object.keys(l.customizationData).length ?
+              { customizationData: l.customizationData }
+            : {}),
+            ...(l.customizationFiles && Object.keys(l.customizationFiles).length ?
+              { customizationFiles: l.customizationFiles }
+            : {}),
           })),
           shipping: {
             fullName: shippingForm.fullName.trim(),

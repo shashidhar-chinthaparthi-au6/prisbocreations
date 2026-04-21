@@ -1,5 +1,10 @@
 import { cartLineId } from "@/lib/cart-line-id";
 import type { CartLine } from "@/lib/store/cart-store";
+import type {
+  CustomizationDataMap,
+  CustomizationFilesMap,
+  CustomizationFieldDef,
+} from "@/lib/customization-types";
 
 /** Normalize persisted / API cart lines: ensure `id` and strip invalid rows. */
 export function normalizeCartLines(raw: unknown): CartLine[] {
@@ -29,6 +34,17 @@ export function normalizeCartLines(raw: unknown): CartLine[] {
       typeof l.giftMessage === "string" && l.giftMessage.trim()
         ? l.giftMessage.trim()
         : undefined;
+    const customizationData =
+      l.customizationData && typeof l.customizationData === "object" && !Array.isArray(l.customizationData)
+        ? (l.customizationData as CustomizationDataMap)
+        : undefined;
+    const customizationFiles =
+      l.customizationFiles && typeof l.customizationFiles === "object" && !Array.isArray(l.customizationFiles)
+        ? (l.customizationFiles as CustomizationFilesMap)
+        : undefined;
+    const customizationSchema = Array.isArray(l.customizationSchema)
+      ? (l.customizationSchema as CustomizationFieldDef[])
+      : undefined;
     const id =
       typeof l.id === "string" && l.id.length > 0
         ? l.id
@@ -38,6 +54,8 @@ export function normalizeCartLines(raw: unknown): CartLine[] {
             customerNotes,
             giftWrap,
             giftMessage,
+            customizationData,
+            customizationFiles,
           });
     const slug = String(l.slug ?? "");
     const name = String(l.name ?? "");
@@ -56,6 +74,9 @@ export function normalizeCartLines(raw: unknown): CartLine[] {
       colorLabel,
       customerImageUrl,
       customerNotes,
+      ...(customizationSchema?.length ? { customizationSchema } : {}),
+      ...(customizationData ? { customizationData } : {}),
+      ...(customizationFiles ? { customizationFiles } : {}),
       ...(giftWrap ? { giftWrap: true as const, ...(giftMessage ? { giftMessage } : {}) } : {}),
     });
   }

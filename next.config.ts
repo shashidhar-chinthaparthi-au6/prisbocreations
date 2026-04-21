@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
       // Legacy JWT routes remain at `/api/v1/auth/*`.
       { source: "/api/orders", destination: "/api/v1/orders" },
       { source: "/api/orders/:path*", destination: "/api/v1/orders/:path*" },
+      { source: "/api/admin/orders/:path*", destination: "/api/v1/admin/orders/:path*" },
     ];
   },
   images: {

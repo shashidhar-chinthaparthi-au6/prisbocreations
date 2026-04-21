@@ -9,6 +9,13 @@ import { formatInrFromPaise } from "@/lib/format";
 import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
 import { Spinner } from "@/components/ui/Spinner";
 import { isHtmlContentEmpty } from "@/lib/html-content-empty";
+import { CustomizationForm } from "@/components/customization/CustomizationForm";
+import { validateClientCustomization } from "@/lib/customization-client-validate";
+import type {
+  CustomizationFieldDef,
+  CustomizationDataMap,
+  CustomizationFilesMap,
+} from "@/lib/customization-types";
 
 export type PurchaseProductOption = {
   key: string;
@@ -43,6 +50,7 @@ export type PurchaseProduct = {
   customizationTextMaxLength?: number;
   customizationImageRequired?: boolean;
   customizationTextRequired?: boolean;
+  customizationFields?: CustomizationFieldDef[];
 };
 
 const FONT_OPTIONS = [
@@ -114,7 +122,9 @@ export function ProductPurchaseClient({
   const [qtyStr, setQtyStr] = useState("1");
   const [cartMsg, setCartMsg] = useState<string | null>(null);
 
-  const customize = Boolean(product.allowCustomerCustomization);
+  const schemaFields = useMemo(() => product.customizationFields ?? [], [product.customizationFields]);
+  const hasSchema = schemaFields.length > 0;
+  const legacyCustomize = Boolean(product.allowCustomerCustomization) && !hasSchema;
   const imgReq = product.customizationImageRequired !== false;
   const txtReq = product.customizationTextRequired === true;
   const maxNotes = Math.min(
@@ -136,6 +146,10 @@ export function ProductPurchaseClient({
   const [isGift, setIsGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
   const [giftWrap, setGiftWrap] = useState(false);
+  const [customizationData, setCustomizationData] = useState<CustomizationDataMap>({});
+  const [customizationFiles, setCustomizationFiles] = useState<CustomizationFilesMap>({});
+  const [schemaFieldErr, setSchemaFieldErr] = useState<string | null>(null);
+  const [schemaUploadBusy, setSchemaUploadBusy] = useState(false);
   const purchaseCtaRef = useRef<HTMLDivElement>(null);
   const [showStickyPurchase, setShowStickyPurchase] = useState(false);
 
@@ -232,15 +246,15 @@ export function ProductPurchaseClient({
 
   const notesForSubmit = useMemo(() => {
     const base = customerNotes.trim();
-    if (!customize) return base;
+    if (!legacyCustomize) return base;
     const label = FONT_OPTIONS.find((f) => f.value === fontKey)?.label ?? fontKey;
     const line = `Type style: ${label}`;
     if (!base) return line;
     return `${base}\n— ${line} —`;
-  }, [customize, customerNotes, fontKey]);
+  }, [legacyCustomize, customerNotes, fontKey]);
 
   function customizationMessage(): string | null {
-    if (!customize) return null;
+    if (!legacyCustomize) return null;
     const img = customerImageUrl.trim();
     const notes = notesForSubmit;
     const userPart = customerNotes.trim();
@@ -305,10 +319,17 @@ export function ProductPurchaseClient({
       optionLabel: selected?.label,
       ...(colors.length && selectedColorKey ? { colorKey: selectedColorKey, colorLabel } : {}),
       quantity: qtyNum!,
-      ...(customize
+      ...(legacyCustomize
         ? {
             customerImageUrl: customerImageUrl.trim() || undefined,
             customerNotes: notesForSubmit.trim() || undefined,
+          }
+        : {}),
+      ...(hasSchema
+        ? {
+            customizationSchema: schemaFields,
+            customizationData,
+            customizationFiles,
           }
         : {}),
       ...(isGift && giftMessage.trim() ? { giftMessage: giftMessage.trim() } : {}),
@@ -322,7 +343,11 @@ export function ProductPurchaseClient({
     cartThumbnailUrl,
     selected?.key,
     selected?.label,
-    customize,
+    legacyCustomize,
+    hasSchema,
+    schemaFields,
+    customizationData,
+    customizationFiles,
     customerImageUrl,
     notesForSubmit,
     isGift,
@@ -334,7 +359,16 @@ export function ProductPurchaseClient({
   function tryAddToCart(opts: { openDrawer: boolean; buyNow?: boolean }) {
     if (visibleOptions.length > 0 && !selected) return;
     if (qtyInvalid || qtyNum === null) return;
-    if (customize) {
+    if (hasSchema) {
+      const v = validateClientCustomization(schemaFields, customizationData, customizationFiles);
+      if (!v.ok) {
+        setSchemaFieldErr(v.firstInvalidKey ?? null);
+        setCustomErr("Please complete all required personalisation fields.");
+        return;
+      }
+      setSchemaFieldErr(null);
+      setCustomErr(null);
+    } else if (legacyCustomize) {
       const msg = customizationMessage();
       if (msg) {
         setCustomErr(msg);
@@ -371,7 +405,7 @@ export function ProductPurchaseClient({
             </div>
             <button
               type="button"
-              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
               onClick={() => tryAddToCart({ openDrawer: true })}
               className="min-h-11 shrink-0 rounded-full bg-accent px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-accent-light disabled:opacity-50 sm:px-5 sm:text-sm"
             >
@@ -454,7 +488,32 @@ export function ProductPurchaseClient({
         </fieldset>
       ) : null}
 
-      {customize ? (
+      {hasSchema ? (
+        <div
+          className="mt-8 rounded-[10px] border border-[#E8E0D6] p-[14px]"
+          style={{ background: "color-mix(in srgb, var(--aml) 42%, white)" }}
+        >
+          <h2 className="text-[14px] font-medium text-ink">Personalise your order</h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            Every item is made to order. Please review your details carefully.
+          </p>
+          <div className="mt-4">
+            <CustomizationForm
+              fields={schemaFields}
+              data={customizationData}
+              files={customizationFiles}
+              onChange={({ data, files }) => {
+                setCustomizationData(data);
+                setCustomizationFiles(files);
+              }}
+              invalidFieldKey={schemaFieldErr}
+              onUploadingChange={setSchemaUploadBusy}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {legacyCustomize ? (
         <div className="mt-8 space-y-5">
           <div className="flex items-end justify-between gap-3">
             <h2 className="font-display text-lg text-ink">Make it yours</h2>
@@ -780,7 +839,7 @@ export function ProductPurchaseClient({
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
-              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
               onClick={() => tryAddToCart({ openDrawer: false })}
               className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -788,7 +847,7 @@ export function ProductPurchaseClient({
             </button>
             <button
               type="button"
-              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
               onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
               className="rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -826,7 +885,7 @@ export function ProductPurchaseClient({
           <div className="flex flex-col gap-3">
             <button
               type="button"
-              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
               onClick={() => tryAddToCart({ openDrawer: false })}
               className="min-h-11 w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -834,7 +893,7 @@ export function ProductPurchaseClient({
             </button>
             <button
               type="button"
-              disabled={maxStock < 1 || qtyInvalid || uploadBusy}
+              disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
               onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
               className="min-h-11 w-full rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
             >

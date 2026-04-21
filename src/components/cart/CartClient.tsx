@@ -78,6 +78,9 @@ export function CartClient() {
             customerNotes: line.customerNotes,
             giftWrap: line.giftWrap,
             giftMessage: line.giftMessage,
+            customizationSchema: line.customizationSchema,
+            customizationData: line.customizationData,
+            customizationFiles: line.customizationFiles,
           },
           { openDrawer: false },
         );

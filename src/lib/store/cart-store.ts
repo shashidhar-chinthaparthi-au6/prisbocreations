@@ -4,6 +4,11 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { cartLineId as buildCartLineId } from "@/lib/cart-line-id";
 import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
+import type {
+  CustomizationFieldDef,
+  CustomizationDataMap,
+  CustomizationFilesMap,
+} from "@/lib/customization-types";
 
 export type CartLine = {
   id: string;
@@ -21,6 +26,10 @@ export type CartLine = {
   customerNotes?: string;
   giftWrap?: boolean;
   giftMessage?: string;
+  /** Snapshot of product personalisation schema (for cart summary + edit sheet). */
+  customizationSchema?: CustomizationFieldDef[];
+  customizationData?: CustomizationDataMap;
+  customizationFiles?: CustomizationFilesMap;
 };
 
 type AddLineInput = Omit<CartLine, "id" | "quantity"> & { quantity?: number };
@@ -57,6 +66,17 @@ function migrateLines(raw: unknown): CartLine[] {
         typeof l.giftMessage === "string" && l.giftMessage.trim()
           ? l.giftMessage.trim()
           : undefined;
+      const customizationData =
+        l.customizationData && typeof l.customizationData === "object" && !Array.isArray(l.customizationData)
+          ? (l.customizationData as CustomizationDataMap)
+          : undefined;
+      const customizationFiles =
+        l.customizationFiles && typeof l.customizationFiles === "object" && !Array.isArray(l.customizationFiles)
+          ? (l.customizationFiles as CustomizationFilesMap)
+          : undefined;
+      const customizationSchema = Array.isArray(l.customizationSchema)
+        ? (l.customizationSchema as CustomizationFieldDef[])
+        : undefined;
       const id =
         typeof l.id === "string" && l.id.length > 0
           ? l.id
@@ -66,6 +86,8 @@ function migrateLines(raw: unknown): CartLine[] {
               customerNotes,
               giftWrap,
               giftMessage,
+              customizationData,
+              customizationFiles,
             });
       return {
         id,
@@ -81,6 +103,9 @@ function migrateLines(raw: unknown): CartLine[] {
         colorLabel,
         customerImageUrl,
         customerNotes,
+        ...(customizationSchema?.length ? { customizationSchema } : {}),
+        ...(customizationData ? { customizationData } : {}),
+        ...(customizationFiles ? { customizationFiles } : {}),
         ...(giftWrap ? { giftWrap: true as const, ...(giftMessage ? { giftMessage } : {}) } : {}),
       };
     })
@@ -100,6 +125,13 @@ type CartState = {
   drawerOpen: boolean;
   add: (line: AddLineInput, opts?: { openDrawer?: boolean }) => void;
   setQty: (lineId: string, quantity: number) => void;
+  updateLineCustomization: (
+    lineId: string,
+    patch: {
+      customizationData: CustomizationDataMap;
+      customizationFiles: CustomizationFilesMap;
+    },
+  ) => void;
   remove: (lineId: string) => void;
   clear: () => void;
   setDrawerOpen: (open: boolean) => void;
@@ -124,6 +156,8 @@ export const useCartStore = create<CartState>()(
           customerNotes: line.customerNotes,
           giftWrap: line.giftWrap,
           giftMessage: line.giftMessage,
+          customizationData: line.customizationData,
+          customizationFiles: line.customizationFiles,
         });
         const qty = line.quantity ?? 1;
         set((state) => {
@@ -149,6 +183,11 @@ export const useCartStore = create<CartState>()(
                 customerNotes: line.customerNotes,
                 giftWrap: line.giftWrap,
                 giftMessage: line.giftMessage?.trim() || undefined,
+                ...(line.customizationSchema?.length ?
+                  { customizationSchema: line.customizationSchema }
+                : {}),
+                ...(line.customizationData ? { customizationData: line.customizationData } : {}),
+                ...(line.customizationFiles ? { customizationFiles: line.customizationFiles } : {}),
               },
             ];
           } else {
@@ -160,6 +199,37 @@ export const useCartStore = create<CartState>()(
           return { lines, ...t, drawerOpen: opts?.openDrawer ? true : state.drawerOpen };
         });
       },
+      updateLineCustomization: (lineId, patch) =>
+        set((state) => {
+          const idx = state.lines.findIndex((l) => l.id === lineId);
+          if (idx === -1) return state;
+          const line = state.lines[idx];
+          const merged: CartLine = {
+            ...line,
+            customizationData: patch.customizationData,
+            customizationFiles: patch.customizationFiles,
+          };
+          const newId = buildCartLineId(line.productId, line.optionKey, {
+            colorKey: line.colorKey,
+            customerImageUrl: line.customerImageUrl,
+            customerNotes: line.customerNotes,
+            giftWrap: line.giftWrap,
+            giftMessage: line.giftMessage,
+            customizationData: merged.customizationData,
+            customizationFiles: merged.customizationFiles,
+          });
+          const others = state.lines.filter((_, j) => j !== idx);
+          const clashIdx = others.findIndex((l) => l.id === newId);
+          let lines: CartLine[];
+          if (clashIdx === -1) {
+            lines = [...others, { ...merged, id: newId }];
+          } else {
+            lines = others.map((l, j) =>
+              j === clashIdx ? { ...l, quantity: l.quantity + merged.quantity } : l,
+            );
+          }
+          return { lines, ...computeCartTotals(lines) };
+        }),
       setQty: (lineId, quantity) =>
         set((state) => {
           const lines = state.lines

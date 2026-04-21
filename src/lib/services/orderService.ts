@@ -24,6 +24,11 @@ import { qualifiesForFreeShipping } from "@/lib/free-shipping";
 import { resolveProductLine } from "@/lib/product-options";
 import { colorVariantsFromDoc } from "@/lib/product-color-variants";
 import { incrementCouponUseCount, validateCouponCode } from "@/lib/services/couponService";
+import {
+  validateSchemaLineCustomization,
+  type LineCustomizationPayload,
+} from "@/lib/customization-order-validate";
+import type { CustomizationDataMap, CustomizationFilesMap } from "@/lib/customization-types";
 
 /** Thrown when cart lines cannot be fulfilled; API maps to HTTP 409. */
 export class OrderStockConflictError extends Error {
@@ -45,6 +50,9 @@ export type OrderCartLineInput = {
   customerNotes?: string;
   giftWrap?: boolean;
   giftMessage?: string;
+  customizationData?: CustomizationDataMap;
+  /** Parsed in `validateSchemaLineCustomization` */
+  customizationFiles?: unknown;
 };
 
 export type ShippingInput = {
@@ -140,10 +148,33 @@ function customizationFlags(p: Record<string, unknown>) {
   };
 }
 
+function hasSchemaCustomization(p: Record<string, unknown>): boolean {
+  const f = p.customizationFields;
+  return Array.isArray(f) && f.length > 0;
+}
+
 function validateLineCustomization(
   p: Record<string, unknown>,
   line: OrderCartLineInput,
-): { customerImageUrl?: string; customerNotes?: string } {
+): {
+  customerImageUrl?: string;
+  customerNotes?: string;
+  customizationData?: CustomizationDataMap;
+  customizationFiles?: CustomizationFilesMap;
+} {
+  if (hasSchemaCustomization(p)) {
+    const rawImg = line.customerImageUrl?.trim() ?? "";
+    const rawNotes = (line.customerNotes ?? "").trim();
+    if (rawImg || rawNotes) {
+      throw new Error(`Use the personalisation form on the product page for ${String(p.name)}`);
+    }
+    const payload: LineCustomizationPayload = {
+      customizationData: line.customizationData,
+      customizationFiles: line.customizationFiles,
+    };
+    return validateSchemaLineCustomization(String(p.name), p.customizationFields, payload);
+  }
+
   const flags = customizationFlags(p);
   const rawImg = line.customerImageUrl?.trim() ?? "";
   const rawNotes = (line.customerNotes ?? "").trim();
@@ -259,6 +290,8 @@ export async function createOrderFromCart(input: {
     customerNotes?: string;
     giftWrapPaise?: number;
     giftMessage?: string;
+    customizationData?: CustomizationDataMap;
+    customizationFiles?: CustomizationFilesMap;
   }> = [];
 
   const conflicts: Array<{ productId: string; name: string; message: string }> = [];

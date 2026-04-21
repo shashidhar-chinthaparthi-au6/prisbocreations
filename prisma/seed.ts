@@ -2,7 +2,7 @@
  * Full catalog wipe + reseed for Prisbo Creations (MongoDB / Mongoose).
  * Run: npx tsx prisma/seed.ts
  *
- * Note: This codebase uses Mongoose, not Prisma ORM (no `prisma migrate`).
+ * Note: This codebase uses Mongoose, not Prisma ORM (there is no `npx prisma migrate` for schema).
  * Product `recipients` (string[] of shop-by-recipient slugs) is defined on the
  * Mongoose model in `src/lib/models/Product.ts`. Re-run this seed to repopulate.
  * Deletion order matches the relational layout from the original spec.
@@ -36,6 +36,7 @@ import { User } from "@/lib/models/User";
 import { Wishlist } from "@/lib/models/Wishlist";
 import type { RecipientSlug } from "@/lib/recipients";
 import { recipientsForCatalogProduct, normalizeRecipients } from "./seed-recipients";
+import { customizationFieldsForSubcategory } from "@/lib/customization-fields-catalog";
 
 function requireMongoUri(): string {
   const u = process.env.MONGODB_URI;
@@ -235,6 +236,7 @@ async function seedSubcategory(data: {
         normalizeRecipients(p.recipients)
       : normalizeRecipients(recipientsForCatalogProduct(data.name, p.name, p.specValues));
 
+    const customizationFields = customizationFieldsForSubcategory(data.name);
     const doc = await Product.create({
       name: p.name,
       slug: slugStr,
@@ -261,6 +263,8 @@ async function seedSubcategory(data: {
       stock: 0,
       isActive: true,
       colourVariants,
+      allowCustomerCustomization: customizationFields.length > 0,
+      customizationFields,
     });
 
     await syncStorefrontFromAdminProduct(String(doc._id));

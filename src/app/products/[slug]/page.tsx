@@ -6,6 +6,7 @@ import { isHtmlContentEmpty, sanitizeProductDescription } from "@/lib/sanitize-h
 import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import { ProductPageClient } from "@/components/product/ProductPageClient";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
+import { parseProductCustomizationFields } from "@/lib/customization-order-validate";
 
 export const revalidate = 30;
 
@@ -171,7 +172,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     customizationTextMaxLength?: number;
     customizationImageRequired?: boolean;
     customizationTextRequired?: boolean;
+    customizationFields?: unknown;
   };
+
+  const customizationFields = parseProductCustomizationFields(pc.customizationFields);
 
   const breadcrumb =
     cat && sub ? (
@@ -274,6 +278,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               : undefined,
           customizationImageRequired: pc.customizationImageRequired,
           customizationTextRequired: Boolean(pc.customizationTextRequired),
+          ...(customizationFields.length ? { customizationFields } : {}),
         }}
       />
     </>

@@ -24,6 +24,8 @@ const lineSchema = z.object({
   customerNotes: emptyToUndefined(z.string().max(2000).optional()),
   giftWrap: z.boolean().optional(),
   giftMessage: emptyToUndefined(z.string().max(500).optional()),
+  customizationData: z.record(z.union([z.string(), z.array(z.string()), z.boolean()])).optional(),
+  customizationFiles: z.record(z.unknown()).optional(),
 });
 
 const shipSchema = z.object({

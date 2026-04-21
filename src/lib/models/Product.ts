@@ -134,6 +134,8 @@ const ProductSchema = new Schema(
     customizationTextMaxLength: { type: Number, default: 500 },
     customizationImageRequired: { type: Boolean, default: true },
     customizationTextRequired: { type: Boolean, default: false },
+    /** Storefront personalisation field definitions (see `customization-fields-catalog.ts`). */
+    customizationFields: { type: [Schema.Types.Mixed], default: [] },
   },
   { timestamps: true },
 );

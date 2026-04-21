@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { adminFetchJson, AdminApiError } from "@/lib/admin/admin-fetch";
-import { uploadAdminImageWithProgress } from "@/lib/api/upload-progress";
+import { deleteAdminS3ObjectIfManaged, uploadAdminImageWithProgress } from "@/lib/api/upload-progress";
+import { isAdminUploadableImageFile, withInferredMimeType } from "@/lib/media-upload";
+import { outputMimeForFile } from "@/lib/canvas-crop";
+import { AdminImageCropDialog } from "@/components/admin/AdminImageCropDialog";
+import { AdminImageViewDialog } from "@/components/admin/AdminImageViewDialog";
+import { adminS3DisplaySrc } from "@/lib/s3-admin-display";
 import { useAdminToast } from "@/components/admin/layout/AdminShell";
 import { AdminBreadcrumb } from "@/components/admin/layout/AdminBreadcrumb";
 import { resolveTemplate, formatInr } from "@/lib/admin/template-resolve";
@@ -29,6 +34,38 @@ type CatTree = {
   name: string;
   subcategories: { _id: string; name: string; schemaFieldCount?: number }[];
 };
+
+type WizardCropSession = { file: File; src: string; variantTempId: string };
+type PendingWizardCrop = { file: File; variantTempId: string };
+type WizardEditImageSession = {
+  variantTempId: string;
+  index: number;
+  storedUrl: string;
+  imageSrc: string;
+  fileName: string;
+  originalMime: string;
+};
+type WizardImagePreview = { url: string; variantTempId: string; index: number };
+
+function fileNameFromUrl(u: string): string {
+  try {
+    const path = new URL(u, typeof window !== "undefined" ? window.location.origin : "http://localhost")
+      .pathname;
+    const seg = path.split("/").filter(Boolean).pop();
+    return seg || "image";
+  } catch {
+    const seg = u.split("/").filter(Boolean).pop();
+    return seg?.split("?")[0] || "image";
+  }
+}
+
+function mimeFromUrl(u: string): string {
+  const base = u.split("?")[0].toLowerCase();
+  if (base.endsWith(".png")) return "image/png";
+  if (base.endsWith(".webp")) return "image/webp";
+  if (base.endsWith(".gif")) return "image/gif";
+  return "image/jpeg";
+}
 
 function isOid(s: string): boolean {
   return /^[a-f\d]{24}$/i.test(s);
@@ -108,10 +145,41 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
   const [skuOk, setSkuOk] = useState<boolean | null>(null);
   const [activeVariantTab, setActiveVariantTab] = useState(0);
   const [previewVariantIdx, setPreviewVariantIdx] = useState(0);
+  const [cropBeforeUpload, setCropBeforeUpload] = useState(true);
+  const [pendingCrops, setPendingCrops] = useState<PendingWizardCrop[]>([]);
+  const [cropSession, setCropSession] = useState<WizardCropSession | null>(null);
+  const [imagePreview, setImagePreview] = useState<WizardImagePreview | null>(null);
+  const [editExistingSession, setEditExistingSession] = useState<WizardEditImageSession | null>(null);
 
   useEffect(() => {
     void Promise.resolve(useProductWizard.persist.rehydrate()).finally(() => setHydrated(true));
   }, []);
+
+  function revokeWizardCropSession(s: WizardCropSession | null) {
+    if (s?.src) URL.revokeObjectURL(s.src);
+  }
+
+  function cancelWizardCropFlow() {
+    revokeWizardCropSession(cropSession);
+    setCropSession(null);
+    setPendingCrops([]);
+  }
+
+  useEffect(() => {
+    if (!cropBeforeUpload || cropSession !== null) return;
+    if (pendingCrops.length === 0) return;
+    const [next, ...rest] = pendingCrops;
+    setPendingCrops(rest);
+    const src = URL.createObjectURL(next.file);
+    setCropSession({ file: next.file, src, variantTempId: next.variantTempId });
+  }, [cropBeforeUpload, cropSession, pendingCrops]);
+
+  useEffect(() => {
+    const src = cropSession?.src;
+    return () => {
+      if (src) URL.revokeObjectURL(src);
+    };
+  }, [cropSession?.src]);
 
   const { data: tree } = useSWR<CatTree[]>(
     "/api/admin/categories",
@@ -295,11 +363,31 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
   const vIdx = Math.min(activeVariantTab, Math.max(0, variants.length - 1));
   const vCur = variants[vIdx];
 
-  async function uploadVariantImages(files: FileList | File[] | null) {
-    if (!vCur || !w.productId) return;
+  function onWizardImagesFileInput(files: FileList | null) {
+    if (!files?.length || !vCur || !w.productId) return;
+    const variantTempId = vCur.tempId;
+    const list = Array.from(files).map((f) => withInferredMimeType(f));
+    const invalid = list.filter((f) => !isAdminUploadableImageFile(f));
+    if (invalid.length) {
+      toast({
+        type: "error",
+        message: "Unsupported file — use JPEG, PNG, WebP, or GIF.",
+      });
+    }
+    const imgs = list.filter((f) => isAdminUploadableImageFile(f));
+    if (!imgs.length) return;
+    if (cropBeforeUpload) {
+      setPendingCrops((p) => [...p, ...imgs.map((file) => ({ file, variantTempId }))]);
+    } else {
+      void uploadVariantImages(imgs, variantTempId);
+    }
+  }
+
+  async function uploadVariantImages(files: FileList | File[] | null, tempIdOverride?: string) {
+    const tempId = tempIdOverride ?? vCur?.tempId;
+    if (!tempId || !w.productId) return;
     const fileArr = files ? Array.from(files) : [];
     if (!fileArr.length) return;
-    const tempId = vCur.tempId;
     let list = [...(useProductWizard.getState().variantImages[tempId] ?? [])];
     for (const file of fileArr) {
       try {
@@ -319,6 +407,71 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
       } catch (e) {
         toast({ type: "error", message: e instanceof Error ? e.message : "Upload failed" });
       }
+    }
+  }
+
+  function removeVariantImage(tempId: string, index: number) {
+    const list = [...(w.variantImages[tempId] ?? [])];
+    if (index < 0 || index >= list.length) return;
+    const [removed] = list.splice(index, 1);
+    const normalized = list.map((im, i) => ({
+      ...im,
+      isPrimary: i === 0,
+      displayOrder: i,
+    }));
+    w.setField("variantImages", { ...w.variantImages, [tempId]: normalized });
+    if (removed?.url) void deleteAdminS3ObjectIfManaged(removed.url);
+  }
+
+  async function onWizardReplaceWithCropped(blob: Blob, baseName: string, sess: WizardEditImageSession) {
+    if (!w.productId) return;
+    const { mime } = outputMimeForFile(sess.originalMime);
+    const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
+    const file = new File([blob], `edited-${baseName}.${ext}`, { type: mime });
+    setEditExistingSession(null);
+    try {
+      const newUrl = await uploadAdminImageWithProgress(file, () => {});
+      const tempId = sess.variantTempId;
+      const list = [...(useProductWizard.getState().variantImages[tempId] ?? [])];
+      const idx = sess.index;
+      if (idx < 0 || idx >= list.length) return;
+      const oldUrl = list[idx].url;
+      const next = list.map((im, i) => (i === idx ? { ...im, url: newUrl } : im));
+      w.setField("variantImages", {
+        ...useProductWizard.getState().variantImages,
+        [tempId]: next,
+      });
+      void deleteAdminS3ObjectIfManaged(oldUrl);
+    } catch (e) {
+      toast({ type: "error", message: e instanceof Error ? e.message : "Upload failed" });
+    }
+  }
+
+  async function onWizardImageCropped(blob: Blob, baseName: string, session: WizardCropSession) {
+    if (!w.productId) return;
+    const { mime } = outputMimeForFile(session.file.type);
+    const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
+    const file = new File([blob], `cropped-${baseName}.${ext}`, { type: mime });
+    revokeWizardCropSession(session);
+    setCropSession(null);
+    const variantTempId = session.variantTempId;
+    try {
+      const url = await uploadAdminImageWithProgress(file, () => {});
+      let list = [...(useProductWizard.getState().variantImages[variantTempId] ?? [])];
+      list = [
+        ...list,
+        {
+          url,
+          isPrimary: list.length === 0,
+          displayOrder: list.length,
+        },
+      ];
+      w.setField("variantImages", {
+        ...useProductWizard.getState().variantImages,
+        [variantTempId]: list,
+      });
+    } catch (e) {
+      toast({ type: "error", message: e instanceof Error ? e.message : "Upload failed" });
     }
   }
 
@@ -698,31 +851,138 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
                 ))}
               </div>
             : null}
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-700">
+              <input
+                type="checkbox"
+                checked={cropBeforeUpload}
+                onChange={(e) => {
+                  setCropBeforeUpload(e.target.checked);
+                  if (!e.target.checked) cancelWizardCropFlow();
+                }}
+                className="rounded border-zinc-300 accent-zinc-900"
+              />
+              Crop images before upload
+            </label>
+            {pendingCrops.length > 0 && cropSession === null ?
+              <p className="text-xs text-zinc-500">
+                Queued: {pendingCrops.length} image{pendingCrops.length === 1 ? "" : "s"} — next crop opens
+                automatically.
+              </p>
+            : null}
             <label className="flex h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 text-sm text-zinc-500">
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 className="hidden"
                 onChange={(e) => {
-                  void uploadVariantImages(e.target.files);
+                  onWizardImagesFileInput(e.target.files);
                   e.target.value = "";
                 }}
               />
               <span className="text-center px-2">
-                Click to upload — select multiple images (JPG/PNG/WebP, max 5MB each)
+                {cropBeforeUpload ?
+                  "Click to choose images — crop each before upload (JPG/PNG/WebP/GIF, max 5MB each)"
+                : "Click to upload — multiple images (JPG/PNG/WebP/GIF, max 5MB each)"}
               </span>
             </label>
+            {cropSession ?
+              <AdminImageCropDialog
+                imageSrc={cropSession.src}
+                fileName={cropSession.file.name}
+                originalMime={cropSession.file.type}
+                onCancel={cancelWizardCropFlow}
+                onCropped={(blob, base) => void onWizardImageCropped(blob, base, cropSession)}
+                title="Crop product image"
+                submitLabel="Upload cropped image"
+              />
+            : editExistingSession ?
+              <AdminImageCropDialog
+                imageSrc={editExistingSession.imageSrc}
+                fileName={editExistingSession.fileName}
+                originalMime={editExistingSession.originalMime}
+                onCancel={() => setEditExistingSession(null)}
+                onCropped={(blob, base) => void onWizardReplaceWithCropped(blob, base, editExistingSession)}
+                title="Crop & replace image"
+                submitLabel="Upload cropped & replace"
+              />
+            : null}
+            <p className="text-xs text-zinc-500">
+              Click a thumbnail for a large preview (and <strong className="font-medium text-zinc-700">Edit</strong>{" "}
+              to crop). Or use <strong className="font-medium text-zinc-700">Crop</strong> on the thumbnail anytime.
+            </p>
+            {imagePreview ?
+              <AdminImageViewDialog
+                url={imagePreview.url}
+                onClose={() => setImagePreview(null)}
+                onEdit={() => {
+                  const p = imagePreview;
+                  setImagePreview(null);
+                  setEditExistingSession({
+                    variantTempId: p.variantTempId,
+                    index: p.index,
+                    storedUrl: p.url,
+                    imageSrc: adminS3DisplaySrc(p.url),
+                    fileName: fileNameFromUrl(p.url),
+                    originalMime: mimeFromUrl(p.url),
+                  });
+                }}
+              />
+            : null}
             <div className="flex flex-wrap gap-2">
               {(vCur ? w.variantImages[vCur.tempId] ?? [] : []).map((im, idx) => (
-                <div key={`${im.url}-${idx}`} className="relative h-20 w-20 overflow-hidden rounded-lg border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={im.url} alt="" className="h-full w-full object-cover" />
+                <div key={`${im.url}-${idx}`} className="relative h-20 w-20 rounded-lg border">
+                  <button
+                    type="button"
+                    className="relative block h-full w-full overflow-hidden rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                    aria-label="View full size"
+                    title="View"
+                    onClick={() =>
+                      vCur &&
+                      setImagePreview({ url: im.url, variantTempId: vCur.tempId, index: idx })
+                    }
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={adminS3DisplaySrc(im.url)} alt="" className="h-full w-full object-cover" />
+                  </button>
                   {im.isPrimary ?
-                    <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[10px] text-white">
+                    <span className="pointer-events-none absolute left-1 bottom-1 rounded bg-black/70 px-1 text-[10px] text-white">
                       Primary
                     </span>
                   : null}
+                  <button
+                    type="button"
+                    className="absolute bottom-0.5 right-0.5 z-[1] flex h-6 items-center justify-center rounded-full bg-white/95 px-1.5 text-[9px] font-semibold uppercase tracking-wide text-zinc-800 shadow-sm ring-1 ring-zinc-200 hover:bg-white"
+                    aria-label="Crop image"
+                    title="Crop and replace"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!vCur) return;
+                      setImagePreview(null);
+                      setEditExistingSession({
+                        variantTempId: vCur.tempId,
+                        index: idx,
+                        storedUrl: im.url,
+                        imageSrc: adminS3DisplaySrc(im.url),
+                        fileName: fileNameFromUrl(im.url),
+                        originalMime: mimeFromUrl(im.url),
+                      });
+                    }}
+                  >
+                    Crop
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-0.5 top-0.5 z-[1] flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900/85 text-xs font-medium text-white shadow-sm hover:bg-zinc-900"
+                    aria-label="Remove image"
+                    title="Remove image"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      vCur && removeVariantImage(vCur.tempId, idx);
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>

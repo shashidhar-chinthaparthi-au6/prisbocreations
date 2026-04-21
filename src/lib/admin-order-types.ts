@@ -16,6 +16,8 @@ export type AdminOrderItem = {
   customerNotes?: string;
   giftWrapPaise?: number;
   giftMessage?: string;
+  customizationData?: Record<string, unknown>;
+  customizationFiles?: Record<string, unknown>;
 };
 
 export type AdminOrderShipping = {

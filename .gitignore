@@ -17,6 +17,8 @@ out
 # uploaded assets (local dev)
 public/uploads/*
 !public/uploads/.gitkeep
+!public/uploads/customization/
+!public/uploads/customization/.gitkeep
 
 # misc
 .DS_Store

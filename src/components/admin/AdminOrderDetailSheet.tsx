@@ -184,9 +184,17 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
             </section>
 
             <section className="rounded-xl border border-sand-deep bg-white p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                Line items
-              </h3>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  Line items
+                </h3>
+                <a
+                  href={`/api/admin/orders/${order._id}/files`}
+                  className="text-xs font-medium text-accent hover:underline"
+                >
+                  Download all files (ZIP)
+                </a>
+              </div>
               <ul className="mt-3 divide-y divide-sand-deep/80">
                 {(order.items ?? []).map((it, i) => (
                   <li key={i} className="flex gap-3 py-3 first:pt-0">
@@ -250,6 +258,74 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
                               className="h-full w-full object-cover"
                             />
                           </div>
+                        </div>
+                      ) : null}
+                      {it.customizationData &&
+                      typeof it.customizationData === "object" &&
+                      !Array.isArray(it.customizationData) &&
+                      Object.keys(it.customizationData as object).length > 0 ? (
+                        <div className="mt-3 rounded-lg border border-sand-deep bg-sand/20 p-3">
+                          <p className="text-xs font-semibold text-ink">Customer personalisation</p>
+                          <dl className="mt-2 space-y-2 text-xs">
+                            {Object.entries(it.customizationData as Record<string, unknown>).map(
+                              ([key, val]) => {
+                                if (val === undefined || val === null || val === "") return null;
+                                const display =
+                                  Array.isArray(val) ? val.join(", ")
+                                  : typeof val === "boolean" ?
+                                    val ? "Yes"
+                                    : "No"
+                                  : String(val);
+                                return (
+                                  <div key={key} className="grid gap-0.5 sm:grid-cols-[8rem_1fr]">
+                                    <dt className="font-medium capitalize text-ink-muted">
+                                      {key.replace(/_/g, " ")}
+                                    </dt>
+                                    <dd className="break-all text-ink">{display}</dd>
+                                  </div>
+                                );
+                              },
+                            )}
+                          </dl>
+                          {it.customizationFiles &&
+                          typeof it.customizationFiles === "object" &&
+                          !Array.isArray(it.customizationFiles) ? (
+                            <ul className="mt-3 space-y-2 border-t border-sand-deep/80 pt-3">
+                              {Object.entries(
+                                it.customizationFiles as Record<
+                                  string,
+                                  | { url?: string; filename?: string }
+                                  | Array<{ url?: string; filename?: string }>
+                                >,
+                              ).flatMap(([key, val]) => {
+                                const list = Array.isArray(val) ? val : [val];
+                                return list.map((m, mi) =>
+                                  m?.url ? (
+                                    <li
+                                      key={`${key}-${mi}`}
+                                      className="flex flex-wrap items-center gap-2 text-xs"
+                                    >
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={m.url}
+                                        alt=""
+                                        className="h-12 w-12 rounded border border-sand-deep object-cover"
+                                      />
+                                      <span className="text-ink-muted">{key.replace(/_/g, " ")}:</span>
+                                      <a
+                                        href={m.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-accent hover:underline"
+                                      >
+                                        {m.filename || "Open file"}
+                                      </a>
+                                    </li>
+                                  ) : null,
+                                );
+                              })}
+                            </ul>
+                          ) : null}
                         </div>
                       ) : null}
                       <div className="mt-2">

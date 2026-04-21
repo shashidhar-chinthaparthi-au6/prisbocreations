@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { CartLine } from "@/components/cart/CartProvider";
 import { StoreMedia } from "@/components/store/StoreMedia";
 import { formatInrFromPaise } from "@/lib/format";
 import { GIFT_WRAP_PAISE } from "@/lib/gift-wrap";
+import { cartCustomizationSummaryRows } from "@/lib/customization-cart-summary";
+import { CartPersonalizationSheet } from "@/components/cart/CartPersonalizationSheet";
 
 type Props = {
   line: CartLine;
@@ -19,6 +22,15 @@ export function CartItem({ line, compact, maxQty, onQty, onRemove, onCloseDrawer
   const img = compact ? 56 : 80;
   const cap = typeof maxQty === "number" && maxQty > 0 ? maxQty : 9999;
   const atMax = line.quantity >= cap;
+  const [editPersonalisation, setEditPersonalisation] = useState(false);
+  const summaryRows =
+    line.customizationSchema?.length ?
+      cartCustomizationSummaryRows(
+        line.customizationSchema,
+        line.customizationData,
+        line.customizationFiles,
+      )
+    : [];
 
   return (
     <li className={`flex gap-3 ${compact ? "rounded-xl border border-[#E8E0D6] bg-[#F5F5F4]/50 p-3" : "rounded-2xl border border-[#E8E0D6] bg-white p-4"}`}>
@@ -57,6 +69,47 @@ export function CartItem({ line, compact, maxQty, onQty, onRemove, onCloseDrawer
             Gift wrap +{formatInrFromPaise(GIFT_WRAP_PAISE)} / unit
           </p>
         ) : null}
+        {summaryRows.length > 0 ? (
+          <ul className={`mt-2 space-y-1 ${compact ? "text-[11px]" : "text-xs"} text-[#6B6560]`}>
+            {summaryRows.map((row, i) =>
+              row.kind === "image" ? (
+                <li key={i} className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={row.thumbUrl}
+                    alt=""
+                    className="h-7 w-7 shrink-0 rounded object-cover"
+                  />
+                  <span>
+                    {row.label}: {row.filename} ✓
+                  </span>
+                </li>
+              ) : row.isSpotify ? (
+                <li key={i}>
+                  Spotify link: ✓ linked
+                </li>
+              ) : (
+                <li key={i}>
+                  {row.label}: &quot;{row.value}&quot;
+                </li>
+              ),
+            )}
+          </ul>
+        ) : null}
+        {line.customizationSchema?.length ? (
+          <button
+            type="button"
+            className={`mt-1 text-left text-xs font-medium text-[#C47A2B] hover:underline ${compact ? "text-[11px]" : ""}`}
+            onClick={() => setEditPersonalisation(true)}
+          >
+            Edit personalisation
+          </button>
+        ) : null}
+        <CartPersonalizationSheet
+          line={line}
+          open={editPersonalisation}
+          onClose={() => setEditPersonalisation(false)}
+        />
         <div className={`mt-2 flex flex-wrap items-center gap-2 ${compact ? "text-sm" : ""}`}>
           <div className="flex items-center gap-1 rounded-full border border-[#E8E0D6] bg-white px-1">
             <button
