@@ -9,15 +9,22 @@ import { TrackingSkeletonLoader } from "@/components/tracking/TrackingSkeletonLo
 import { OrderSummaryCard } from "@/components/tracking/OrderSummaryCard";
 import type { ComponentProps } from "react";
 import { ReorderButton } from "@/components/account/ReorderButton";
+import { OrderReviewPanel, type OrderReviewLine } from "@/components/account/OrderReviewPanel";
 
 type ReorderLine = ComponentProps<typeof ReorderButton>["items"][number];
 
 export function AccountOrderDetailClient({
   orderId,
   initialReorderItems,
+  delivered,
+  reviewLines,
+  orderDateLabel,
 }: {
   orderId: string;
   initialReorderItems: ReorderLine[];
+  delivered: boolean;
+  reviewLines: OrderReviewLine[];
+  orderDateLabel: string;
 }) {
   const [data, setData] = useState<TrackPayload | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -103,6 +110,10 @@ export function AccountOrderDetailClient({
       ) : null}
 
       <OrderSummaryCard data={data} addressMode="account" />
+
+      {delivered && reviewLines.length > 0 ? (
+        <OrderReviewPanel orderId={orderId} orderDateLabel={orderDateLabel} lines={reviewLines} />
+      ) : null}
 
       <section id="tracking">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-muted)]">Tracking</h2>

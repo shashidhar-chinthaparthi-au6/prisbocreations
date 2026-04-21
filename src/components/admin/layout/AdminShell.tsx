@@ -23,6 +23,7 @@ const nav = [
   { href: "/admin/products", label: "Products" },
   { href: "/admin/setup/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/notifications", label: "Notifications" },
   { href: "/admin/users", label: "Users" },
 ];

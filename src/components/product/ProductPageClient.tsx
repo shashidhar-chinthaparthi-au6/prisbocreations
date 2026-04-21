@@ -12,7 +12,7 @@ import type { PurchaseProduct } from "@/components/product/ProductPurchaseClient
 import { recordRecentlyViewed } from "@/lib/recently-viewed";
 import { recordRecentlyViewedProductId } from "@/lib/recently-viewed-ids";
 import { WishlistHeart } from "@/components/ui/WishlistHeart";
-import { ProductReviewsSection } from "@/components/product-detail/ProductReviewsSection";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
 
 type Props = {
   defaultImages: string[];
@@ -121,7 +121,7 @@ export function ProductPageClient({
       </div>
     </div>
     <div className="mx-auto max-w-[1100px]">
-      <ProductReviewsSection productId={product.id} productSlug={product.slug} />
+      <ReviewSection productId={product.id} productSlug={product.slug} productName={product.name} />
     </div>
     </>
   );

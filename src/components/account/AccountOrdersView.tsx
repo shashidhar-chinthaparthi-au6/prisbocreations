@@ -32,6 +32,8 @@ export type AccountOrderRow = {
     customerNotes?: string;
     giftWrapPaise?: number;
     giftMessage?: string;
+    /** Set for delivered orders when the user has submitted a product review. */
+    reviewed?: boolean;
   }>;
 };
 
@@ -87,6 +89,10 @@ export function AccountOrdersView({ orders }: { orders: AccountOrderRow[] }) {
                 const showTrack =
                   o.status === "shipped" || o.status === "processing" || o.scans.length > 0;
                 const showReorder = o.delivered && o.reorderItems.length > 0;
+                const showReview =
+                  o.delivered &&
+                  o.reorderItems.some((it) => !it.reviewed) &&
+                  o.reorderItems.length > 0;
                 return (
                   <tr key={o.id} className="border-b border-[var(--brand-border)] last:border-0">
                     <td className="px-4 py-3">
@@ -130,6 +136,14 @@ export function AccountOrdersView({ orders }: { orders: AccountOrderRow[] }) {
                         >
                           View details
                         </Link>
+                        {showReview ? (
+                          <Link
+                            href={`/account/orders/${o.id}#review`}
+                            className="text-xs font-medium text-[var(--ok,#2d6a4f)] hover:underline"
+                          >
+                            Rate items →
+                          </Link>
+                        ) : null}
                         {showReorder ? <ReorderButton items={o.reorderItems} /> : null}
                       </div>
                     </td>
@@ -148,6 +162,10 @@ export function AccountOrdersView({ orders }: { orders: AccountOrderRow[] }) {
           const showTrack =
             o.status === "shipped" || o.status === "processing" || o.scans.length > 0;
           const showReorder = o.delivered && o.reorderItems.length > 0;
+          const showReview =
+            o.delivered &&
+            o.reorderItems.some((it) => !it.reviewed) &&
+            o.reorderItems.length > 0;
           return (
             <li
               key={o.id}
@@ -173,6 +191,40 @@ export function AccountOrdersView({ orders }: { orders: AccountOrderRow[] }) {
                 {formatInrFromPaise(o.totalPaise)}{" "}
                 <span className="text-xs text-[var(--brand-muted)]">· {cod ? "COD" : "Paid online"}</span>
               </p>
+              {showReview ? (
+                <div className="mt-4 rounded-xl border border-[var(--brand-border)] bg-[#faf8f5] p-3">
+                  <p className="text-xs font-semibold text-[var(--brand-ink)]">How was your order?</p>
+                  <ul className="mt-2 space-y-2">
+                    {o.reorderItems.slice(0, 4).map((it, idx) => (
+                      <li key={`${o.id}-${it.productId}-${idx}`} className="flex items-center gap-2 text-xs">
+                        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-[var(--brand-sand,#F5F0E8)]">
+                          {it.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={it.imageUrl} alt="" className="h-full w-full object-cover" />
+                          ) : null}
+                        </div>
+                        <span className="min-w-0 flex-1 truncate text-[var(--brand-ink)]">{it.name}</span>
+                        {it.reviewed ? (
+                          <span className="shrink-0 text-[var(--ok,#2d6a4f)]">Reviewed ✓</span>
+                        ) : (
+                          <Link
+                            href={`/account/orders/${o.id}#review`}
+                            className="shrink-0 text-[var(--brand-amber)] hover:underline"
+                          >
+                            Rate →
+                          </Link>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={`/account/orders/${o.id}#review`}
+                    className="mt-3 inline-flex text-xs font-semibold text-[var(--brand-amber)] hover:underline"
+                  >
+                    Write reviews →
+                  </Link>
+                </div>
+              ) : null}
               <div className="mt-4 flex flex-wrap gap-2">
                 {showTrack ? (
                   <Link

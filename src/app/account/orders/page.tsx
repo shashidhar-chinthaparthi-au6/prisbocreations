@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import mongoose from "mongoose";
 import { getStoreSession } from "@/lib/auth/store-session";
 import { connectDb } from "@/lib/db";
 import { listOrdersForUser } from "@/lib/services/orderService";
 import { AccountOrdersView, type AccountOrderRow } from "@/components/account/AccountOrdersView";
 import { deriveCurrentStage } from "@/lib/trackingStatus";
+import { Review } from "@/lib/models/Review";
 
 export const metadata = { title: "Orders" };
 
@@ -66,6 +68,29 @@ export default async function AccountOrdersPage() {
       })),
     };
   });
+
+  const uid = new mongoose.Types.ObjectId(session.sub);
+  const productIds = [
+    ...new Set(
+      rows.filter((r) => r.delivered).flatMap((r) => r.reorderItems.map((it) => it.productId)),
+    ),
+  ]
+    .filter((id) => mongoose.isValidObjectId(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+  const reviewedDocs =
+    productIds.length > 0
+      ? await Review.find({ userId: uid, productId: { $in: productIds } })
+          .select("productId")
+          .lean()
+      : [];
+  const reviewedSet = new Set(reviewedDocs.map((d) => String(d.productId)));
+  for (const row of rows) {
+    if (!row.delivered) continue;
+    row.reorderItems = row.reorderItems.map((it) => ({
+      ...it,
+      reviewed: reviewedSet.has(it.productId),
+    }));
+  }
 
   return (
     <div className="space-y-6">

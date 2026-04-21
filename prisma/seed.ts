@@ -28,6 +28,7 @@ import { Order } from "@/lib/models/Order";
 import { Payment } from "@/lib/models/Payment";
 import { Product } from "@/lib/models/Product";
 import { Review } from "@/lib/models/Review";
+import { ReviewVote } from "@/lib/models/ReviewVote";
 import { SchemaField } from "@/lib/models/SchemaField";
 import type { FieldType } from "@/lib/models/schema-field-constants";
 import { Subcategory } from "@/lib/models/Subcategory";
@@ -125,6 +126,7 @@ async function clearAll(): Promise<void> {
   await TrackingEvent.deleteMany({});
   await Payment.deleteMany({});
   await Order.deleteMany({});
+  await ReviewVote.deleteMany({});
   await Review.deleteMany({});
   await Wishlist.deleteMany({});
   await NewsletterSubscriber.deleteMany({});

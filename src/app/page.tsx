@@ -11,6 +11,7 @@ import { HomeNewsletter } from "@/components/storefront/HomeNewsletter";
 import { HomeRecentlyViewed } from "@/components/storefront/HomeRecentlyViewed";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { RecipientCards } from "@/components/storefront/RecipientCards";
+import { FeaturedReviews } from "@/components/home/FeaturedReviews";
 import { TrustIconHeart, TrustIconShieldCheck, TrustIconTruck } from "@/components/storefront/HomeTrustIcons";
 
 export const revalidate = 120;
@@ -146,6 +147,8 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
+
+      <FeaturedReviews />
 
       {/* Recipients */}
       <section>

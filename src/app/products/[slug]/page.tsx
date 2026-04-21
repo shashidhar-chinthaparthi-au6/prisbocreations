@@ -7,6 +7,9 @@ import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-v
 import { ProductPageClient } from "@/components/product/ProductPageClient";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 import { parseProductCustomizationFields } from "@/lib/customization-order-validate";
+import mongoose from "mongoose";
+import { Review } from "@/lib/models/Review";
+import { User } from "@/lib/models/User";
 
 export const revalidate = 30;
 
@@ -212,7 +215,24 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const effStock = productHasOptions(p)
     ? (p.options ?? []).reduce((s, o) => s + Math.max(0, Number(o.stock) || 0), 0)
     : Math.max(0, Number(p.stock) || 0);
-  const jsonLd = {
+
+  const pid = p._id as mongoose.Types.ObjectId;
+  const [aggRow, approvedReviews] = await Promise.all([
+    Review.aggregate<{ avg: number; c: number }>([
+      { $match: { productId: pid, isApproved: true, isRejected: { $ne: true } } },
+      { $group: { _id: null, avg: { $avg: "$rating" }, c: { $sum: 1 } } },
+    ]),
+    Review.find({ productId: pid, isApproved: true, isRejected: { $ne: true } })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("rating body guestName createdAt")
+      .populate<{ userId?: { name?: string } | null }>({ path: "userId", model: User, select: "name" })
+      .lean(),
+  ]);
+  const reviewCount = aggRow[0]?.c ?? 0;
+  const avgRating = aggRow[0]?.avg != null ? Math.round(aggRow[0].avg * 10) / 10 : 0;
+
+  const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: p.name,
@@ -226,6 +246,35 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         effStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
     },
   };
+
+  if (reviewCount > 0) {
+    jsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: avgRating.toFixed(1),
+      reviewCount,
+      bestRating: "5",
+      worstRating: "1",
+    };
+    jsonLd.review = approvedReviews.map((r) => {
+      const u = r.userId && typeof r.userId === "object" && "name" in r.userId ? r.userId : null;
+      const name = u?.name?.trim() || r.guestName?.trim() || "Customer";
+      return {
+        "@type": "Review",
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: r.rating,
+        },
+        author: {
+          "@type": "Person",
+          name,
+        },
+        reviewBody: r.body,
+        datePublished: r.createdAt
+          ? new Date(r.createdAt).toISOString().split("T")[0]
+          : undefined,
+      };
+    });
+  }
 
   return (
     <>
