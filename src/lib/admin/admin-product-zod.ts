@@ -1,6 +1,9 @@
 import { z } from "zod";
+import { RECIPIENT_SLUGS } from "@/lib/recipients";
 
 const objectIdStr = z.string().refine((s) => /^[a-f\d]{24}$/i.test(s), "Invalid id");
+
+const recipientSlugZ = z.enum(RECIPIENT_SLUGS);
 
 const variantImageZ = z.object({
   _id: objectIdStr.optional(),
@@ -57,6 +60,7 @@ export const adminProductPatchZ = z
     colourVariants: z.array(colourVariantInputZ).optional(),
     featured: z.boolean().optional(),
     tags: z.array(z.string()).optional(),
+    recipients: z.array(recipientSlugZ).max(5).optional(),
   })
   .strict();
 

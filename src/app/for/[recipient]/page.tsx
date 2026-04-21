@@ -1,72 +1,173 @@
-import Link from "next/link";
+import { Suspense } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { RecipientCollectionHero } from "@/components/storefront/RecipientCollectionHero";
+import { StorefrontListing } from "@/components/listing/StorefrontListing";
 import { connectDb } from "@/lib/db";
-import { listStorefrontProducts } from "@/lib/services/storefrontCatalog";
-import { ProductCard } from "@/components/storefront/ProductCard";
+import { RECIPIENT_META, RECIPIENT_SLUGS, parseRecipientSlug } from "@/lib/recipients";
+import {
+  listingWantsInStockOnly,
+  listStorefrontCategoryRows,
+  listStorefrontFilterFacets,
+  listStorefrontProducts,
+  listStorefrontSubcategoryRowsForCategory,
+  type StorefrontSort,
+} from "@/lib/services/storefrontCatalog";
 
-const ALLOWED = new Set(["him", "her", "kids", "couples", "corporate"]);
+export const revalidate = 60;
 
-export const revalidate = 120;
+function parseSort(s: string | undefined): StorefrontSort | undefined {
+  if (
+    s === "relevance" ||
+    s === "newest" ||
+    s === "price_asc" ||
+    s === "price_desc" ||
+    s === "popular" ||
+    s === "name_asc"
+  ) {
+    return s;
+  }
+  return undefined;
+}
+
+function spToCategoryList(val: string | string[] | undefined): string[] | undefined {
+  if (val === undefined) return undefined;
+  if (typeof val === "string") return val ? [val] : undefined;
+  const arr = val.filter((x): x is string => typeof x === "string" && Boolean(x));
+  return arr.length ? arr : undefined;
+}
+
+export function generateStaticParams() {
+  return RECIPIENT_SLUGS.map((recipient) => ({ recipient }));
+}
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ recipient: string }>;
-}) {
-  const { recipient } = await params;
-  const r = recipient?.toLowerCase() ?? "";
-  if (!ALLOWED.has(r)) return { title: "Recipient" };
+}): Promise<Metadata> {
+  const { recipient: raw } = await params;
+  const slug = parseRecipientSlug(raw);
+  if (!slug) return { title: "Recipient" };
+  const m = RECIPIENT_META[slug];
   return {
-    title: `Gifts for ${r}`,
-    description: `Personalised picks for ${r} — Prisbo Creations.`,
+    title: `${m.title} — Prisbo Creations`,
+    description: m.description,
+    openGraph: {
+      title: `${m.title} — Prisbo Creations`,
+      images: [{ url: m.image }],
+    },
   };
 }
 
-export default async function ForRecipientPage({
+async function RecipientListingSection({
   params,
+  searchParams,
 }: {
   params: Promise<{ recipient: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { recipient } = await params;
-  const r = recipient?.toLowerCase() ?? "";
-  if (!ALLOWED.has(r)) notFound();
+  const { recipient: raw } = await params;
+  const slug = parseRecipientSlug(raw);
+  if (!slug) notFound();
+
+  const sp = await searchParams;
+  const sort = parseSort(typeof sp.sort === "string" ? sp.sort : undefined);
+  const page = Math.max(1, Number(typeof sp.page === "string" ? sp.page : "1") || 1);
+  const q = typeof sp.q === "string" ? sp.q : undefined;
+  const subRaw =
+    typeof sp.sub === "string"
+      ? sp.sub
+      : typeof sp.subcategory === "string"
+        ? sp.subcategory
+        : undefined;
+  const priceMin =
+    typeof sp.price_min === "string" && sp.price_min !== "" ? Number(sp.price_min) : undefined;
+  const priceMax =
+    typeof sp.price_max === "string" && sp.price_max !== "" ? Number(sp.price_max) : undefined;
+  const inStockOnly = listingWantsInStockOnly(sp.in_stock) ? true : false;
+  const occasion = typeof sp.occasion === "string" ? sp.occasion : undefined;
+  const material = typeof sp.material === "string" ? sp.material : undefined;
+  const minAverageRating = sp.rating === "4" ? 4 : undefined;
+
+  const category = spToCategoryList(sp.category);
 
   await connectDb();
-  const { items, total } = await listStorefrontProducts({
-    recipient: r,
-    page: 1,
-    pageSize: 24,
-    sort: "popular",
-    inStockOnly: true,
-  });
+  const meta = RECIPIENT_META[slug];
+
+  const [counts, result, facets] = await Promise.all([
+    listStorefrontCategoryRows(),
+    listStorefrontProducts({
+      categorySlugs: category,
+      subcategorySlug: subRaw,
+      recipient: slug,
+      q,
+      sort: sort ?? "relevance",
+      page,
+      pageSize: 24,
+      inStockOnly,
+      priceMinPaise:
+        priceMin != null && Number.isFinite(priceMin) ? Math.max(0, Math.round(priceMin * 100)) : undefined,
+      priceMaxPaise:
+        priceMax != null && Number.isFinite(priceMax) ? Math.max(0, Math.round(priceMax * 100)) : undefined,
+      occasion,
+      material,
+      minAverageRating,
+    }),
+    listStorefrontFilterFacets({
+      categorySlugs: category?.length === 1 ? category : undefined,
+      subcategorySlug: subRaw,
+      recipient: slug,
+    }),
+  ]);
+
+  let subcategories: Awaited<ReturnType<typeof listStorefrontSubcategoryRowsForCategory>> = [];
+  if (category?.length === 1) {
+    subcategories = await listStorefrontSubcategoryRowsForCategory(category[0]);
+  }
 
   return (
-    <div className="mx-auto max-w-[1400px]">
-      <nav className="text-sm text-[var(--brand-muted)]">
-        <Link href="/" className="hover:text-[var(--brand-amber-dark)]">
-          Home
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-[var(--brand-ink)]">For {r}</span>
-      </nav>
-      <h1 className="mt-4 font-display text-3xl capitalize text-[var(--brand-ink)] sm:text-4xl">
-        Gifts for {r}
-      </h1>
-      <p className="mt-2 text-sm text-[var(--brand-muted)]">{total} products tagged for this recipient.</p>
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((p) => (
-          <ProductCard key={p.id} product={p} />
-        ))}
+    <div className="pb-16">
+      <RecipientCollectionHero
+        title={meta.title}
+        description={meta.description}
+        imageUrl={meta.image}
+        overlayColor={`${meta.color}CC`}
+        productCount={result.total}
+      />
+      <div className="mx-auto max-w-[1400px] px-4 pt-6 sm:px-6">
+        <StorefrontListing
+          initial={result}
+          categories={counts}
+          categoryLabelRows={counts.map((c) => ({ slug: c.slug, name: c.name }))}
+          subcategories={subcategories}
+          facets={facets}
+          mode="all"
+          title={meta.title}
+          forcedRecipient={slug}
+          recipientMetaTitle={meta.title}
+        />
       </div>
-      {items.length === 0 ? (
-        <p className="mt-8 text-[var(--brand-muted)]">
-          No tagged products yet — browse{" "}
-          <Link href="/products" className="font-medium text-[var(--brand-amber)] hover:underline">
-            all products
-          </Link>
-          .
-        </p>
-      ) : null}
     </div>
+  );
+}
+
+export default function ForRecipientPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ recipient: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="animate-pulse px-4 py-20 text-center text-sm text-[var(--brand-muted)]">
+          Loading…
+        </div>
+      }
+    >
+      <RecipientListingSection params={params} searchParams={searchParams} />
+    </Suspense>
   );
 }

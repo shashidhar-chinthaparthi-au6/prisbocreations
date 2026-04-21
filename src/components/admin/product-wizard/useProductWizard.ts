@@ -2,6 +2,14 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { RECIPIENT_SLUGS, type RecipientSlug } from "@/lib/recipients";
+
+function coerceRecipients(raw: unknown): RecipientSlug[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (x): x is RecipientSlug => typeof x === "string" && (RECIPIENT_SLUGS as readonly string[]).includes(x),
+  );
+}
 export type SchemaFieldType = "text" | "select" | "number" | "boolean";
 
 export type SchemaFieldLite = {
@@ -58,6 +66,7 @@ export interface ProductWizardState {
   packerAddress: string;
   publishNow: boolean;
   scheduledPublishAt: string;
+  recipients: RecipientSlug[];
   setStep: (n: number) => void;
   setField: <K extends keyof Omit<ProductWizardState, "setStep" | "setField" | "reset" | "hydrateFromProduct">>(
     key: K,
@@ -100,6 +109,7 @@ const defaultState: Omit<
   packerAddress: "",
   publishNow: true,
   scheduledPublishAt: "",
+  recipients: [],
 };
 
 export const useProductWizard = create<ProductWizardState>()(
@@ -157,6 +167,7 @@ export const useProductWizard = create<ProductWizardState>()(
           manufacturerAddress: String(product.manufacturerAddress ?? ""),
           packerSameAsMfr: product.packerSameAsMfr !== false,
           packerAddress: String(product.packerAddress ?? ""),
+          recipients: coerceRecipients(product.recipients),
         });
       },
     }),
@@ -189,6 +200,7 @@ export const useProductWizard = create<ProductWizardState>()(
         packerAddress: s.packerAddress,
         publishNow: s.publishNow,
         scheduledPublishAt: s.scheduledPublishAt,
+        recipients: s.recipients,
       }),
       skipHydration: true,
     },

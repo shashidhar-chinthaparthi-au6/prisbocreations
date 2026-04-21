@@ -281,6 +281,8 @@ export type AdminProductListFilters = {
   search?: string;
   status?: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "all";
   categoryId?: string;
+  /** Canonical recipient slug (him | her | kids | couples | corporate). */
+  recipient?: string;
   lowStock?: boolean;
   page?: number;
   pageSize?: number;
@@ -314,6 +316,10 @@ export async function adminListProductsV2(params: AdminProductListFilters) {
     const subs = await Subcategory.find({ categoryId: params.categoryId }).select("_id").lean();
     const subIds = subs.map((s) => s._id);
     clauses.push({ $or: [{ categoryId: catOid }, { subcategoryId: { $in: subIds } }] });
+  }
+  const rec = params.recipient?.trim().toLowerCase();
+  if (rec) {
+    clauses.push({ recipients: rec });
   }
   const q = params.search?.trim();
   if (q) {
@@ -434,6 +440,7 @@ export async function createAdminProductShell(input: {
     description: "",
     descriptionTemplate: "",
     specValues: {},
+    recipients: [],
     pricePaise: 0,
     stock: 0,
     hasColourVariants: true,
@@ -552,6 +559,7 @@ export async function applyAdminProductPatch(
   }
   if (patch.featured !== undefined) p.featured = patch.featured;
   if (patch.tags !== undefined) p.tags = patch.tags;
+  if (patch.recipients !== undefined) p.recipients = patch.recipients;
 
   if (patch.colourVariants !== undefined) {
     p.colourVariants = patch.colourVariants.map((cv) => ({

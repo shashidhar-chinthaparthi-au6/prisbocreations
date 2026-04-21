@@ -9,6 +9,7 @@ import { uploadAdminImageWithProgress } from "@/lib/api/upload-progress";
 import { useAdminToast } from "@/components/admin/layout/AdminShell";
 import { AdminBreadcrumb } from "@/components/admin/layout/AdminBreadcrumb";
 import { resolveTemplate, formatInr } from "@/lib/admin/template-resolve";
+import { ADMIN_RECIPIENT_OPTIONS } from "@/lib/recipients";
 import { useProductWizard, type SchemaFieldLite } from "./useProductWizard";
 
 const STEPS = [
@@ -95,6 +96,7 @@ function buildPatch(state: ReturnType<typeof useProductWizard.getState>) {
     packerSameAsMfr: state.packerSameAsMfr,
     packerAddress: state.packerSameAsMfr ? undefined : state.packerAddress || undefined,
     colourVariants,
+    recipients: state.recipients,
   };
 }
 
@@ -540,6 +542,33 @@ export function ProductWizardClient({ editProductId }: { editProductId?: string 
                 />
                 <span>Sizes not applicable (one size)</span>
               </label>
+            </div>
+            <div className="max-w-md space-y-2 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Recipient tags</p>
+              <p className="text-xs text-zinc-500">
+                Optional — helps customers find this product in shop-by-recipient collections.
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {ADMIN_RECIPIENT_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.slug}
+                    className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800"
+                  >
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-zinc-900"
+                      checked={w.recipients.includes(opt.slug)}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...w.recipients, opt.slug]
+                          : w.recipients.filter((x) => x !== opt.slug);
+                        w.setField("recipients", next);
+                      }}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         : null}

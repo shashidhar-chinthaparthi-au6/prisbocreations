@@ -28,6 +28,7 @@ export async function GET(req: Request) {
     | "all"
     | null;
   const categoryId = url.searchParams.get("categoryId") ?? undefined;
+  const recipient = url.searchParams.get("recipient")?.trim().toLowerCase() || undefined;
   const lowStock = url.searchParams.get("lowStock") === "1";
   const page = url.searchParams.get("page");
   const pageSize = url.searchParams.get("pageSize");
@@ -44,6 +45,7 @@ export async function GET(req: Request) {
     search,
     status: status ?? "all",
     categoryId,
+    recipient,
     lowStock,
     page: page ? Number(page) : undefined,
     pageSize: pageSize ? Number(pageSize) : undefined,

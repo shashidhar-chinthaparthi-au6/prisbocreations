@@ -29,12 +29,17 @@ type Props = {
   subtitle?: string;
   forcedCategorySlug?: string;
   forcedSubcategorySlug?: string;
+  /** When set, all product fetches include `recipient` (shop-by-recipient collection). */
+  forcedRecipient?: string;
+  /** Breadcrumb label when `forcedRecipient` is set (e.g. "For him"). */
+  recipientMetaTitle?: string;
 };
 
 function buildFetchQuery(
   sp: URLSearchParams,
   forcedCategorySlug?: string,
   forcedSubcategorySlug?: string,
+  forcedRecipient?: string,
 ): string {
   const p = new URLSearchParams(sp.toString());
   p.set("limit", "24");
@@ -43,6 +48,7 @@ function buildFetchQuery(
     p.set("subcategory", forcedSubcategorySlug);
     p.delete("sub");
   }
+  if (forcedRecipient) p.set("recipient", forcedRecipient);
   return p.toString();
 }
 
@@ -57,6 +63,8 @@ export function StorefrontListing({
   subtitle,
   forcedCategorySlug,
   forcedSubcategorySlug,
+  forcedRecipient,
+  recipientMetaTitle,
 }: Props) {
   const sp = useSearchParams();
   const [extra, setExtra] = useState<StorefrontProductCard[]>([]);
@@ -75,7 +83,7 @@ export function StorefrontListing({
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const q = buildFetchQuery(sp, forcedCategorySlug, forcedSubcategorySlug);
+      const q = buildFetchQuery(sp, forcedCategorySlug, forcedSubcategorySlug, forcedRecipient);
       const r = await fetch(`/api/products?${q}&skip=${merged.length}&limit=12&page=1`);
       const j = (await r.json()) as {
         ok?: boolean;
@@ -86,7 +94,7 @@ export function StorefrontListing({
     } finally {
       setLoadingMore(false);
     }
-  }, [forcedCategorySlug, forcedSubcategorySlug, hasMore, loadingMore, merged.length, sp]);
+  }, [forcedCategorySlug, forcedSubcategorySlug, forcedRecipient, hasMore, loadingMore, merged.length, sp]);
 
   const sidebar = (
     <FilterSidebar mode={mode} categories={categories} subcategories={subcategories} facets={facets} />
@@ -100,7 +108,9 @@ export function StorefrontListing({
             Home
           </Link>
           <span className="mx-1">›</span>
-          {mode === "category" && forcedCategorySlug ? (
+          {forcedRecipient && recipientMetaTitle ? (
+            <span className="text-[var(--ink)]">{recipientMetaTitle}</span>
+          ) : mode === "category" && forcedCategorySlug ? (
             <>
               <Link href="/products" className="hover:text-[var(--amd)]">
                 All products
@@ -130,7 +140,12 @@ export function StorefrontListing({
             description="Try adjusting your filters."
             primary={{
               label: "Clear filters",
-              href: mode === "category" && forcedCategorySlug ? `/category/${forcedCategorySlug}` : "/products",
+              href:
+                forcedRecipient ?
+                  `/for/${forcedRecipient}`
+                : mode === "category" && forcedCategorySlug ?
+                  `/category/${forcedCategorySlug}`
+                : "/products",
             }}
             secondary={{ label: "Browse all", href: "/products" }}
           />

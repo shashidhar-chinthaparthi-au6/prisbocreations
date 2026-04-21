@@ -6,6 +6,7 @@ import { Review } from "@/lib/models/Review";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import type { ProductDoc } from "@/lib/models/Product";
+import { parseRecipientSlug } from "@/lib/recipients";
 
 function searchPattern(q: string): RegExp {
   const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -56,7 +57,7 @@ export type StorefrontListParams = {
   material?: string;
   /** When set (e.g. 4), only products whose approved reviews average ≥ this value. */
   minAverageRating?: number;
-  /** Matches `tags` (case-insensitive) for recipient collections, e.g. him, her, kids. */
+  /** Matches `recipients` array (canonical slug: him | her | kids | couples | corporate). */
   recipient?: string;
   q?: string;
   sort?: StorefrontSort;
@@ -236,14 +237,6 @@ async function resolveSubcategoryObjectId(
   return null;
 }
 
-const RECIPIENT_TAG_MAP: Record<string, string[]> = {
-  him: ["for-him", "him", "for him", "men", "gifts-for-him"],
-  her: ["for-her", "her", "for her", "women", "gifts-for-her"],
-  kids: ["kids", "for-kids", "children", "gifts-for-kids"],
-  couples: ["couples", "for-couples", "wedding", "gifts-for-couples"],
-  corporate: ["corporate", "business", "bulk", "corporate-gifts"],
-};
-
 type BrowseMatchParams = Pick<
   StorefrontListParams,
   | "categorySlugs"
@@ -324,13 +317,13 @@ async function buildStorefrontBrowseMatch(
     ];
   }
 
-  const recipient = params.recipient?.trim().toLowerCase();
-  if (recipient) {
-    const candidates = RECIPIENT_TAG_MAP[recipient] ?? [recipient];
-    const tagOr = candidates.map((c) => ({
-      tags: new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
-    }));
-    match.$and = [...(Array.isArray(match.$and) ? match.$and : []), { $or: tagOr }];
+  const recipientRaw = params.recipient?.trim() ?? "";
+  if (recipientRaw) {
+    const slug = parseRecipientSlug(recipientRaw);
+    if (!slug) {
+      return { empty: true };
+    }
+    match.recipients = slug;
   }
 
   return { match };
@@ -341,11 +334,13 @@ export async function listStorefrontFilterFacets(params: {
   categorySlugs?: string[];
   subcategorySlug?: string;
   subcategoryCategorySlug?: string;
+  recipient?: string;
 }): Promise<{ occasions: string[]; materials: string[] }> {
   const built = await buildStorefrontBrowseMatch({
     categorySlugs: params.categorySlugs,
     subcategorySlug: params.subcategorySlug,
     subcategoryCategorySlug: params.subcategoryCategorySlug,
+    recipient: params.recipient,
   });
   if ("empty" in built) return { occasions: [], materials: [] };
   const rows = await Product.find(built.match).select("specValues").lean();

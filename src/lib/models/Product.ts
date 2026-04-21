@@ -123,6 +123,8 @@ const ProductSchema = new Schema(
     colorVariants: { type: [LegacyProductColorVariantSchema], default: [] },
     images: { type: [String], default: [] },
     tags: { type: [String], default: [] },
+    /** Shop-by-recipient slugs: him | her | kids | couples | corporate */
+    recipients: { type: [String], default: [], index: true },
     featured: { type: Boolean, default: false, index: true },
     isActive: { type: Boolean, default: true, index: true },
     allowCustomerCustomization: { type: Boolean, default: false },

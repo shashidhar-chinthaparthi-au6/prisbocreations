@@ -2,9 +2,10 @@
  * Full catalog wipe + reseed for Prisbo Creations (MongoDB / Mongoose).
  * Run: npx tsx prisma/seed.ts
  *
- * Note: This codebase uses Mongoose, not Prisma. Deletion order matches the
- * relational layout from the original spec (embedded order items / variants map
- * to single Product / Order documents).
+ * Note: This codebase uses Mongoose, not Prisma ORM (no `prisma migrate`).
+ * Product `recipients` (string[] of shop-by-recipient slugs) is defined on the
+ * Mongoose model in `src/lib/models/Product.ts`. Re-run this seed to repopulate.
+ * Deletion order matches the relational layout from the original spec.
  */
 import { config } from "dotenv";
 import { resolve } from "path";
@@ -14,6 +15,8 @@ config({ path: resolve(process.cwd(), ".env") });
 
 import mongoose from "mongoose";
 import type { Types } from "mongoose";
+import bcrypt from "bcryptjs";
+import { computeInitials } from "@/lib/account/compute-initials";
 import { syncStorefrontFromAdminProduct } from "@/lib/admin/product-storefront-sync";
 import { uniqueProductSlug } from "@/lib/admin/slug-unique";
 import { Address } from "@/lib/models/Address";
@@ -31,6 +34,8 @@ import { Subcategory } from "@/lib/models/Subcategory";
 import { TrackingEvent } from "@/lib/models/TrackingEvent";
 import { User } from "@/lib/models/User";
 import { Wishlist } from "@/lib/models/Wishlist";
+import type { RecipientSlug } from "@/lib/recipients";
+import { recipientsForCatalogProduct, normalizeRecipients } from "./seed-recipients";
 
 function requireMongoUri(): string {
   const u = process.env.MONGODB_URI;
@@ -110,6 +115,8 @@ type SeedProduct = {
   sizesNotApplicable: boolean;
   variants: SeedVariant[];
   specValues: Record<string, string | number | boolean>;
+  /** When set, overrides automatic recipient tagging from subcategory + name rules. */
+  recipients?: RecipientSlug[];
 };
 
 async function clearAll(): Promise<void> {
@@ -223,6 +230,11 @@ async function seedSubcategory(data: {
       };
     });
 
+    const recipients =
+      p.recipients?.length ?
+        normalizeRecipients(p.recipients)
+      : normalizeRecipients(recipientsForCatalogProduct(data.name, p.name, p.specValues));
+
     const doc = await Product.create({
       name: p.name,
       slug: slugStr,
@@ -237,6 +249,7 @@ async function seedSubcategory(data: {
       description: "",
       descriptionTemplate: p.description,
       specValues: p.specValues,
+      recipients,
       status: "PUBLISHED",
       publishedAt: new Date(),
       manufacturerName: "Prisbo Creations Studio",
@@ -313,6 +326,37 @@ async function upsertCoupons(): Promise<void> {
     );
   }
   console.log("✓ 4 coupons upserted");
+}
+
+/**
+ * `clearAll()` removes every user. If `SEED_ADMIN_EMAIL` + `SEED_ADMIN_PASSWORD`
+ * are set in `.env.local`, recreate the admin so JWT login still works after a full seed.
+ */
+async function upsertAdminFromEnv(): Promise<void> {
+  const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim();
+  const adminPass = process.env.SEED_ADMIN_PASSWORD;
+  if (!adminEmail || !adminPass) {
+    console.log(
+      "ℹ Skipping admin upsert — set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in .env.local to restore admin after seed.",
+    );
+    return;
+  }
+  const hash = await bcrypt.hash(adminPass, 12);
+  const name = "Prisbo Admin";
+  await User.findOneAndUpdate(
+    { email: adminEmail.toLowerCase() },
+    {
+      $set: {
+        email: adminEmail.toLowerCase(),
+        passwordHash: hash,
+        name,
+        avatarInitials: computeInitials(name),
+        role: "admin",
+      },
+    },
+    { upsert: true },
+  );
+  console.log(`✓ Admin upserted: ${adminEmail.toLowerCase()}`);
 }
 
 async function main(): Promise<void> {
@@ -403,6 +447,8 @@ async function main(): Promise<void> {
 
   console.log("\n✅ SEED COMPLETE");
   console.log(JSON.stringify(counts, null, 2));
+
+  await upsertAdminFromEnv();
 
   await mongoose.disconnect();
 }

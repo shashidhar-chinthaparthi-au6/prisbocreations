@@ -7,6 +7,7 @@ import { adminFetchJson, AdminApiError } from "@/lib/admin/admin-fetch";
 import { useAdminToast } from "@/components/admin/layout/AdminShell";
 import { AdminBreadcrumb } from "@/components/admin/layout/AdminBreadcrumb";
 import { getLowStockThreshold } from "@/lib/admin/low-stock";
+import { ADMIN_RECIPIENT_OPTIONS, parseRecipientSlug, type RecipientSlug } from "@/lib/recipients";
 
 const inr = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -31,6 +32,7 @@ type Row = Record<string, unknown> & {
   }[];
   _category?: { name?: string } | null;
   _subcategory?: { name?: string } | null;
+  recipients?: string[];
 };
 
 function buildListUrl(p: {
@@ -41,6 +43,7 @@ function buildListUrl(p: {
   lowStock: boolean;
   sort: string;
   order: string;
+  recipient: string;
 }) {
   const sp = new URLSearchParams();
   sp.set("page", String(p.page));
@@ -48,6 +51,7 @@ function buildListUrl(p: {
   if (p.search.trim()) sp.set("search", p.search.trim());
   if (p.status !== "all") sp.set("status", p.status);
   if (p.categoryId) sp.set("categoryId", p.categoryId);
+  if (p.recipient) sp.set("recipient", p.recipient);
   if (p.lowStock) sp.set("lowStock", "1");
   sp.set("sort", p.sort);
   sp.set("order", p.order);
@@ -67,11 +71,12 @@ export function ProductsPageClient({
   const [lowStock, setLowStock] = useState(false);
   const [sort, setSort] = useState("updatedAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [recipient, setRecipient] = useState<string>("");
 
   const swrKey = useMemo(
     () =>
-      buildListUrl({ page, search, status, categoryId, lowStock, sort, order }),
-    [page, search, status, categoryId, lowStock, sort, order],
+      buildListUrl({ page, search, status, categoryId, lowStock, sort, order, recipient }),
+    [page, search, status, categoryId, lowStock, sort, order, recipient],
   );
 
   const { data, isLoading, mutate } = useAdminProductsList(swrKey);
@@ -238,6 +243,27 @@ export function ProductsPageClient({
             </button>
           ))}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Recipient</span>
+          {ADMIN_RECIPIENT_OPTIONS.map((r) => {
+            const active = recipient === r.slug;
+            return (
+              <button
+                key={r.slug}
+                type="button"
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  active ? "bg-violet-700 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                }`}
+                onClick={() => {
+                  setRecipient((prev) => (prev === r.slug ? "" : r.slug));
+                  setPage(1);
+                }}
+              >
+                {r.label.replace(/^For /, "")}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isLoading ?
@@ -250,7 +276,7 @@ export function ProductsPageClient({
           </Link>
         </div>
       : <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table className="w-full min-w-[1040px] text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-xs uppercase text-zinc-500">
                 <th className="px-3 py-2">
@@ -266,6 +292,7 @@ export function ProductsPageClient({
                   </button>
                 </th>
                 <th className="px-3 py-2">Category</th>
+                <th className="px-3 py-2 max-w-[140px]">Recipients</th>
                 <th className="px-3 py-2">Variants</th>
                 <th className="px-3 py-2">
                   <button
@@ -315,6 +342,9 @@ export function ProductsPageClient({
                 const st =
                   r.status ??
                   (r.isActive !== false ? ("PUBLISHED" as const) : ("ARCHIVED" as const));
+                const recs = (r.recipients ?? []).filter(
+                  (x): x is RecipientSlug => parseRecipientSlug(x) !== null,
+                );
                 return (
                   <tr key={id} className="group border-b border-zinc-100 hover:bg-zinc-50/80">
                     <td className="px-3 py-3">
@@ -324,6 +354,20 @@ export function ProductsPageClient({
                       </p>
                     </td>
                     <td className="px-3 py-3 text-zinc-600">{r._category?.name ?? "—"}</td>
+                    <td className="px-3 py-3 align-top">
+                      <div className="flex flex-wrap gap-1">
+                        {recs.length ?
+                          recs.map((slug) => (
+                            <span
+                              key={slug}
+                              className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-900"
+                            >
+                              {slug}
+                            </span>
+                          ))
+                        : <span className="text-xs text-zinc-400">—</span>}
+                      </div>
+                    </td>
                     <td className="px-3 py-3">
                       <div className="flex gap-1">
                         {swatches.map((v, i) => (
