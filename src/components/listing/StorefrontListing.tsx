@@ -1,7 +1,6 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { ActiveFilterPills } from "@/components/listing/ActiveFilterPills";
@@ -31,8 +30,6 @@ type Props = {
   forcedSubcategorySlug?: string;
   /** When set, all product fetches include `recipient` (shop-by-recipient collection). */
   forcedRecipient?: string;
-  /** Breadcrumb label when `forcedRecipient` is set (e.g. "For him"). */
-  recipientMetaTitle?: string;
 };
 
 function buildFetchQuery(
@@ -64,7 +61,6 @@ export function StorefrontListing({
   forcedCategorySlug,
   forcedSubcategorySlug,
   forcedRecipient,
-  recipientMetaTitle,
 }: Props) {
   const sp = useSearchParams();
   const [extra, setExtra] = useState<StorefrontProductCard[]>([]);
@@ -102,30 +98,8 @@ export function StorefrontListing({
 
   return (
     <ListingLayout sidebar={sidebar}>
-      <div className="px-2 py-1 sm:px-3 md:px-4 lg:px-5">
-        <nav className="text-[11px] text-[var(--muted)]">
-          <Link href="/" className="hover:text-[var(--amd)]">
-            Home
-          </Link>
-          <span className="mx-1">›</span>
-          {forcedRecipient && recipientMetaTitle ? (
-            <span className="text-[var(--ink)]">{recipientMetaTitle}</span>
-          ) : mode === "category" && forcedCategorySlug ? (
-            <>
-              <Link href="/products" className="hover:text-[var(--amd)]">
-                All products
-              </Link>
-              <span className="mx-1">›</span>
-              <span className="text-[var(--ink)]">{title}</span>
-            </>
-          ) : (
-            <span className="text-[var(--ink)]">All products</span>
-          )}
-        </nav>
-
-        <div className="mt-3">
-          <ListingTopbar title={title} subtitle={subtitle} showing={merged.length} total={initial.total} />
-        </div>
+      <div className="flex flex-col gap-3 px-2 py-1 sm:px-3 sm:py-0 md:px-4 lg:px-5">
+        <ListingTopbar title={title} subtitle={subtitle} showing={merged.length} total={initial.total} />
 
         <ActiveFilterPills
           categories={categoryLabelRows}

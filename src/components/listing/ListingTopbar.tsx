@@ -21,10 +21,8 @@ export function ListingTopbar({ title, subtitle, showing, total }: Props) {
           Showing {showing} of {total} products
         </p>
       </div>
-      <div className="w-full min-w-0 shrink-0 md:max-w-[220px]">
-        <div className="[&_select]:text-[10px] md:[&_select]:text-sm">
-          <ProductsSortBar />
-        </div>
+      <div className="w-full min-w-0 shrink-0 sm:max-w-[200px] md:max-w-[240px] lg:max-w-[min(100%,20rem)]">
+        <ProductsSortBar />
       </div>
     </div>
   );

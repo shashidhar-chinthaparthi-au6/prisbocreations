@@ -2,10 +2,29 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useTransition } from "react";
+import { useLayoutEffect, useMemo, useState, useTransition } from "react";
 import { useListingFilters } from "@/hooks/useListingFilters";
 import { FilterSection } from "@/components/listing/FilterSection";
 import { PriceRangeSlider } from "@/components/listing/PriceRangeSlider";
+
+function FilterSlidersIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4" />
+    </svg>
+  );
+}
 
 export type CategoryRow = { slug: string; name: string; count: number };
 export type Facets = { occasions: string[]; materials: string[] };
@@ -32,6 +51,21 @@ function useFilterActive() {
   }, [sp]);
 }
 
+function useActiveFilterCount() {
+  const sp = useSearchParams();
+  return useMemo(() => {
+    let n = sp.getAll("category").length;
+    if (sp.get("subcategory") || sp.get("sub")) n += 1;
+    if (sp.get("price_min") || sp.get("price_max")) n += 1;
+    if (sp.get("occasion")) n += 1;
+    if (sp.get("material")) n += 1;
+    if (sp.get("in_stock") === "true" || sp.get("in_stock") === "1") n += 1;
+    if (sp.get("rating") === "4") n += 1;
+    if (sp.get("q")) n += 1;
+    return n;
+  }, [sp]);
+}
+
 export function FilterSidebar({ mode, categories, subcategories, facets }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,6 +73,28 @@ export function FilterSidebar({ mode, categories, subcategories, facets }: Props
   const { setFilters } = useListingFilters();
   const [, startTransition] = useTransition();
   const anyActive = useFilterActive();
+  const activeCount = useActiveFilterCount();
+
+  const [isLg, setIsLg] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => {
+      const wide = mq.matches;
+      setIsLg(wide);
+      if (wide) {
+        setMobileOpen(true);
+      } else {
+        setMobileOpen(false);
+      }
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const showFilterBody = isLg || mobileOpen;
 
   const selectedCats = searchParams.getAll("category");
   const singleCategory = selectedCats.length === 1 ? selectedCats[0] : null;
@@ -66,38 +122,83 @@ export function FilterSidebar({ mode, categories, subcategories, facets }: Props
   const inStockChecked = inStockRaw === "true" || inStockRaw === "1";
   const ratingChecked = searchParams.get("rating") === "4";
 
-  return (
-    <aside className="filter-sidebar">
-      <h2 className="mb-3 text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--muted)] md:text-[11px]">
-        Filters
-      </h2>
+  const checkBoxBase =
+    "shrink-0 rounded border-[var(--bdd)] accent-[var(--am)] h-3.5 w-3.5 sm:h-4 sm:w-4";
+  const checkRowStart = `mt-0.5 ${checkBoxBase} lg:mt-1`;
+  const checkRowCenter = checkBoxBase;
+  const labelTextCls = "min-w-0 flex-1 text-[10px] leading-snug sm:text-xs lg:text-[13px] lg:leading-5";
+  const rowCls = "flex cursor-pointer items-start gap-2.5 text-[var(--muted)] sm:items-center lg:gap-3";
 
-      {anyActive ? (
+  const asideClass =
+    "filter-sidebar" +
+    (!isLg && !showFilterBody ?
+      " max-lg:!border-0 max-lg:!bg-transparent max-lg:!p-1 max-lg:!shadow-none"
+    : "");
+
+  return (
+    <aside className={asideClass} aria-label="Filters">
+      {/* Mobile / tablet: collapsed filter trigger (full-width card, left accent) */}
+      {!isLg ? (
         <button
           type="button"
-          onClick={() => startTransition(() => router.push(pathname, { scroll: false }))}
-          className="mb-3 block w-full text-center text-[11px] text-[var(--am)] underline"
+          aria-expanded={showFilterBody}
+          onClick={() => setMobileOpen((o) => !o)}
+          className="flex w-full items-center gap-3 rounded-xl border border-[var(--brand-border)] border-l-[4px] border-l-[#C47A2B] bg-gradient-to-r from-[#FDF5EB] to-white px-4 py-3.5 text-left shadow-sm transition hover:border-[#C47A2B] lg:hidden"
         >
-          Clear all
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#C47A2B] shadow-sm ring-1 ring-[#E8E0D6]">
+            <FilterSlidersIcon className="shrink-0" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-base font-semibold leading-tight text-[var(--ink)]">Filters</span>
+          </span>
+          {activeCount > 0 ? (
+            <span className="shrink-0 rounded-full bg-[#C47A2B] px-2 py-0.5 text-center text-xs font-bold tabular-nums text-white">
+              {activeCount}
+            </span>
+          ) : null}
+          <span
+            className={`shrink-0 text-[#6B6560] transition-transform ${showFilterBody ? "rotate-180" : ""}`}
+            aria-hidden
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
         </button>
       ) : null}
 
-      {mode === "all" ? (
-        <FilterSection title="Category">
-          <ul className="space-y-1">
+      {showFilterBody ? (
+        <div className={isLg ? "contents" : "mt-3 border-t border-[var(--bd)] pt-3"}>
+          {anyActive ? (
+            <button
+              type="button"
+              onClick={() => startTransition(() => router.push(pathname, { scroll: false }))}
+              className="mb-3 w-full rounded-lg border border-[var(--bd)] bg-[var(--sf)] py-1.5 text-center text-[11px] font-medium text-[var(--amd)] transition hover:border-[var(--am)] hover:bg-[var(--aml)] sm:text-xs lg:mb-4 lg:py-2"
+            >
+              Clear all
+            </button>
+          ) : null}
+
+          {/** key remount: inner sections start closed on mobile (`defaultOpen={false}`) and open on `lg` */}
+          <div key={isLg ? "filters-lg" : "filters-sm"}>
+            {mode === "all" ? (
+              <FilterSection defaultOpen={isLg} title="Category">
+          <ul className="space-y-1.5 sm:space-y-2">
             {categories.map((c) => (
               <li key={c.slug}>
-                <label className="flex cursor-pointer items-start gap-1.5 text-[var(--muted)]">
+                <label className={rowCls}>
                   <input
                     type="checkbox"
                     checked={selectedCats.includes(c.slug)}
                     onChange={(e) => toggleCategory(c.slug, e.target.checked)}
-                    className="mt-0.5 h-3 w-3 shrink-0 rounded border-[var(--bdd)] accent-[var(--am)]"
+                    className={checkRowStart}
                   />
-                  <span className="min-w-0 flex-1 text-[10px] leading-snug md:text-xs" title={c.name}>
-                    <span className="block truncate md:whitespace-normal md:break-words">{c.name}</span>
+                  <span className={labelTextCls} title={c.name}>
+                    <span className="block truncate lg:whitespace-normal lg:break-words">{c.name}</span>
                   </span>
-                  <span className="shrink-0 text-[9px] tabular-nums text-[var(--muted)]">({c.count})</span>
+                  <span className="shrink-0 text-[9px] tabular-nums text-[var(--muted)] sm:text-[10px] lg:text-xs">
+                    ({c.count})
+                  </span>
                 </label>
               </li>
             ))}
@@ -105,108 +206,115 @@ export function FilterSidebar({ mode, categories, subcategories, facets }: Props
         </FilterSection>
       ) : null}
 
-      {(mode === "category" || Boolean(singleCategory)) && subcategories.length > 0 ? (
-        <FilterSection title="Subcategory">
-          <ul className="space-y-1">
+            {(mode === "category" || Boolean(singleCategory)) && subcategories.length > 0 ? (
+              <FilterSection defaultOpen={isLg} title="Subcategory">
+          <ul className="space-y-1.5 sm:space-y-2">
             {subcategories.map((s) => (
               <li key={s.slug}>
-                <label className="flex cursor-pointer items-start gap-1.5 text-[var(--muted)]">
+                <label className={rowCls}>
                   <input
                     type="checkbox"
                     checked={activeSubSlug === s.slug}
                     onChange={(e) => toggleSubcategory(e.target.checked ? s.slug : null)}
-                    className="mt-0.5 h-3 w-3 shrink-0 rounded border-[var(--bdd)] accent-[var(--am)]"
+                    className={checkRowStart}
                   />
-                  <span className="min-w-0 flex-1 truncate text-[10px] md:text-xs" title={s.name}>
+                  <span className={`min-w-0 flex-1 lg:whitespace-normal ${labelTextCls}`} title={s.name}>
                     {s.name}{" "}
-                    <span className="text-[9px] tabular-nums">({s.count})</span>
+                    <span className="text-[9px] tabular-nums sm:text-[10px] lg:text-xs">({s.count})</span>
                   </span>
                 </label>
               </li>
             ))}
           </ul>
-        </FilterSection>
-      ) : null}
+              </FilterSection>
+            ) : null}
 
-      <FilterSection title="Price range">
-        <PriceRangeSlider />
-      </FilterSection>
+            <FilterSection defaultOpen={isLg} title="Price range">
+              <PriceRangeSlider />
+            </FilterSection>
 
-      {facets.occasions.length ? (
-        <FilterSection title="Occasion">
-          <ul className="space-y-1">
+            {facets.occasions.length ? (
+              <FilterSection defaultOpen={isLg} title="Occasion">
+          <ul className="space-y-1.5 sm:space-y-2">
             {facets.occasions.map((o) => (
               <li key={o}>
-                <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-[var(--muted)] md:text-xs">
+                <label className={`${rowCls} items-center`}>
                   <input
                     type="checkbox"
                     checked={searchParams.get("occasion") === o}
                     onChange={(e) => setFilters({ occasion: e.target.checked ? o : null })}
-                    className="h-3 w-3 shrink-0 rounded border-[var(--bdd)] accent-[var(--am)]"
+                    className={checkRowCenter}
                   />
-                  <span className="truncate" title={o}>
+                  <span className={`truncate ${labelTextCls}`} title={o}>
                     {o}
                   </span>
                 </label>
               </li>
             ))}
           </ul>
-        </FilterSection>
-      ) : null}
+              </FilterSection>
+            ) : null}
 
-      {facets.materials.length ? (
-        <FilterSection title="Material">
-          <ul className="space-y-1">
+            {facets.materials.length ? (
+              <FilterSection defaultOpen={isLg} title="Material">
+          <ul className="space-y-1.5 sm:space-y-2">
             {facets.materials.map((m) => (
               <li key={m}>
-                <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-[var(--muted)] md:text-xs">
+                <label className={`${rowCls} items-center`}>
                   <input
                     type="checkbox"
                     checked={searchParams.get("material") === m}
                     onChange={(e) => setFilters({ material: e.target.checked ? m : null })}
-                    className="h-3 w-3 shrink-0 rounded border-[var(--bdd)] accent-[var(--am)]"
+                    className={checkRowCenter}
                   />
-                  <span className="truncate" title={m}>
+                  <span className={`truncate ${labelTextCls}`} title={m}>
                     {m}
                   </span>
                 </label>
               </li>
             ))}
           </ul>
-        </FilterSection>
+              </FilterSection>
+            ) : null}
+
+            <FilterSection defaultOpen={isLg} title="Availability">
+              <label className={`${rowCls} items-center`}>
+                <input
+                  type="checkbox"
+                  checked={inStockChecked}
+                  onChange={(e) => setFilters({ in_stock: e.target.checked ? "true" : null })}
+                  className={checkRowCenter}
+                />
+                <span className="text-[10px] leading-snug text-[var(--muted)] sm:text-xs lg:text-[13px] lg:leading-5">
+                  <span className="md:hidden">In stock</span>
+                  <span className="hidden md:inline">In stock only</span>
+                </span>
+              </label>
+            </FilterSection>
+
+            <FilterSection defaultOpen={isLg} title="Rating">
+              <label className={`${rowCls} items-center`}>
+                <input
+                  type="checkbox"
+                  checked={ratingChecked}
+                  onChange={(e) => setFilters({ rating: e.target.checked ? "4" : null })}
+                  className={checkRowCenter}
+                />
+                <span className="text-[10px] leading-snug text-[var(--muted)] sm:text-xs lg:text-[13px] lg:leading-5">
+                  <span className="md:hidden">4★+</span>
+                  <span className="hidden md:inline">4★ and above</span>
+                </span>
+              </label>
+            </FilterSection>
+          </div>
+
+          <p className="mt-2 text-center text-[10px] text-[var(--muted)] sm:text-xs lg:mt-3 lg:text-sm">
+            <Link href="/products" className="font-medium text-[var(--am)] hover:underline">
+              Browse all products
+            </Link>
+          </p>
+        </div>
       ) : null}
-
-      <FilterSection title="Availability">
-        <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-[var(--muted)] md:text-xs">
-          <input
-            type="checkbox"
-            checked={inStockChecked}
-            onChange={(e) => setFilters({ in_stock: e.target.checked ? "true" : null })}
-            className="h-3 w-3 shrink-0 rounded border-[var(--bdd)] accent-[var(--am)]"
-          />
-          <span className="md:hidden">In stock</span>
-          <span className="hidden md:inline">In stock only</span>
-        </label>
-      </FilterSection>
-
-      <FilterSection title="Rating">
-        <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-[var(--muted)] md:text-xs">
-          <input
-            type="checkbox"
-            checked={ratingChecked}
-            onChange={(e) => setFilters({ rating: e.target.checked ? "4" : null })}
-            className="h-3 w-3 shrink-0 rounded border-[var(--bdd)] accent-[var(--am)]"
-          />
-          <span className="md:hidden">4★+</span>
-          <span className="hidden md:inline">4★ and above</span>
-        </label>
-      </FilterSection>
-
-      <p className="mt-2 text-center text-[10px] text-[var(--muted)] md:mt-3">
-        <Link href="/products" className="font-medium text-[var(--am)] hover:underline">
-          Browse all products
-        </Link>
-      </p>
     </aside>
   );
 }

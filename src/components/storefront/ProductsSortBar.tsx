@@ -40,10 +40,10 @@ export function ProductsSortBar() {
 
   return (
     <>
-      <label className="hidden items-center gap-2 text-sm text-[var(--brand-muted)] lg:flex">
-        <span className="whitespace-nowrap">Sort</span>
+      <label className="hidden min-w-0 max-w-full flex-1 items-center gap-2.5 text-sm text-[var(--brand-muted)] lg:flex">
+        <span className="shrink-0 whitespace-nowrap text-[13px] font-medium">Sort</span>
         <select
-          className="min-h-11 rounded-lg border border-[var(--brand-border)] bg-white px-3 py-2 text-[var(--brand-ink)]"
+          className="min-h-11 w-full min-w-0 max-w-full rounded-xl border border-[var(--brand-border)] bg-white px-3 py-2.5 text-sm text-[var(--brand-ink)] shadow-sm focus:border-[var(--brand-amber)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-amber)]/30 xl:min-h-12 xl:pl-4 xl:pr-4 xl:text-[15px]"
           value={current}
           aria-label="Sort products"
           onChange={(e) => {

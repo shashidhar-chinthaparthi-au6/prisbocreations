@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connectDb } from "@/lib/db";
 import { listCategories } from "@/lib/services/catalogService";
+import { STOREFRONT_FULL_BLEED, STOREFRONT_GUTTER } from "@/lib/storefront-layout";
 
 export const metadata = { title: "Categories" };
 
@@ -9,7 +10,8 @@ export default async function CategoriesPage() {
   const categories = await listCategories();
 
   return (
-    <div className="space-y-8">
+    <div className={STOREFRONT_FULL_BLEED}>
+      <div className={`${STOREFRONT_GUTTER} space-y-8 pb-8`}>
       <div>
         <h1 className="font-display text-3xl text-ink">All categories</h1>
         <p className="mt-2 text-ink-muted">Explore our full range of personalized products.</p>
@@ -62,6 +64,7 @@ export default async function CategoriesPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -145,7 +145,6 @@ async function RecipientListingSection({
           mode="all"
           title={meta.title}
           forcedRecipient={slug}
-          recipientMetaTitle={meta.title}
         />
       </div>
     </div>

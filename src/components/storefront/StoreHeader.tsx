@@ -103,13 +103,13 @@ export function StoreHeader() {
   return (
     <>
       <header
-        className="sticky-header relative z-[100] border-b border-[#E8E0D6] bg-[var(--brand-card)]"
+        className="sticky-header store-rail-bg relative z-[100] border-b border-[#E8E0D6]"
         onMouseLeave={() => setHoverCat(null)}
       >
-        <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-1 px-3 sm:px-4 md:h-[60px] md:gap-2 md:px-6 lg:h-16 lg:px-8">
+        <div className="relative mx-auto flex h-14 w-full max-w-none items-center gap-1 px-3 sm:px-4 md:h-[60px] md:gap-2 md:px-6 lg:grid lg:h-16 lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-2 lg:px-8">
           <button
             type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] lg:hidden"
+            className="relative z-20 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] lg:hidden"
             aria-label="Open menu"
             onClick={() => setMobileOpen(true)}
           >
@@ -120,12 +120,14 @@ export function StoreHeader() {
             </span>
           </button>
 
-          <div className="flex min-w-0 flex-1 justify-center md:justify-start lg:flex-none">
+          <div
+            className="pointer-events-auto absolute left-1/2 top-1/2 z-20 w-[min(60vw,240px)] -translate-x-1/2 -translate-y-1/2 text-center min-[400px]:w-auto lg:static lg:col-start-1 lg:row-start-1 lg:w-auto lg:max-w-none lg:translate-x-0 lg:translate-y-0 lg:justify-self-start lg:text-left"
+          >
             <Wordmark />
           </div>
 
           <nav
-            className="relative hidden min-h-0 min-w-0 flex-none items-center gap-1 overflow-x-auto lg:flex"
+            className="relative z-10 hidden min-h-0 min-w-0 items-center justify-center gap-1 overflow-x-auto overflow-y-visible lg:col-start-2 lg:row-start-1 lg:flex lg:justify-self-center"
             aria-label="Shop by category"
           >
             <Link href="/products" className={allActive ? tabActive : tabIdle}>
@@ -140,9 +142,7 @@ export function StoreHeader() {
             ))}
           </nav>
 
-          <div className="hidden min-w-0 flex-1 lg:block" aria-hidden />
-
-          <div className="flex min-w-0 shrink-0 items-center gap-0.5 sm:gap-1">
+          <div className="relative z-20 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-0.5 sm:gap-1 lg:col-start-3 lg:row-start-1 lg:ml-0 lg:justify-self-end">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -202,11 +202,11 @@ export function StoreHeader() {
 
         {hoverCat && activeCategory ? (
           <div
-            className="absolute left-0 right-0 top-full z-[90] border-b border-[#E8E0D6] bg-[var(--brand-card)] shadow-[var(--shadow-modal)] animate-in fade-in duration-150"
+            className="store-rail-bg absolute left-0 right-0 top-full z-[90] border-b border-[#E8E0D6] shadow-[var(--shadow-modal)] animate-in fade-in duration-150"
             onMouseEnter={() => setHoverCat(hoverCat)}
             onMouseLeave={() => setHoverCat(null)}
           >
-            <div className="mx-auto grid max-w-[1400px] gap-8 px-6 py-8 lg:grid-cols-[220px_1fr_280px] lg:px-8">
+            <div className="mx-auto grid w-full max-w-none gap-8 px-6 py-8 lg:grid-cols-[220px_1fr_280px] lg:px-8">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[var(--brand-muted)]">In {activeCategory.name}</p>
                 <ul className="mt-3 space-y-1">
@@ -279,7 +279,7 @@ export function StoreHeader() {
             onClick={() => setMobileOpen(false)}
           />
           <div
-            className="absolute left-0 top-0 flex h-full w-[min(320px,85vw)] max-w-[85vw] flex-col bg-[var(--brand-card)] shadow-2xl ring-1 ring-[#E8E0D6] transition-transform duration-300 ease-out"
+            className="store-rail-bg absolute left-0 top-0 flex h-full w-[min(320px,85vw)] max-w-[85vw] flex-col shadow-2xl ring-1 ring-[#E8E0D6] transition-transform duration-300 ease-out"
             {...navSwipe}
           >
             <div className="flex items-center justify-between border-b border-[#E8E0D6] px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">

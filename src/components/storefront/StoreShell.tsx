@@ -1,19 +1,15 @@
 "use client";
 
-import { StoreAnnouncementBar } from "@/components/storefront/StoreAnnouncementBar";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
-import { StoreHeader } from "@/components/storefront/StoreHeader";
+import { StoreShellHeaderBlock } from "@/components/storefront/StoreShellHeaderBlock";
 
 export function StoreShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-[var(--brand-surface)] text-[var(--brand-ink)]">
-      <div className="sticky top-0 z-[100] pt-[env(safe-area-inset-top)]">
-        <StoreAnnouncementBar />
-        <StoreHeader />
-      </div>
+      <StoreShellHeaderBlock />
       <main
         id="site-main-scroll"
-        className="w-full px-[max(1rem,env(safe-area-inset-left))] py-6 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-10"
+        className="w-full px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] pt-[calc(var(--storefront-header-h,var(--listing-sticky-top))+1.5rem)] sm:px-6 sm:pb-8 sm:pt-[calc(var(--storefront-header-h,var(--listing-sticky-top))+2rem)] lg:px-10"
       >
         {children}
       </main>

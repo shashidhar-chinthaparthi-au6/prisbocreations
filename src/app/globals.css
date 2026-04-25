@@ -12,8 +12,9 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;
   max-width: 100vw;
+  /* Default: allow horizontal trim; `clip` avoids a scroll “box” that breaks `position: sticky` (use when supported). */
+  overflow-x: hidden;
 }
 
 * {
@@ -142,7 +143,8 @@ textarea {
   --bdd: #c8bdb0;
   --ok: #2d6a4f;
 
-  --listing-sticky-top: calc(env(safe-area-inset-top) + 72px);
+  /* Sticky block = announcement (~34px) + header; keep filter below it when scrolling. */
+  --listing-sticky-top: calc(env(safe-area-inset-top) + 5.75rem);
 
   --brand-amber: #c47a2b;
   --brand-amber-light: #f5e6d0;
@@ -164,7 +166,7 @@ textarea {
 
 @media (min-width: 1024px) {
   :root {
-    --listing-sticky-top: calc(env(safe-area-inset-top) + 80px);
+    --listing-sticky-top: calc(env(safe-area-inset-top) + 6.5rem);
   }
 }
 
@@ -172,33 +174,82 @@ textarea {
   min-height: 100dvh;
 }
 
-/* Listing: persistent left filter column (all breakpoints) */
+/* Shared warm surface: filter rail, main nav bar, related panels. */
+.store-rail-bg {
+  background: #f4ebe0;
+  background: color-mix(in srgb, var(--brand-amber-light) 24%, var(--brand-surface));
+}
+
+/* Full-height warm strip: viewport left → product column (width `--filter-rail-w` from `ListingLayout`). */
+.filter-rail-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: var(--filter-rail-w, 0px);
+  max-width: 100%;
+  height: 100dvh;
+  pointer-events: none;
+  border: none;
+  border-right: 1px solid var(--bd, var(--brand-border));
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Listing filters: full-width on top (mobile/tablet); left fixed column from lg (`--filter-aside-left` from `ListingLayout`) */
 .filter-sidebar {
-  width: 120px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   flex-shrink: 0;
   background: var(--brand-card);
-  border-right: 1px solid var(--bd, var(--brand-border));
-  padding: 10px 8px;
-  position: sticky;
-  top: var(--listing-sticky-top);
-  align-self: flex-start;
-  max-height: calc(100dvh - var(--listing-sticky-top));
-  overflow-y: auto;
+  border: 1px solid var(--bd, var(--brand-border));
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  padding: 0.875rem 0.75rem 1rem;
+  position: static;
+  overflow: visible;
+  max-height: none;
   scrollbar-width: thin;
-  box-sizing: border-box;
 }
 
 @media (min-width: 640px) {
   .filter-sidebar {
-    width: 180px;
-    padding: 12px 10px;
+    padding: 1rem 0.875rem 1.125rem;
   }
 }
 
 @media (min-width: 1024px) {
   .filter-sidebar {
-    width: 220px;
-    padding: 14px 12px;
+    width: 270px;
+    max-width: 270px;
+    flex-shrink: 0;
+    /* Paint is the fixed `.filter-rail-backdrop` behind this column; form sits on a transparent strip. */
+    padding: 0.5rem 1rem 1rem 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    position: fixed;
+    /* Viewport `left` from a layout spacer; rough fallback before measure (safe-area + typical gutter). */
+    left: var(
+      --filter-aside-left,
+      max(1.5rem, env(safe-area-inset-left, 0px))
+    );
+    right: auto;
+    top: var(--storefront-header-h, var(--listing-sticky-top));
+    z-index: 20;
+    max-height: calc(100dvh - var(--storefront-header-h, var(--listing-sticky-top)) - 0.5rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+@media (min-width: 1280px) {
+  .filter-sidebar {
+    width: 300px;
+    max-width: 300px;
+    padding: 0.5rem 1rem 1.25rem 0;
   }
 }
 
@@ -239,13 +290,24 @@ textarea {
 
 .listing-page-shell {
   display: flex;
+  flex-direction: column;
   min-height: 100dvh;
   width: 100%;
   min-width: 0;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .listing-page-shell {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1.5rem;
+    min-height: 0;
+  }
 }
 
 body {
-  /* Horizontal overflow on body only — overflow-x on html + body together can break vertical scroll (iOS Safari). */
   overflow-x: hidden;
   overflow-y: auto;
   max-width: 100vw;
@@ -254,6 +316,13 @@ body {
   font-size: 15px;
   line-height: 1.7;
   overscroll-behavior-y: auto;
+}
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
 }
 
 @layer components {

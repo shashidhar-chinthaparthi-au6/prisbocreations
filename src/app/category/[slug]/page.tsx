@@ -14,8 +14,7 @@ import {
 } from "@/lib/services/storefrontCatalog";
 import { getCategoryBySlug } from "@/lib/services/catalogService";
 import { StorefrontListing } from "@/components/listing/StorefrontListing";
-import { CategoryHero } from "@/components/category/CategoryHero";
-import { SubcategoryPills } from "@/components/category/SubcategoryPills";
+import { STOREFRONT_FULL_BLEED, STOREFRONT_GUTTER } from "@/lib/storefront-layout";
 
 export const revalidate = 60;
 
@@ -119,41 +118,26 @@ async function CategoryListingSection({
     }),
   ]);
 
-  const totalInCat = counts.find((c) => c.slug === slug)?.count ?? result.total;
-  const heroImg = effectiveCatalogImages(cat)[0] ?? null;
-  const desc = typeof cat.description === "string" ? cat.description : "";
   const subMeta = subRaw ? subcategories.find((s) => s.slug === subRaw) : undefined;
 
   const categories = counts;
 
   return (
-    <div className="pb-16">
-      <CategoryHero
-        name={cat.name}
-        description={desc}
-        imageUrl={heroImg}
-        subcategoryCount={subcategories.length}
-        productCount={totalInCat}
-      />
-      <div className="mx-auto max-w-[1400px] px-4 pt-4 sm:px-6">
-        {subcategories.length > 0 ? (
-          <Suspense fallback={null}>
-            <SubcategoryPills categorySlug={slug} subcategories={subcategories} totalCount={totalInCat} />
-          </Suspense>
-        ) : null}
-      </div>
-      <div className="mx-auto max-w-[1400px] px-4 pt-6 sm:px-6">
-        <StorefrontListing
-          initial={result}
-          categories={categories}
-          categoryLabelRows={categories.map((c) => ({ slug: c.slug, name: c.name }))}
-          subcategories={subcategories}
-          facets={facets}
-          mode="category"
-          title={cat.name}
-          subtitle={subMeta ? subMeta.name : undefined}
-          forcedCategorySlug={slug}
-        />
+    <div className={STOREFRONT_FULL_BLEED}>
+      <div className="pb-16">
+        <div className={`${STOREFRONT_GUTTER} pt-2 sm:pt-4`}>
+          <StorefrontListing
+            initial={result}
+            categories={categories}
+            categoryLabelRows={categories.map((c) => ({ slug: c.slug, name: c.name }))}
+            subcategories={subcategories}
+            facets={facets}
+            mode="category"
+            title={cat.name}
+            subtitle={subMeta ? subMeta.name : undefined}
+            forcedCategorySlug={slug}
+          />
+        </div>
       </div>
     </div>
   );

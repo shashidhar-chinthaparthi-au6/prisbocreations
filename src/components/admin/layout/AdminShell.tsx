@@ -21,6 +21,7 @@ export function useAdminToast() {
 
 const nav = [
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/home-hero", label: "Home hero" },
   { href: "/admin/setup/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/reviews", label: "Reviews" },

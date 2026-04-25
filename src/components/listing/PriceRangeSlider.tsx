@@ -102,12 +102,12 @@ function DesktopDual({ maxRupees }: { maxRupees: number }) {
   };
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-[var(--muted)]">
+    <div className="space-y-2.5 lg:space-y-3">
+      <p className="text-xs font-medium text-[var(--ink)] sm:text-sm">
         ₹{localMin.toLocaleString("en-IN")} – ₹{localMax.toLocaleString("en-IN")}
       </p>
       <Slider.Root
-        className="relative flex h-6 w-full touch-none select-none items-center"
+        className="relative flex h-7 w-full touch-none select-none items-center lg:h-8"
         value={[localMin, localMax]}
         min={0}
         max={maxRupees}
@@ -121,15 +121,15 @@ function DesktopDual({ maxRupees }: { maxRupees: number }) {
         }}
         aria-label="Price range"
       >
-        <Slider.Track className="relative h-1.5 grow rounded-full bg-[var(--bd)]">
+        <Slider.Track className="relative h-1.5 grow rounded-full bg-[var(--bd)] lg:h-2">
           <Slider.Range className="absolute h-full rounded-full bg-[var(--am)]" />
         </Slider.Track>
         <Slider.Thumb
-          className="block h-4 w-4 rounded-full border-2 border-white bg-[var(--am)] shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--am)]"
+          className="block h-4 w-4 rounded-full border-2 border-white bg-[var(--am)] shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--am)] lg:h-5 lg:w-5"
           aria-label="Minimum price"
         />
         <Slider.Thumb
-          className="block h-4 w-4 rounded-full border-2 border-white bg-[var(--am)] shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--am)]"
+          className="block h-4 w-4 rounded-full border-2 border-white bg-[var(--am)] shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--am)] lg:h-5 lg:w-5"
           aria-label="Maximum price"
         />
       </Slider.Root>
