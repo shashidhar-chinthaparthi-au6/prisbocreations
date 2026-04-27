@@ -82,19 +82,20 @@ export default async function HomePage() {
           <p className="mt-1 text-sm text-[var(--brand-muted)] sm:text-base">
             Explore our full range of personalised creations.
           </p>
-          <div className="mt-6 flex max-md:scroll-row gap-3 md:grid md:grid-cols-3 md:gap-3 md:overflow-visible lg:grid-cols-5">
+          <div className="home-carousel-row mt-6 flex max-md:scroll-row gap-3 md:grid md:grid-cols-3 md:gap-3 md:overflow-visible lg:grid-cols-5">
             {catCards.map((c) => {
               const imageSrc =
                 (c.images?.[0] || c.imageUrl || "").trim() ||
                 categoryCardPlaceholderImage(c.slug, c.name);
               return (
-                <HomeCategoryCard
-                  key={String(c._id)}
-                  href={`/category/${c.slug}`}
-                  name={c.name}
-                  slug={c.slug}
-                  imageSrc={imageSrc}
-                />
+                <div key={String(c._id)} className="home-carousel-slide w-[160px] shrink-0 md:w-auto">
+                  <HomeCategoryCard
+                    href={`/category/${c.slug}`}
+                    name={c.name}
+                    slug={c.slug}
+                    imageSrc={imageSrc}
+                  />
+                </div>
               );
             })}
           </div>
@@ -112,11 +113,11 @@ export default async function HomePage() {
                 View all →
               </Link>
             </div>
-            <div className="mt-6 flex max-md:scroll-row gap-3 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible lg:grid-cols-4">
+            <div className="home-carousel-row mt-6 flex max-md:scroll-row gap-3 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible lg:grid-cols-4">
               {featured.map((p) => (
                 <div
                   key={p.id}
-                  className="w-[calc(50vw-24px)] min-w-[160px] max-w-[280px] shrink-0 sm:w-auto sm:min-w-0 sm:max-w-none"
+                  className="home-carousel-slide w-[calc(50vw-24px)] min-w-[160px] max-w-[280px] shrink-0 sm:w-auto sm:min-w-0 sm:max-w-none"
                 >
                   <ProductCard product={p} />
                 </div>

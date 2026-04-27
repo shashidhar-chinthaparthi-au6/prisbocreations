@@ -19,9 +19,9 @@ export function HomeCategoryCard({ href, name, slug, imageSrc }: Props) {
   return (
     <Link
       href={href}
-      className="group relative h-[160px] w-[160px] shrink-0 overflow-hidden rounded-2xl md:h-[160px] md:w-auto"
+      className="group relative flex h-full min-h-[160px] w-[160px] shrink-0 flex-col overflow-hidden rounded-2xl md:h-[160px] md:w-auto md:flex-none"
     >
-      <div className="relative aspect-square h-full md:aspect-auto md:min-h-[160px]">
+      <div className="relative min-h-[120px] flex-1 md:aspect-auto md:min-h-[160px] md:h-full md:flex-none">
         <div
           className="absolute inset-0 z-0"
           style={{ backgroundColor: fallbackBg }}

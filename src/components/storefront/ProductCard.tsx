@@ -84,7 +84,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
 
   const cardClass = useMemo(
     () =>
-      `product-card group flex flex-col rounded-[12px] bg-[var(--brand-card)] shadow-[var(--shadow-card)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(0,0,0,0.12)] ${
+      `product-card group flex h-full min-h-0 flex-col rounded-[12px] bg-[var(--brand-card)] shadow-[var(--shadow-card)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(0,0,0,0.12)] ${
         out ? "opacity-95" : ""
       }`,
     [out],
@@ -96,7 +96,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <Link href={`/products/${product.slug}`} className="card-img block overflow-hidden rounded-t-[9px]">
+      <Link href={`/products/${product.slug}`} className="card-img block shrink-0 overflow-hidden rounded-t-[9px]">
         <div className="relative aspect-square overflow-hidden rounded-t-[9px] bg-[var(--sf)]">
           {product.imageUrl && !primaryImgError ? (
             <>

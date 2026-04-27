@@ -34,9 +34,9 @@ export function HomeRecentlyViewed() {
   return (
     <section className="mt-14 space-y-4">
       <h2 className="font-display text-2xl text-[var(--brand-ink)] sm:text-3xl">Pick up where you left off</h2>
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+      <div className="home-carousel-row -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
         {items.map((p) => (
-          <div key={p.id} className="w-[220px] shrink-0 sm:w-[240px]">
+          <div key={p.id} className="home-carousel-slide w-[220px] shrink-0 sm:w-[240px]">
             <ProductCard product={p} />
           </div>
         ))}

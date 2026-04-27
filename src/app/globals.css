@@ -87,6 +87,7 @@ textarea {
 
 .scroll-row {
   display: flex;
+  align-items: stretch;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -102,6 +103,25 @@ textarea {
 .scroll-row > * {
   scroll-snap-align: start;
   flex-shrink: 0;
+}
+
+/* Home horizontal strips: equal slide height only below `md` (grid layouts unchanged). */
+@media (max-width: 767px) {
+  .home-carousel-row {
+    align-items: stretch;
+  }
+
+  .home-carousel-slide {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    min-height: 0;
+  }
+
+  .home-carousel-slide > * {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
 }
 
 .full-height {
