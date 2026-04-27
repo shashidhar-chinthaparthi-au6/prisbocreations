@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api/fetch-client";
+import { compressImageFileForAdmin } from "@/lib/client/compress-image-for-upload";
 import {
   isImageMime,
   isVideoMime,
@@ -103,7 +104,10 @@ export async function uploadAdminMediaWithProgress(
   options: { imagesOnly?: boolean } = {},
 ): Promise<string> {
   const { imagesOnly = false } = options;
-  const f = withInferredMimeType(file);
+  let f = withInferredMimeType(file);
+  if (isImageMime(f.type)) {
+    f = await compressImageFileForAdmin(f, { maxBytes: maxBytesForAdminMime(f.type) });
+  }
   assertAllowedFile(f, imagesOnly);
 
   onProgress(0);

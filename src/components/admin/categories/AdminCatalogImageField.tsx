@@ -2,6 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useAdminToast } from "@/components/admin/layout/AdminShell";
+import { compressImageFileForAdmin } from "@/lib/client/compress-image-for-upload";
+import { MAX_CATEGORY_UPLOAD_BYTES, withInferredMimeType } from "@/lib/media-upload";
 
 function postAdminCategoryImage(file: File, onProgress: (pct: number) => void): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -54,7 +56,11 @@ export function AdminCatalogImageField({ label, value, onChange }: Props) {
       setBusy(true);
       setProgress(0);
       try {
-        const url = await postAdminCategoryImage(file, setProgress);
+        const raw = withInferredMimeType(file);
+        const ready = await compressImageFileForAdmin(raw, {
+          maxBytes: MAX_CATEGORY_UPLOAD_BYTES,
+        });
+        const url = await postAdminCategoryImage(ready, setProgress);
         onChange(url);
       } catch (e) {
         toast({

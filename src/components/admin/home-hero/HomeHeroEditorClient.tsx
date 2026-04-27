@@ -180,6 +180,8 @@ export function HomeHeroEditorClient() {
 
             <div className="mt-3 grid gap-3 sm:grid-cols-[140px,1fr] sm:items-start">
               <div className="relative aspect-[4/3] w-full max-w-[200px] overflow-hidden rounded-lg bg-zinc-100 sm:max-w-none">
+                {/* Admin preview: arbitrary URLs / data URLs — avoid next/image domain config */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={slide.image || "data:,"} alt="" className="h-full w-full object-cover" />
                 {uploadingIdx === i ? (
                   <div

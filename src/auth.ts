@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { authJwtDecode, authJwtEncode } from "@/lib/auth/auth-jwt-hs256";
 import { getAuthJsSecret } from "@/lib/auth/auth-secret";
 
 const secret = getAuthJsSecret();
@@ -43,12 +44,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
+  jwt: {
+    encode: authJwtEncode,
+    decode: authJwtDecode,
+  },
   pages: {
     signIn: "/login",
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.sub = user.id;
         token.id = user.id;
         token.role = (user as { role?: string }).role ?? "customer";
       }

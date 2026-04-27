@@ -15,8 +15,7 @@ type LeanCategory = { slug?: string; name?: string } | null;
 type LeanSubcategory = { slug?: string; name?: string } | null;
 
 /** Product lean doc as returned from Mongo (admin or storefront). */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LeanProduct = Record<string, any>;
+type LeanProduct = Record<string, unknown>;
 
 export function buildProductPageClientPropsFromDoc(
   p: LeanProduct,
@@ -24,7 +23,7 @@ export function buildProductPageClientPropsFromDoc(
   sub: LeanSubcategory,
 ): ComponentProps<typeof ProductPageClient> {
   const descriptionHtml = sanitizeProductDescription(
-    typeof p.description === "string" ? p.description : "",
+    typeof p["description"] === "string" ? p["description"] : "",
   );
 
   const raw = p as typeof p & {
@@ -71,7 +70,7 @@ export function buildProductPageClientPropsFromDoc(
     typeof raw.highlightsHtml === "string" ? raw.highlightsHtml : "",
   );
   const cartOptions = (() => {
-    const opts = p.options;
+    const opts = p["options"];
     if (!Array.isArray(opts) || opts.length === 0) return undefined;
     type CartOpt = {
       key: string;
@@ -131,9 +130,16 @@ export function buildProductPageClientPropsFromDoc(
   })();
 
   const colorVariants = colorVariantsFromDoc(p);
-  const defaultImages = Array.isArray(p.images) ? p.images : [];
+  const defaultImages = Array.isArray(p["images"])
+    ? p["images"].filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+    : [];
   const primaryImage =
     listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
+
+  const productName = typeof p["name"] === "string" ? p["name"] : "";
+  const tags = Array.isArray(p["tags"])
+    ? p["tags"].filter((t): t is string => typeof t === "string")
+    : [];
 
   const pc = p as typeof p & {
     allowCustomerCustomization?: boolean;
@@ -198,9 +204,12 @@ export function buildProductPageClientPropsFromDoc(
   return {
     defaultImages,
     colorVariants,
-    galleryProductName: p.name,
-    sku: typeof p.sku === "string" && p.sku ? p.sku : String(p.skuBase ?? ""),
-    title: p.name,
+    galleryProductName: productName,
+    sku:
+      typeof p["sku"] === "string" && p["sku"]
+        ? p["sku"]
+        : String(p["skuBase"] ?? ""),
+    title: productName,
     breadcrumb,
     backLink,
     descriptionHtml,
@@ -211,13 +220,19 @@ export function buildProductPageClientPropsFromDoc(
       specificationRows.length === 0 ? legacySpecificationsHtml : "",
     legacyFeaturesHtml: featureLines.length === 0 ? legacyFeaturesHtml : "",
     legacyHighlightsHtml: highlightLines.length === 0 ? legacyHighlightsHtml : "",
-    tags: p.tags ?? [],
+    tags,
     product: {
-      id: String(p._id),
-      slug: p.slug,
-      name: p.name,
-      pricePaise: p.pricePaise,
-      stock: p.stock,
+      id: String(p["_id"]),
+      slug: typeof p["slug"] === "string" ? p["slug"] : "",
+      name: productName,
+      pricePaise:
+        typeof p["pricePaise"] === "number" && Number.isFinite(p["pricePaise"])
+          ? p["pricePaise"]
+          : Number(p["pricePaise"]) || 0,
+      stock:
+        typeof p["stock"] === "number" && Number.isFinite(p["stock"])
+          ? p["stock"]
+          : Number(p["stock"]) || 0,
       image: primaryImage,
       weightKg: pickPhys(phys.weightKg, 0.3),
       lengthCm: pickPhys(phys.lengthCm, 20),
@@ -245,10 +260,13 @@ export function buildProductPageClientPropsFromDoc(
 /** For JSON-LD / SEO on the live product page only. */
 export function productJsonLdBasics(p: LeanProduct) {
   const colorVariants = colorVariantsFromDoc(p);
-  const defaultImages = Array.isArray(p.images) ? p.images : [];
+  const defaultImages = Array.isArray(p["images"])
+    ? p["images"].filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+    : [];
   const primaryImage =
     listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
-  const pricePaise = typeof p.pricePaise === "number" ? p.pricePaise : Number(p.pricePaise) || 0;
+  const pricePaise =
+    typeof p["pricePaise"] === "number" ? p["pricePaise"] : Number(p["pricePaise"]) || 0;
   const priced = p as typeof p & { pricePaise: number; options?: ProductOption[] | null };
   const priceModel = { ...priced, pricePaise };
   const listPricePaise = productHasOptions(priceModel) ? minOptionPricePaise(priceModel) : pricePaise;
@@ -257,6 +275,6 @@ export function productJsonLdBasics(p: LeanProduct) {
         (s, o) => s + Math.max(0, Number(o.stock) || 0),
         0,
       )
-    : Math.max(0, Number(p.stock) || 0);
+    : Math.max(0, Number(p["stock"]) || 0);
   return { primaryImage, listPricePaise, effStock };
 }

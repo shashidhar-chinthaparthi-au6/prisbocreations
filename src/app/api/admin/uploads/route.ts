@@ -4,6 +4,8 @@ import path from "path";
 import sharp from "sharp";
 import { requireAdmin } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
+import { MAX_CATEGORY_UPLOAD_BYTES } from "@/lib/media-upload";
+import { shrinkImageBufferToMaxBytes } from "@/lib/server/shrink-image-buffer-to-max-bytes";
 import { getS3Config } from "@/lib/s3-config";
 import { putPublicUploadObject } from "@/lib/s3-server";
 
@@ -13,7 +15,9 @@ const MIME_EXT: Record<string, string> = {
   "image/webp": ".webp",
 };
 
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = MAX_CATEGORY_UPLOAD_BYTES;
+/** Accept larger originals; output is capped to MAX_BYTES after processing. */
+const MAX_INPUT_BYTES = 15 * 1024 * 1024;
 const MAX_WIDTH = 1200;
 
 async function processImage(buf: Buffer, mime: string): Promise<{ out: Buffer; contentType: string }> {
@@ -63,7 +67,9 @@ export async function POST(req: Request) {
 
   const buf = Buffer.from(await (file as File).arrayBuffer());
   if (buf.length === 0) return jsonError("Empty file", 400);
-  if (buf.length > MAX_BYTES) return jsonError("Max 2 MB per file", 400);
+  if (buf.length > MAX_INPUT_BYTES) {
+    return jsonError(`Max ${Math.round(MAX_INPUT_BYTES / (1024 * 1024))} MB upload; images are compressed to 2 MB`, 400);
+  }
 
   let processed: Buffer;
   let contentType: string;
@@ -71,6 +77,11 @@ export async function POST(req: Request) {
     const r = await processImage(buf, mime);
     processed = r.out;
     contentType = r.contentType;
+    if (processed.length > MAX_BYTES) {
+      const shrunk = await shrinkImageBufferToMaxBytes(processed, contentType, MAX_BYTES);
+      processed = shrunk.out;
+      contentType = shrunk.contentType;
+    }
   } catch {
     return jsonError("Could not process image", 400);
   }
