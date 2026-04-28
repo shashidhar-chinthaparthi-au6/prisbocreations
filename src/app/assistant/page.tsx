@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { getAssistantEnabledCached } from "@/lib/services/storefrontSettingsService";
 import { AssistantPageClient } from "./AssistantPageClient";
 
 export const metadata: Metadata = {
@@ -8,7 +10,11 @@ export const metadata: Metadata = {
     "Chat with Prisbo Assistant for gift ideas and catalogue search — personalised keepsakes made in-studio.",
 };
 
-export default function AssistantPage() {
+export default async function AssistantPage() {
+  if (!(await getAssistantEnabledCached())) {
+    redirect("/");
+  }
+
   return (
     <Suspense
       fallback={

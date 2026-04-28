@@ -13,7 +13,7 @@ const HEADER_H_VAR = "--storefront-header-h";
  * When the assistant sidebar is open on large screens, the bar uses the same right
  * edge as the main column so it stays aligned with page content.
  */
-export function StoreShellHeaderBlock() {
+export function StoreShellHeaderBlock({ assistantEnabled = true }: { assistantEnabled?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const assistantSidebarOpen = useAssistantChatStore((s) => s.sidebarOpen);
 
@@ -32,19 +32,19 @@ export function StoreShellHeaderBlock() {
       ro.disconnect();
       document.documentElement.style.removeProperty(HEADER_H_VAR);
     };
-  }, [assistantSidebarOpen]);
+  }, [assistantSidebarOpen, assistantEnabled]);
 
   return (
     <div
       ref={ref}
       className={`fixed left-0 top-0 z-[100] pt-[env(safe-area-inset-top)] transition-[right] duration-300 ease-out will-change-[right] right-0 ${
-        assistantSidebarOpen
+        assistantEnabled && assistantSidebarOpen
           ? "lg:right-[min(420px,calc(100vw-env(safe-area-inset-right)-1px))]"
           : ""
       }`}
     >
       <StoreAnnouncementBar />
-      <StoreHeader />
+      <StoreHeader assistantEnabled={assistantEnabled} />
     </div>
   );
 }

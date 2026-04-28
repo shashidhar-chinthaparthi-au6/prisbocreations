@@ -6,6 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { AiAssistantGlyph } from "@/components/storefront/AiAssistantGlyph";
 import {
+  ASSISTANT_REPLY_LANGUAGE_OPTIONS,
+  DEFAULT_ASSISTANT_PREFERENCES,
+  type AssistantPreferences,
+  type AssistantReplyLanguageId,
+  readAssistantPreferences,
+  speechRecognitionLang,
+  speechSynthesisLang,
+  writeAssistantPreferences,
+} from "@/lib/store/assistant-preferences";
+import {
   clearGuestMessagesFromSession,
   readGuestMessagesFromSession,
   writeGuestMessagesToSession,
@@ -18,6 +28,78 @@ type Props = {
   onClose?: () => void;
   rootId?: string;
 };
+
+function MicGlyph({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.42 2.72 6.23 6 6.72V22h2v-4.28c3.28-.49 6-3.29 6-6.72h-1.7z" />
+    </svg>
+  );
+}
+
+function StopRecordingGlyph({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  );
+}
+
+function SpeakerGlyph({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+    </svg>
+  );
+}
+
+type SpeechRecognitionAlternativeLike = { transcript: string };
+
+type SpeechRecognitionResultLike = { 0?: SpeechRecognitionAlternativeLike; length?: number };
+
+type SpeechRecognitionResultListLike = {
+  length: number;
+  [n: number]: SpeechRecognitionResultLike;
+};
+
+/** Minimal shape for Chromium / WebKitSpeechRecognition browsers. */
+type SpeechRecognitionBrowser = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  continuous: boolean;
+  start: () => void;
+  abort?: () => void;
+  onresult:
+    | ((
+        ev: {
+          resultIndex: number;
+          results: SpeechRecognitionResultListLike;
+        },
+      ) => void)
+    | null;
+  onerror: ((ev: { error: string }) => void) | null;
+  onend: (() => void) | null;
+};
+
+function getSpeechRecognitionCtor(): (new () => SpeechRecognitionBrowser) | null {
+  if (typeof globalThis === "undefined") return null;
+  const g = globalThis as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionBrowser;
+    webkitSpeechRecognition?: new () => SpeechRecognitionBrowser;
+  };
+  return g.SpeechRecognition ?? g.webkitSpeechRecognition ?? null;
+}
+
+function speakAssistantReply(content: string, replyLanguage: AssistantReplyLanguageId): void {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const clean = content.replace(/\s+/g, " ").trim().slice(0, 4000);
+  if (!clean) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(clean);
+  utter.lang = speechSynthesisLang(replyLanguage);
+  window.speechSynthesis.speak(utter);
+}
 
 async function persistThreadToServer() {
   const msgs = useAssistantChatStore.getState().messages;
@@ -58,6 +140,50 @@ export function PrisboAssistantChat({ variant, onAfterApplyProducts, onClose, ro
   const guestHydratedRef = useRef(false);
   const prevSessionStatusRef = useRef<typeof status | undefined>(undefined);
   const [guestStorageReady, setGuestStorageReady] = useState(false);
+
+  const prefsId = useId();
+  const micId = useId();
+  const speechOutId = useId();
+  const [prefs, setPrefs] = useState<AssistantPreferences>(DEFAULT_ASSISTANT_PREFERENCES);
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [speechErr, setSpeechErr] = useState<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionBrowser | null>(null);
+
+  useEffect(() => {
+    setPrefs(readAssistantPreferences());
+    setPrefsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    writeAssistantPreferences(prefs);
+  }, [prefsHydrated, prefs]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.abort?.();
+      } catch {
+        /* ignore */
+      }
+      if (typeof window !== "undefined") window.speechSynthesis?.cancel?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (prefs.speechInputEnabled) return;
+    if (!listening) return;
+    try {
+      recognitionRef.current?.abort?.();
+    } catch {
+      /* ignore */
+    }
+    setListening(false);
+  }, [prefs.speechInputEnabled, listening]);
+
+  const hasSpeechRecognition =
+    typeof globalThis !== "undefined" && Boolean(getSpeechRecognitionCtor());
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -174,10 +300,71 @@ export function PrisboAssistantChat({ variant, onAfterApplyProducts, onClose, ro
     if (variant === "sidebar") router.push("/");
   }, [clearAndRestart, router, variant]);
 
+  const toggleSpeechInput = useCallback(() => {
+    if (!prefs.speechInputEnabled || loading) return;
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) {
+      setSpeechErr("Speech input is not supported in this browser.");
+      return;
+    }
+    setSpeechErr(null);
+
+    if (listening && recognitionRef.current) {
+      try {
+        recognitionRef.current?.abort?.();
+      } catch {
+        /* ignore */
+      }
+      recognitionRef.current = null;
+      setListening(false);
+      return;
+    }
+
+    try {
+      /** Fresh dictation pass — clear so a new mic tap doesn’t stack on old text */
+      setInput("");
+      const r = new Ctor();
+      r.lang = speechRecognitionLang(prefs.replyLanguage);
+      r.interimResults = false;
+      r.maxAlternatives = 1;
+      r.continuous = false;
+      r.onresult = (ev) => {
+        let t = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const row = ev.results[i];
+          const part = row?.[0]?.transcript;
+          if (part) t += part;
+        }
+        const next = t.trim();
+        if (next.length) {
+          setInput((prev) => `${prev}${prev.trim() ? " " : ""}${next}`.slice(0, 4000));
+        }
+      };
+      r.onerror = (ev) => {
+        setListening(false);
+        recognitionRef.current = null;
+        if (ev.error !== "aborted" && ev.error !== "no-speech") {
+          setSpeechErr("Speech didn’t catch that — try again or type.");
+        }
+      };
+      r.onend = () => {
+        setListening(false);
+        recognitionRef.current = null;
+      };
+      recognitionRef.current = r;
+      setListening(true);
+      r.start();
+    } catch {
+      setListening(false);
+      setSpeechErr("Microphone unavailable.");
+    }
+  }, [listening, loading, prefs.replyLanguage, prefs.speechInputEnabled]);
+
   const send = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
 
+    const prefsSnapshot = prefs;
     const { messages: prior } = useAssistantChatStore.getState();
     const nextHist = [...prior, { role: "user" as const, content: text }];
     setMessages(nextHist);
@@ -191,6 +378,7 @@ export function PrisboAssistantChat({ variant, onAfterApplyProducts, onClose, ro
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pathname,
+          replyLanguage: prefsSnapshot.replyLanguage,
           messages: nextHist.slice(-14).map((r) => ({ role: r.role, content: r.content })),
         }),
       });
@@ -218,6 +406,9 @@ export function PrisboAssistantChat({ variant, onAfterApplyProducts, onClose, ro
       const applyHref = j.data.applyHref ?? null;
       const filterSummary = j.data.filterSummary ?? null;
       setMessages((prev) => [...prev, { role: "assistant", content: reply, applyHref, filterSummary }]);
+      if (prefsSnapshot.speechOutputEnabled) {
+        queueMicrotask(() => speakAssistantReply(reply, prefsSnapshot.replyLanguage));
+      }
       if (status === "authenticated") {
         queueMicrotask(() => {
           void persistThreadToServer();
@@ -226,7 +417,7 @@ export function PrisboAssistantChat({ variant, onAfterApplyProducts, onClose, ro
     } finally {
       setLoading(false);
     }
-  }, [input, loading, pathname, setMessages, status]);
+  }, [input, loading, pathname, prefs, setMessages, status]);
 
   const apply = (href: string) => {
     router.push(href);
@@ -355,6 +546,87 @@ export function PrisboAssistantChat({ variant, onAfterApplyProducts, onClose, ro
       <footer
         className={`shrink-0 border-t border-[var(--brand-border)] bg-[color-mix(in_srgb,var(--brand-surface)_50%,white)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 ${variant === "page" ? "sm:px-6" : ""}`}
       >
+        <details className="mb-3 rounded-lg border border-[var(--brand-border)] bg-white/80 px-3 py-2 text-[12px]">
+          <summary className="cursor-pointer list-inside font-semibold text-[var(--brand-ink)]">
+            Voice &amp; language preferences
+          </summary>
+          <div className="mt-3 space-y-3 border-t border-[color-mix(in_srgb,var(--brand-border)_75%,transparent)] pt-3 text-[var(--brand-ink)]">
+            <div>
+              <label htmlFor={`${prefsId}-lang`} className="block text-[11px] font-medium text-[var(--brand-muted)]">
+                Assistant replies in
+              </label>
+              <select
+                id={`${prefsId}-lang`}
+                value={prefs.replyLanguage}
+                onChange={(e) =>
+                  setPrefs((p) => ({
+                    ...p,
+                    replyLanguage: e.target.value as AssistantReplyLanguageId,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-[var(--brand-border-dark)] bg-white px-2 py-1.5 text-[13px] text-[var(--brand-ink)] focus:border-[var(--brand-amber)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand-amber-light)_70%,transparent)]"
+              >
+                {ASSISTANT_REPLY_LANGUAGE_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[10px] leading-snug text-[var(--brand-muted)]">
+                Catalog filters stay in English; this only affects the assistant wording you read.
+              </p>
+            </div>
+            <label className="flex cursor-pointer items-start gap-2">
+              <input
+                id={micId}
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--brand-border-dark)] accent-[var(--brand-amber)]"
+                checked={prefs.speechInputEnabled}
+                onChange={(e) =>
+                  setPrefs((p) => ({ ...p, speechInputEnabled: e.target.checked }))
+                }
+              />
+              <MicGlyph className="mt-0.5 shrink-0 text-[var(--brand-amber-dark)] opacity-85" />
+              <span className="min-w-0">
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <span>Speech input</span>
+                </span>
+                <span className="block text-[11px] text-[var(--brand-muted)]">
+                  Shows the mic next to Send (browser speech‑to‑text; may ask for mic permission).
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2">
+              <input
+                id={speechOutId}
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[var(--brand-border-dark)] accent-[var(--brand-amber)]"
+                checked={prefs.speechOutputEnabled}
+                onChange={(e) =>
+                  setPrefs((p) => ({ ...p, speechOutputEnabled: e.target.checked }))
+                }
+              />
+              <SpeakerGlyph className="mt-0.5 shrink-0 text-[var(--brand-amber-dark)] opacity-85" />
+              <span className="min-w-0">
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <span>Read replies aloud</span>
+                </span>
+                <span className="block text-[11px] text-[var(--brand-muted)]">
+                  Speaks each assistant reply (on by default; uses your browser voice).
+                </span>
+              </span>
+            </label>
+            {prefs.speechInputEnabled && !hasSpeechRecognition ?
+              <p className="rounded-md bg-[color-mix(in_srgb,var(--brand-amber-light)_55%,white)] px-2 py-1.5 text-[11px] text-[var(--brand-amber-dark)]">
+                This browser doesn&apos;t expose speech‑to‑text. Use Chrome / Edge / Safari current versions, or type instead.
+              </p>
+            : null}
+            {speechErr ?
+              <p className="rounded-md bg-rose-50 px-2 py-1.5 text-[11px] text-rose-900">{speechErr}</p>
+            : null}
+          </div>
+        </details>
+
         <div className="flex gap-3">
           <textarea
             ref={inputRef}
@@ -370,14 +642,32 @@ export function PrisboAssistantChat({ variant, onAfterApplyProducts, onClose, ro
             placeholder={"Describe what you're looking for…"}
             className="min-h-[5.25rem] flex-1 resize-none rounded-xl border border-[var(--brand-border-dark)] bg-white px-3 py-3 text-[15px] leading-snug text-[var(--brand-ink)] placeholder:text-[var(--brand-muted)] focus:border-[var(--brand-amber)] focus:outline-none focus:ring-[3px] focus:ring-[color-mix(in_srgb,var(--brand-amber-light)_70%,transparent)]"
           />
-          <button
-            type="button"
-            disabled={loading || !input.trim()}
-            onClick={() => void send()}
-            className="btn-primary h-[2.75rem] min-w-[4.5rem] shrink-0 self-end px-4 text-sm font-semibold"
-          >
-            Send
-          </button>
+          <div className="flex shrink-0 flex-col items-stretch gap-2 self-end">
+            {prefs.speechInputEnabled ?
+              <button
+                type="button"
+                onClick={() => void toggleSpeechInput()}
+                disabled={loading || !hasSpeechRecognition}
+                aria-label={listening ? "Stop microphone" : "Speak to type"}
+                aria-pressed={listening}
+                className={`flex h-[2.75rem] min-w-[2.75rem] items-center justify-center rounded-xl border px-2 transition ${
+                  listening ?
+                    "border-[var(--brand-amber-dark)] bg-[color-mix(in_srgb,var(--brand-amber-light)_70%,white)] text-[var(--brand-amber-dark)]"
+                  : "border-[var(--brand-border-dark)] bg-white text-[var(--brand-muted)] hover:border-[var(--brand-amber)] hover:text-[var(--brand-ink)]"
+                } ${loading ? "cursor-not-allowed opacity-45" : ""}`}
+              >
+                {listening ? <StopRecordingGlyph /> : <MicGlyph />}
+              </button>
+            : null}
+            <button
+              type="button"
+              disabled={loading || !input.trim()}
+              onClick={() => void send()}
+              className="btn-primary h-[2.75rem] min-w-[4.5rem] px-4 text-sm font-semibold"
+            >
+              Send
+            </button>
+          </div>
         </div>
       </footer>
     </div>

@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { connectDb } from "@/lib/db";
 import { getOptionalAuth } from "@/lib/api/auth";
 import { jsonError, jsonOk } from "@/lib/api/response";
+import { storefrontAssistantUnavailableResponse } from "@/lib/services/storefrontSettingsService";
 import {
   AssistantConversation,
   isAssistantThreadStale,
@@ -45,6 +46,9 @@ function stripForClient(
 
 /** GET transcript for signed-in user; drops idle thread past ~10 days since last save. */
 export async function GET() {
+  const denied = await storefrontAssistantUnavailableResponse();
+  if (denied) return denied;
+
   const session = await getOptionalAuth();
   if (!session?.sub || !Types.ObjectId.isValid(session.sub)) {
     return jsonOk({ messages: [], persistent: false, retentionDays: 10 });
@@ -86,6 +90,9 @@ type PutBody = { messages?: unknown };
 
 /** PUT replace transcript; Mongoose timestamps refresh retention window. */
 export async function PUT(req: Request) {
+  const denied = await storefrontAssistantUnavailableResponse();
+  if (denied) return denied;
+
   const session = await getOptionalAuth();
   if (!session?.sub || !Types.ObjectId.isValid(session.sub)) {
     return jsonError("Sign in to save assistant conversations.", 401);
@@ -145,6 +152,9 @@ export async function PUT(req: Request) {
 
 /** DELETE saved transcript only. */
 export async function DELETE() {
+  const denied = await storefrontAssistantUnavailableResponse();
+  if (denied) return denied;
+
   const session = await getOptionalAuth();
   if (!session?.sub || !Types.ObjectId.isValid(session.sub)) {
     return jsonError("Sign in to clear saved history.", 401);

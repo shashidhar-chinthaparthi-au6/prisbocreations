@@ -49,7 +49,7 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-export function StoreHeader() {
+export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: boolean }) {
   const pathname = usePathname() ?? "";
   const hideCart = pathname.startsWith("/checkout");
   const [nav, setNav] = useState<NavCategory[]>([]);
@@ -100,6 +100,7 @@ export function StoreHeader() {
     pathname === `/category/${slug}` || pathname.startsWith(`/category/${slug}/`);
 
   function openPrisboAssistant() {
+    if (!assistantEnabled) return;
     if (pathname === "/assistant") {
       document.getElementById("prisbo-assistant-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
@@ -169,20 +170,22 @@ export function StoreHeader() {
               </svg>
             </button>
 
-            <button
-              type="button"
-              onClick={openPrisboAssistant}
-              className="flex max-w-[min(8.5rem,calc(100vw-13rem))] min-h-[44px] shrink-0 items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-2 hover:bg-[var(--brand-amber-light)] sm:gap-2 sm:px-3 sm:py-2"
-              aria-label="Open shopping assistant — gift ideas and product help"
-              title="Opens Prisbo Assistant: describe what you're looking for and jump to matching products"
-            >
-              <AiAssistantGlyph className="h-[1.625rem] w-[1.625rem] shrink-0 sm:h-8 sm:w-8" />
-              <span className="truncate text-left text-[11px] font-semibold leading-tight text-[var(--brand-ink)] sm:text-[13px]">
-                Assistant
-              </span>
-            </button>
+            {assistantEnabled ?
+              <button
+                type="button"
+                onClick={openPrisboAssistant}
+                className="flex max-w-[min(8.5rem,calc(100vw-13rem))] min-h-[44px] shrink-0 items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-2 hover:bg-[var(--brand-amber-light)] sm:gap-2 sm:px-3 sm:py-2"
+                aria-label="Open shopping assistant — gift ideas and product help"
+                title="Opens Prisbo Assistant: describe what you're looking for and jump to matching products"
+              >
+                <AiAssistantGlyph className="h-[1.625rem] w-[1.625rem] shrink-0 sm:h-8 sm:w-8" />
+                <span className="truncate text-left text-[11px] font-semibold leading-tight text-[var(--brand-ink)] sm:text-[13px]">
+                  Assistant
+                </span>
+              </button>
+            : null}
 
-            <HeaderDivider />
+            {assistantEnabled ? <HeaderDivider /> : null}
 
             <Link
               href="/track"
@@ -317,29 +320,31 @@ export function StoreHeader() {
                 ×
               </button>
             </div>
-            <div className="border-b border-[var(--brand-border)] px-3 py-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  setSidebarOpen(true);
-                }}
-                className="flex w-full items-center gap-3 rounded-lg border border-[color-mix(in_srgb,var(--brand-amber)_28%,var(--brand-border))] bg-[color-mix(in_srgb,var(--brand-amber-light)_45%,white)] px-4 py-3 text-left"
-              >
-                <AiAssistantGlyph className="h-9 w-9 shrink-0" aria-hidden />
-                <span>
-                  <span className="block text-sm font-semibold text-[var(--brand-ink)]">Prisbo Assistant</span>
-                  <span className="text-xs text-[var(--brand-muted)]">Gift ideas &amp; catalogue help · opens on the right</span>
-                </span>
-              </button>
-              <Link
-                href="/assistant"
-                className="mt-2 block w-full py-2 text-center text-sm font-medium text-[var(--brand-amber-dark)] underline decoration-[color-mix(in_srgb,var(--brand-amber)_40%,transparent)] underline-offset-2"
-                onClick={() => setMobileOpen(false)}
-              >
-                Full-page conversational shopping
-              </Link>
-            </div>
+            {assistantEnabled ?
+              <div className="border-b border-[var(--brand-border)] px-3 py-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setSidebarOpen(true);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg border border-[color-mix(in_srgb,var(--brand-amber)_28%,var(--brand-border))] bg-[color-mix(in_srgb,var(--brand-amber-light)_45%,white)] px-4 py-3 text-left"
+                >
+                  <AiAssistantGlyph className="h-9 w-9 shrink-0" aria-hidden />
+                  <span>
+                    <span className="block text-sm font-semibold text-[var(--brand-ink)]">Prisbo Assistant</span>
+                    <span className="text-xs text-[var(--brand-muted)]">Gift ideas &amp; catalogue help · opens on the right</span>
+                  </span>
+                </button>
+                <Link
+                  href="/assistant"
+                  className="mt-2 block w-full py-2 text-center text-sm font-medium text-[var(--brand-amber-dark)] underline decoration-[color-mix(in_srgb,var(--brand-amber)_40%,transparent)] underline-offset-2"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Full-page conversational shopping
+                </Link>
+              </div>
+            : null}
             <div className="border-b border-[var(--brand-border)] px-3 py-3">
               <button
                 type="button"

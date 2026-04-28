@@ -1,3 +1,4 @@
+import type { AssistantReplyLanguageId } from "@/lib/store/assistant-preferences";
 import type { NavCategoryTreeItem } from "@/lib/services/catalogService";
 import { RECIPIENT_SLUGS } from "@/lib/recipients";
 
@@ -10,13 +11,41 @@ function compactCategoriesJson(tree: NavCategoryTreeItem[]): string {
   return JSON.stringify(rows, null, 0);
 }
 
+const REPLY_LANGUAGE_INSTRUCTION: Record<
+  Exclude<AssistantReplyLanguageId, "auto">,
+  string
+> = {
+  en: "Write the conversational reply string in clear Indian English.",
+  hi: "Write the reply field in Hindi (Devanagari). Use roman text only if the script does not fit UTF-8 JSON for this API.",
+  ta: "Write the reply field in Tamil script where possible.",
+  te: "Write the reply field in Telugu script where possible.",
+  kn: "Write the reply field in Kannada script where possible.",
+  ml: "Write the reply field in Malayalam script where possible.",
+  mr: "Write the reply field in Marathi (Devanagari) where possible.",
+  bn: "Write the reply field in Bengali script where possible.",
+  gu: "Write the reply field in Gujarati script where possible.",
+  pa: "Write the reply field in Punjabi (Gurmukhi) where possible.",
+};
+
+function languageInstructionsBlock(pref: AssistantReplyLanguageId): string {
+  if (pref === "auto") {
+    return `Respond in neutral Indian English unless the shopper writes clearly in another language — then mirror that language politely for the reply string.`;
+  }
+  return `${REPLY_LANGUAGE_INSTRUCTION[pref]} Keep catalogue filter fields (categories, subcategories.slug, recipient, q keywords) as exact ASCII slugs from this prompt. Only the conversational "reply" value may use the chosen script.`;
+}
+
 /**
  * Prompt that constrains Sarvam to answer as JSON with storefront filter hints.
+ * @param replyLanguage Preferred language for the human-visible reply field (auto mirrors shopper tone).
  */
-export function buildStorefrontAssistantSystemPrompt(tree: NavCategoryTreeItem[]): string {
+export function buildStorefrontAssistantSystemPrompt(
+  tree: NavCategoryTreeItem[],
+  opts?: { replyLanguage?: AssistantReplyLanguageId },
+): string {
+  const replyLang: AssistantReplyLanguageId = opts?.replyLanguage ?? "auto";
   const catalog = compactCategoriesJson(tree);
 
-  return `You are Prisbo Assistant — a friendly concierge for the Prisbo Creations online gift studio (India). You reply in neutral English unless the shopper writes in another language — then mirror that language politely.
+  return `You are Prisbo Assistant — a friendly concierge for the Prisbo Creations online gift studio (India). ${languageInstructionsBlock(replyLang)}
 
 Respond with exactly one JSON object and no other prose before or after it. Wrap nothing in markdown — output raw JSON only.
 

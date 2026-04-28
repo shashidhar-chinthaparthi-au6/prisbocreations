@@ -1,19 +1,31 @@
 "use client";
 
+import { useEffect } from "react";
 import { PrisboAssistantSidebar } from "@/components/storefront/PrisboAssistantSidebar";
 import { StoreFooter } from "@/components/storefront/StoreFooter";
 import { StoreShellHeaderBlock } from "@/components/storefront/StoreShellHeaderBlock";
 import { useAssistantChatStore } from "@/lib/store/assistant-chat-store";
 
-export function StoreShell({ children }: { children: React.ReactNode }) {
+export function StoreShell({
+  children,
+  assistantEnabled = true,
+}: {
+  children: React.ReactNode;
+  assistantEnabled?: boolean;
+}) {
   const assistantSidebarOpen = useAssistantChatStore((s) => s.sidebarOpen);
+  const setSidebarOpen = useAssistantChatStore((s) => s.setSidebarOpen);
+
+  useEffect(() => {
+    if (!assistantEnabled && assistantSidebarOpen) setSidebarOpen(false);
+  }, [assistantEnabled, assistantSidebarOpen, setSidebarOpen]);
 
   return (
     <div className="min-h-dvh bg-[var(--brand-canvas)] text-[var(--brand-ink)]">
-      <StoreShellHeaderBlock />
+      <StoreShellHeaderBlock assistantEnabled={assistantEnabled} />
       <div
         className={`transition-[margin] duration-300 ease-out will-change-[margin] ${
-          assistantSidebarOpen
+          assistantEnabled && assistantSidebarOpen
             ? "lg:mr-[min(420px,calc(100vw-env(safe-area-inset-right)-1px))]"
             : ""
         }`}
@@ -26,7 +38,7 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
         </main>
         <StoreFooter />
       </div>
-      <PrisboAssistantSidebar />
+      {assistantEnabled ? <PrisboAssistantSidebar /> : null}
     </div>
   );
 }

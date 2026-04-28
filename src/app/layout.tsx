@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { ConditionalStoreShell } from "@/components/storefront/ConditionalStoreShell";
+import { getAssistantEnabledCached } from "@/lib/services/storefrontSettingsService";
 
 const display = Playfair_Display({
   subsets: ["latin"],
@@ -52,12 +53,19 @@ export const viewport = {
   themeColor: "#c47a2b",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  let assistantEnabled = true;
+  try {
+    assistantEnabled = await getAssistantEnabledCached();
+  } catch {
+    assistantEnabled = true;
+  }
+
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <Providers>
-          <ConditionalStoreShell>{children}</ConditionalStoreShell>
+          <ConditionalStoreShell assistantEnabled={assistantEnabled}>{children}</ConditionalStoreShell>
         </Providers>
       </body>
     </html>

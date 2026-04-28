@@ -1,6 +1,7 @@
 import { connectDb } from "@/lib/db";
 import { jsonError, jsonOk } from "@/lib/api/response";
 import { listNavCategoryTree } from "@/lib/services/catalogService";
+import { storefrontAssistantUnavailableResponse } from "@/lib/services/storefrontSettingsService";
 import {
   buildStorefrontAssistantSystemPrompt,
   parseStorefrontAssistantJson,
@@ -15,14 +16,30 @@ import {
   buildAssistantFilterSummaryLabel,
   refineAssistantFiltersFromUserMessage,
 } from "@/lib/storefront/assistant-filter-refinement";
+import {
+  ASSISTANT_REPLY_LANGUAGE_OPTIONS,
+  type AssistantReplyLanguageId,
+} from "@/lib/store/assistant-preferences";
 
 const MAX_HISTORY = 16;
 const MAX_CONTENT = 1800;
 
+const REPLY_LANGUAGE_IDS = new Set<AssistantReplyLanguageId>(
+  ASSISTANT_REPLY_LANGUAGE_OPTIONS.map((o) => o.id),
+);
+
 type Body = {
   messages?: { role: string; content: string }[];
   pathname?: string;
+  /** Reply language for the assistant's conversational text; catalog slugs remain ASCII. */
+  replyLanguage?: string;
 };
+
+function parseReplyLanguage(raw: unknown): AssistantReplyLanguageId {
+  if (typeof raw !== "string") return "auto";
+  const s = raw.trim().toLowerCase();
+  return REPLY_LANGUAGE_IDS.has(s as AssistantReplyLanguageId) ? (s as AssistantReplyLanguageId) : "auto";
+}
 
 function sanitizeMessages(raw: Body["messages"]): SarvamChatMessage[] | null {
   if (!Array.isArray(raw) || raw.length === 0) return null;
@@ -41,6 +58,9 @@ function sanitizeMessages(raw: Body["messages"]): SarvamChatMessage[] | null {
 }
 
 export async function POST(req: Request) {
+  const denied = await storefrontAssistantUnavailableResponse();
+  if (denied) return denied;
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -55,9 +75,10 @@ export async function POST(req: Request) {
 
   await connectDb();
   const tree = await listNavCategoryTree();
+  const replyLanguage = parseReplyLanguage(body.replyLanguage);
   const system: SarvamChatMessage = {
     role: "system",
-    content: buildStorefrontAssistantSystemPrompt(tree),
+    content: buildStorefrontAssistantSystemPrompt(tree, { replyLanguage }),
   };
 
   const completion = await sarvamChatCompletion({
