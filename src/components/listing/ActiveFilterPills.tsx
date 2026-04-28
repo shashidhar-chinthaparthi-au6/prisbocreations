@@ -4,6 +4,13 @@ import { useMemo, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useListingFilters } from "@/hooks/useListingFilters";
 
+/** Remove all subcategory-focused query keys (supports repeated ?sub=&subcategoryCategory=…). */
+function stripSubSearchParams(params: URLSearchParams) {
+  params.delete("sub");
+  params.delete("subcategory");
+  params.delete("subcategoryCategory");
+}
+
 type CatRow = { slug: string; name: string };
 
 type Props = {
@@ -38,26 +45,50 @@ export function ActiveFilterPills({ categories, subcategories }: Props) {
         onRemove: () => {
           const p = new URLSearchParams(searchParams.toString());
           p.delete("category");
+          p.delete("categories");
           for (const c of cats) {
             if (c !== slug) p.append("category", c);
           }
           p.delete("page");
-          p.delete("subcategory");
-          p.delete("sub");
+          stripSubSearchParams(p);
           startTransition(() => {
             router.push(`${pathname}?${p.toString()}`, { scroll: false });
           });
         },
       });
     }
-    const sub = searchParams.get("subcategory") || searchParams.get("sub");
-    if (sub) {
+
+    const snapshotSubRows = (): { slug: string; parent?: string }[] => {
+      const subs = [...searchParams.getAll("sub")];
+      const parents = [...searchParams.getAll("subcategoryCategory")];
+      const legacy = searchParams.get("subcategory") ?? undefined;
+      if (subs.length) return subs.map((slug, i) => ({ slug, parent: parents[i] }));
+      if (legacy) return [{ slug: legacy, parent: parents[0] }];
+      return [];
+    };
+
+    const subRows = snapshotSubRows();
+    for (let dropIndex = 0; dropIndex < subRows.length; dropIndex++) {
+      const row = subRows[dropIndex]!;
+      const name = subBySlug.get(row.slug) ?? row.slug;
       out.push({
-        key: "subcategory",
-        label: subBySlug.get(sub) ?? sub,
-        onRemove: () => setFilters({ subcategory: null, sub: null }),
+        key: `subcategory:${row.slug}:${dropIndex}`,
+        label: name,
+        onRemove: () => {
+          const next = snapshotSubRows();
+          next.splice(dropIndex, 1);
+          const p = new URLSearchParams(searchParams.toString());
+          stripSubSearchParams(p);
+          for (const r of next) {
+            p.append("sub", r.slug);
+            if (r.parent) p.append("subcategoryCategory", r.parent);
+          }
+          p.delete("page");
+          startTransition(() => router.push(`${pathname}?${p.toString()}`, { scroll: false }));
+        },
       });
     }
+
     const pmin = searchParams.get("price_min");
     const pmax = searchParams.get("price_max");
     if ((pmin != null && pmin !== "") || (pmax != null && pmax !== "")) {

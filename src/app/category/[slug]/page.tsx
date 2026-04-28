@@ -14,6 +14,7 @@ import {
 } from "@/lib/services/storefrontCatalog";
 import { getCategoryBySlug } from "@/lib/services/catalogService";
 import { StorefrontListing } from "@/components/listing/StorefrontListing";
+import { parseSubcategoryPairsFromNextSearchParams } from "@/lib/storefront/parse-listing-sub-params";
 import { STOREFRONT_FULL_BLEED, STOREFRONT_GUTTER } from "@/lib/storefront-layout";
 
 export const revalidate = 60;
@@ -74,12 +75,7 @@ async function CategoryListingSection({
   const sort = parseSort(typeof sp.sort === "string" ? sp.sort : undefined);
   const page = Math.max(1, Number(typeof sp.page === "string" ? sp.page : "1") || 1);
   const q = typeof sp.q === "string" ? sp.q : undefined;
-  const subRaw =
-    typeof sp.sub === "string"
-      ? sp.sub
-      : typeof sp.subcategory === "string"
-        ? sp.subcategory
-        : undefined;
+  const subPairs = parseSubcategoryPairsFromNextSearchParams(sp);
   const priceMin =
     typeof sp.price_min === "string" && sp.price_min !== "" ? Number(sp.price_min) : undefined;
   const priceMax =
@@ -98,7 +94,7 @@ async function CategoryListingSection({
     listStorefrontSubcategoryRowsForCategory(slug),
     listStorefrontProducts({
       categorySlugs: [slug],
-      subcategorySlug: subRaw,
+      subcategoryPairs: subPairs,
       q,
       sort: sort ?? "relevance",
       page,
@@ -114,11 +110,12 @@ async function CategoryListingSection({
     }),
     listStorefrontFilterFacets({
       categorySlugs: [slug],
-      subcategorySlug: subRaw,
+      subcategoryPairs: subPairs,
     }),
   ]);
 
-  const subMeta = subRaw ? subcategories.find((s) => s.slug === subRaw) : undefined;
+  const pinSubSlug = subPairs?.[0]?.slug;
+  const subMeta = pinSubSlug ? subcategories.find((s) => s.slug === pinSubSlug) : undefined;
 
   const categories = counts;
 

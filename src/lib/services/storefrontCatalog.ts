@@ -13,6 +13,111 @@ function searchPattern(q: string): RegExp {
   return new RegExp(escaped, "i");
 }
 
+/** Lemmas meaning “two unrelated product nouns”: OR-search instead of exact phrase across fields. Typo‑tolerant (e.g. thirts → shirt). */
+const OR_DUAL_WORD_SLUG = new Set(
+  (
+    [
+      "mug",
+      "mugs",
+      "shirt",
+      "shirts",
+      "tee",
+      "tees",
+      "hoodie",
+      "hoodies",
+      "poster",
+      "posters",
+      "keychain",
+      "keychains",
+      "frame",
+      "frames",
+      "bottle",
+      "bottles",
+      "tote",
+      "totes",
+      "plaque",
+      "plaques",
+      "pillow",
+      "pillows",
+      "notebook",
+      "notebooks",
+    ] as string[]
+  ).concat(["tshirt", "tshirts", "thirts", "thirt"]),
+);
+
+function normalizeProductSearchToken(raw: string): string {
+  const x = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (x === "thirts" || x === "thirt") return "shirt";
+  if (x === "tshorts" || x === "tshort") return "shirt";
+  return x;
+}
+
+/** “mugs and t-shirts”, “a & b” → OR tokens for search alternatives. */
+function normalizeConversationConnectors(q: string): string {
+  return q.replace(/\s+and\s+/gi, "|").replace(/\s*&\s*/g, "|");
+}
+
+/**
+ * If the shopper (or model) passes two space‑separated product keywords (e.g. “mugs tshirts”),
+ * treat as OR; otherwise keep one phrase (e.g. “spotify plaque”, “red mug”).
+ */
+function dualProductKeywordOrIfApplicable(q: string): string {
+  const t = q.trim();
+  const parts = t.split(/\s+/);
+  if (parts.length !== 2) return t;
+  const [a, b] = parts;
+  const na = normalizeProductSearchToken(a);
+  const nb = normalizeProductSearchToken(b);
+  if (na.length < 2 || nb.length < 2) return t;
+  if (OR_DUAL_WORD_SLUG.has(na) && OR_DUAL_WORD_SLUG.has(nb)) return `${a}|${b}`;
+  return t;
+}
+
+/** Thousand separators (`1,299`) stay joined; commas between words split OR clauses. */
+function splitCommaOrFragments(s: string): string[] {
+  const guarded = s.replace(/\b(\d{1,3}),\s*(\d{3})\b/g, "$1__PRICESEP__$2");
+  return guarded
+    .split(",")
+    .map((p) => p.trim().replace(/__PRICESEP__/g, ","))
+    .filter(Boolean);
+}
+
+const MAX_SEARCH_OR_ALTERNATIVES = 8;
+
+function splitSearchQueryAlternatives(raw: string): string[] {
+  const withAnd = normalizeConversationConnectors(raw.trim());
+  const t = dualProductKeywordOrIfApplicable(withAnd).slice(0, 200);
+  if (!t) return [];
+
+  const byPipe = t.split(/\s*\|\s*/).map((x) => x.trim()).filter(Boolean);
+  if (byPipe.length > 1) return byPipe.slice(0, MAX_SEARCH_OR_ALTERNATIVES);
+
+  const byComma = splitCommaOrFragments(t);
+  if (byComma.length > 1) return byComma.slice(0, MAX_SEARCH_OR_ALTERNATIVES);
+
+  return [t];
+}
+
+function textSearchGroupForSegment(segment: string): Record<string, unknown> {
+  const rx = searchPattern(segment);
+  return {
+    $or: [
+      { name: rx },
+      { description: rx },
+      { brand: rx },
+      { "specificationRows.key": rx },
+      { "specificationRows.value": rx },
+      { featureLines: rx },
+      { highlightLines: rx },
+      { specificationsHtml: rx },
+      { featuresHtml: rx },
+      { highlightsHtml: rx },
+      { tags: rx },
+      { sku: rx },
+    ],
+  };
+}
+
 /** Active products visible on the storefront (legacy rows may omit `status`). */
 export function storefrontPublishedMatch(): Record<string, unknown> {
   return {
@@ -43,6 +148,8 @@ export type StorefrontListParams = {
   subcategorySlug?: string;
   /** When subcategory slug is ambiguous, narrow by parent category slug. */
   subcategoryCategorySlug?: string;
+  /** Multiple subcategories = UNION of products within those sections (fine-grained browse). */
+  subcategoryPairs?: Array<{ slug: string; categorySlug?: string }>;
   priceMinPaise?: number;
   priceMaxPaise?: number;
   /** When `true`, exclude zero–effective-stock products. When omitted or `false`, include all. */
@@ -285,6 +392,7 @@ type BrowseMatchParams = Pick<
   | "categorySlugs"
   | "subcategorySlug"
   | "subcategoryCategorySlug"
+  | "subcategoryPairs"
   | "q"
   | "recipient"
   | "featured"
@@ -309,8 +417,30 @@ async function buildStorefrontBrowseMatch(
     match._id = { $in: oids.map((id) => new mongoose.Types.ObjectId(id)) };
   }
 
+  const pairs: Array<{ slug: string; categorySlug?: string }> = [];
+  if (params.subcategoryPairs?.length) pairs.push(...params.subcategoryPairs);
+  else if (params.subcategorySlug?.trim())
+    pairs.push({
+      slug: params.subcategorySlug.trim(),
+      categorySlug: params.subcategoryCategorySlug?.trim(),
+    });
+
+  if (pairs.length > 1) {
+    const oids: mongoose.Types.ObjectId[] = [];
+    for (const p of pairs) {
+      const oid = await resolveSubcategoryObjectId(p.slug, p.categorySlug);
+      if (!oid) return { empty: true };
+      oids.push(oid);
+    }
+    match.subcategoryId = { $in: oids };
+  } else if (pairs.length === 1) {
+    const oid = await resolveSubcategoryObjectId(pairs[0]!.slug, pairs[0]!.categorySlug);
+    if (!oid) return { empty: true };
+    match.subcategoryId = oid;
+  }
+
   const catSlugs = (params.categorySlugs ?? []).map((s) => s.trim().toLowerCase()).filter(Boolean);
-  if (catSlugs.length) {
+  if (!match.subcategoryId && catSlugs.length) {
     const cats = await Category.find({ slug: { $in: catSlugs } })
       .select("_id")
       .lean();
@@ -325,39 +455,20 @@ async function buildStorefrontBrowseMatch(
     match.$or = or;
   }
 
-  if (params.subcategorySlug) {
-    const subOid = await resolveSubcategoryObjectId(
-      params.subcategorySlug,
-      params.subcategoryCategorySlug,
-    );
-    if (!subOid) {
-      return { empty: true };
-    }
-    match.subcategoryId = subOid;
-  }
-
+  /** When ≥2 subs are requested, catalogue scope is already a union (`$in`). A parallel `q` like
+   *  "mugs, t-shirts" would still force a substring hit on titles — many real listings omit those words — so combined AND yields zero hits. Omit text matching in that case; filters stay visible in the UI. */
   const qTrim = params.q?.trim().slice(0, 200) ?? "";
-  if (qTrim) {
-    const rx = searchPattern(qTrim);
-    match.$and = [
-      ...(Array.isArray(match.$and) ? match.$and : []),
-      {
-        $or: [
-          { name: rx },
-          { description: rx },
-          { brand: rx },
-          { "specificationRows.key": rx },
-          { "specificationRows.value": rx },
-          { featureLines: rx },
-          { highlightLines: rx },
-          { specificationsHtml: rx },
-          { featuresHtml: rx },
-          { highlightsHtml: rx },
-          { tags: rx },
-          { sku: rx },
-        ],
-      },
-    ];
+  const applyQTextMatch = Boolean(qTrim) && !(pairs.length > 1);
+  if (applyQTextMatch && qTrim) {
+    const segments = splitSearchQueryAlternatives(qTrim).map((s) => s.trim()).filter(Boolean);
+    if (segments.length === 1) {
+      match.$and = [...(Array.isArray(match.$and) ? match.$and : []), textSearchGroupForSegment(segments[0]!)];
+    } else {
+      match.$and = [
+        ...(Array.isArray(match.$and) ? match.$and : []),
+        { $or: segments.map((seg) => textSearchGroupForSegment(seg)) },
+      ];
+    }
   }
 
   const recipientRaw = params.recipient?.trim() ?? "";
@@ -377,12 +488,14 @@ export async function listStorefrontFilterFacets(params: {
   categorySlugs?: string[];
   subcategorySlug?: string;
   subcategoryCategorySlug?: string;
+  subcategoryPairs?: Array<{ slug: string; categorySlug?: string }>;
   recipient?: string;
 }): Promise<{ occasions: string[]; materials: string[] }> {
   const built = await buildStorefrontBrowseMatch({
     categorySlugs: params.categorySlugs,
     subcategorySlug: params.subcategorySlug,
     subcategoryCategorySlug: params.subcategoryCategorySlug,
+    subcategoryPairs: params.subcategoryPairs,
     recipient: params.recipient,
   });
   if ("empty" in built) return { occasions: [], materials: [] };
@@ -415,6 +528,7 @@ export async function listStorefrontProducts(
     categorySlugs: params.categorySlugs,
     subcategorySlug: params.subcategorySlug,
     subcategoryCategorySlug: params.subcategoryCategorySlug,
+    subcategoryPairs: params.subcategoryPairs,
     q: params.q,
     recipient: params.recipient,
     featured: params.featured,

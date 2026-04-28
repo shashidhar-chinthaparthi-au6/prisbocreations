@@ -10,6 +10,10 @@ import {
   type StorefrontSort,
 } from "@/lib/services/storefrontCatalog";
 import { StorefrontListing } from "@/components/listing/StorefrontListing";
+import {
+  parseCategoriesFromNextSearchParams,
+  parseSubcategoryPairsFromNextSearchParams,
+} from "@/lib/storefront/parse-listing-sub-params";
 
 export const revalidate = 60;
 
@@ -37,13 +41,6 @@ function parseSort(s: string | undefined): StorefrontSort | undefined {
   return undefined;
 }
 
-function spToCategoryList(val: string | string[] | undefined): string[] | undefined {
-  if (val === undefined) return undefined;
-  if (typeof val === "string") return val ? [val] : undefined;
-  const arr = val.filter((x): x is string => typeof x === "string" && Boolean(x));
-  return arr.length ? arr : undefined;
-}
-
 async function ProductsListingLoader({
   searchParams,
 }: {
@@ -53,13 +50,8 @@ async function ProductsListingLoader({
   const sort = parseSort(typeof sp.sort === "string" ? sp.sort : undefined);
   const page = Math.max(1, Number(typeof sp.page === "string" ? sp.page : "1") || 1);
   const q = typeof sp.q === "string" ? sp.q : undefined;
-  const category = spToCategoryList(sp.category);
-  const subRaw =
-    typeof sp.sub === "string"
-      ? sp.sub
-      : typeof sp.subcategory === "string"
-        ? sp.subcategory
-        : undefined;
+  const category = parseCategoriesFromNextSearchParams(sp);
+  const subPairs = parseSubcategoryPairsFromNextSearchParams(sp);
   const priceMin =
     typeof sp.price_min === "string" && sp.price_min !== "" ? Number(sp.price_min) : undefined;
   const priceMax =
@@ -74,7 +66,7 @@ async function ProductsListingLoader({
     listStorefrontCategoryRows(),
     listStorefrontProducts({
       categorySlugs: category,
-      subcategorySlug: subRaw,
+      subcategoryPairs: subPairs,
       q,
       sort: sort ?? "relevance",
       page,
@@ -90,7 +82,7 @@ async function ProductsListingLoader({
     }),
     listStorefrontFilterFacets({
       categorySlugs: category?.length === 1 ? category : undefined,
-      subcategorySlug: subRaw,
+      subcategoryPairs: subPairs,
     }),
   ]);
 

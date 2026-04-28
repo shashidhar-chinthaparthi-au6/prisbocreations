@@ -1,6 +1,7 @@
 import { connectDb } from "@/lib/db";
 import { jsonOk } from "@/lib/api/response";
 import { listStorefrontProducts, type StorefrontSort } from "@/lib/services/storefrontCatalog";
+import { parseSubcategoryPairsFromSearch } from "@/lib/storefront/parse-listing-sub-params";
 
 function parseSort(raw: string | null): StorefrontSort | undefined {
   const s = raw?.trim();
@@ -26,9 +27,10 @@ export async function GET(req: Request) {
     ...category,
     ...(categoryCsv ? categoryCsv.split(",").map((s) => s.trim()).filter(Boolean) : []),
   ];
-  const subcategorySlug =
-    url.searchParams.get("subcategory") ?? url.searchParams.get("sub") ?? undefined;
-  const subcategoryCategorySlug = url.searchParams.get("subcategoryCategory") ?? undefined;
+  const subPairs = parseSubcategoryPairsFromSearch(
+    (key) => url.searchParams.getAll(key),
+    (key) => url.searchParams.get(key),
+  );
   const featured = url.searchParams.get("featured") === "true";
   const idsRaw = url.searchParams.get("ids");
   const ids = idsRaw
@@ -77,8 +79,7 @@ export async function GET(req: Request) {
 
   const result = await listStorefrontProducts({
     categorySlugs: categorySlugs.length ? categorySlugs : undefined,
-    subcategorySlug,
-    subcategoryCategorySlug,
+    subcategoryPairs: subPairs,
     featured,
     ids,
     recipient,

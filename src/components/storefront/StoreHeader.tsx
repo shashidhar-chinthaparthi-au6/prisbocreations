@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation";
 import { HeaderCart } from "@/components/HeaderCart";
 import { HeaderAccountIcon } from "@/components/layout/HeaderAccountIcon";
 import { StoreSearchOverlayFull } from "@/components/storefront/StoreSearchOverlay";
+import { AiAssistantGlyph } from "@/components/storefront/AiAssistantGlyph";
+import { useAssistantChatStore } from "@/lib/store/assistant-chat-store";
 import { useWishlistStore } from "@/lib/store/wishlist-store";
 import { useSwipeToClose } from "@/hooks/useSwipeToClose";
 
@@ -56,6 +58,7 @@ export function StoreHeader() {
   const [hoverCat, setHoverCat] = useState<string | null>(null);
   const [openAccordionSlug, setOpenAccordionSlug] = useState<string | null>(null);
   const wishCount = useWishlistStore((s) => s.ids.length);
+  const setSidebarOpen = useAssistantChatStore((s) => s.setSidebarOpen);
   const navSwipe = useSwipeToClose(() => setMobileOpen(false), "left", 80);
 
   useEffect(() => {
@@ -96,6 +99,14 @@ export function StoreHeader() {
   const categoryActive = (slug: string) =>
     pathname === `/category/${slug}` || pathname.startsWith(`/category/${slug}/`);
 
+  function openPrisboAssistant() {
+    if (pathname === "/assistant") {
+      document.getElementById("prisbo-assistant-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setSidebarOpen(true);
+  }
+
   function toggleAccordion(slug: string) {
     setOpenAccordionSlug((s) => (s === slug ? null : slug));
   }
@@ -106,7 +117,7 @@ export function StoreHeader() {
         className="sticky-header store-rail-bg relative z-[100] border-b border-[#E8E0D6]"
         onMouseLeave={() => setHoverCat(null)}
       >
-        <div className="relative mx-auto flex h-14 w-full max-w-none items-center gap-1 px-3 sm:px-4 md:h-[60px] md:gap-2 md:px-6 lg:grid lg:h-16 lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-2 lg:px-8">
+        <div className="relative mx-auto flex h-14 w-full max-w-none items-center gap-1 px-3 sm:px-4 md:h-[60px] md:gap-2 md:px-6 lg:grid lg:h-16 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-4 lg:pl-10 lg:pr-6 xl:pl-12 xl:pr-8">
           <button
             type="button"
             className="relative z-20 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] lg:hidden"
@@ -121,13 +132,13 @@ export function StoreHeader() {
           </button>
 
           <div
-            className="pointer-events-auto absolute left-1/2 top-1/2 z-20 w-[min(60vw,240px)] -translate-x-1/2 -translate-y-1/2 text-center min-[400px]:w-auto lg:static lg:col-start-1 lg:row-start-1 lg:w-auto lg:max-w-none lg:translate-x-0 lg:translate-y-0 lg:justify-self-start lg:text-left"
+            className="pointer-events-auto absolute left-1/2 top-1/2 z-20 w-[min(60vw,240px)] -translate-x-1/2 -translate-y-1/2 text-center min-[400px]:w-auto lg:static lg:col-start-1 lg:row-start-1 lg:z-auto lg:w-auto lg:max-w-none lg:translate-x-0 lg:translate-y-0 lg:justify-self-start lg:text-left"
           >
             <Wordmark />
           </div>
 
           <nav
-            className="relative z-10 hidden min-h-0 min-w-0 items-center justify-center gap-1 overflow-x-auto overflow-y-visible lg:col-start-2 lg:row-start-1 lg:flex lg:justify-self-center"
+            className="relative isolate z-10 hidden min-h-0 min-w-0 items-center gap-1 overflow-x-auto overflow-y-visible overscroll-x-contain lg:col-start-2 lg:row-start-1 lg:flex lg:w-full lg:max-w-full lg:flex-nowrap lg:justify-center lg:self-center lg:justify-self-stretch"
             aria-label="Shop by category"
           >
             <Link href="/products" className={allActive ? tabActive : tabIdle}>
@@ -142,7 +153,7 @@ export function StoreHeader() {
             ))}
           </nav>
 
-          <div className="relative z-20 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-0.5 sm:gap-1 lg:col-start-3 lg:row-start-1 lg:ml-0 lg:justify-self-end">
+          <div className="relative isolate z-10 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-0.5 sm:gap-1 lg:col-start-3 lg:row-start-1 lg:ml-0 lg:justify-self-end">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -156,6 +167,19 @@ export function StoreHeader() {
                 />
                 <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={openPrisboAssistant}
+              className="flex max-w-[min(8.5rem,calc(100vw-13rem))] min-h-[44px] shrink-0 items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-2 hover:bg-[var(--brand-amber-light)] sm:gap-2 sm:px-3 sm:py-2"
+              aria-label="Open shopping assistant — gift ideas and product help"
+              title="Opens Prisbo Assistant: describe what you're looking for and jump to matching products"
+            >
+              <AiAssistantGlyph className="h-[1.625rem] w-[1.625rem] shrink-0 sm:h-8 sm:w-8" />
+              <span className="truncate text-left text-[11px] font-semibold leading-tight text-[var(--brand-ink)] sm:text-[13px]">
+                Assistant
+              </span>
             </button>
 
             <HeaderDivider />
@@ -292,6 +316,29 @@ export function StoreHeader() {
               >
                 ×
               </button>
+            </div>
+            <div className="border-b border-[var(--brand-border)] px-3 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  setSidebarOpen(true);
+                }}
+                className="flex w-full items-center gap-3 rounded-lg border border-[color-mix(in_srgb,var(--brand-amber)_28%,var(--brand-border))] bg-[color-mix(in_srgb,var(--brand-amber-light)_45%,white)] px-4 py-3 text-left"
+              >
+                <AiAssistantGlyph className="h-9 w-9 shrink-0" aria-hidden />
+                <span>
+                  <span className="block text-sm font-semibold text-[var(--brand-ink)]">Prisbo Assistant</span>
+                  <span className="text-xs text-[var(--brand-muted)]">Gift ideas &amp; catalogue help · opens on the right</span>
+                </span>
+              </button>
+              <Link
+                href="/assistant"
+                className="mt-2 block w-full py-2 text-center text-sm font-medium text-[var(--brand-amber-dark)] underline decoration-[color-mix(in_srgb,var(--brand-amber)_40%,transparent)] underline-offset-2"
+                onClick={() => setMobileOpen(false)}
+              >
+                Full-page conversational shopping
+              </Link>
             </div>
             <div className="border-b border-[var(--brand-border)] px-3 py-3">
               <button

@@ -1,0 +1,144 @@
+import type { NavCategoryTreeItem } from "@/lib/services/catalogService";
+import { parseRecipientSlug, type RecipientSlug } from "@/lib/recipients";
+import type { RawAssistantFilters } from "@/lib/sarvam/assistant-schema";
+
+/** Validated filter fields ready for URL serialization. */
+export type ValidatedListingFilters = {
+  q?: string;
+  category?: string;
+  subcategory?: string;
+  recipient?: RecipientSlug;
+  sort?: string;
+  price_min?: number;
+  price_max?: number;
+  in_stock?: boolean;
+  occasion?: string;
+  material?: string;
+  rating?: "4";
+};
+
+export function validateAssistantFiltersAgainstCatalog(
+  raw: RawAssistantFilters | null | undefined,
+  tree: NavCategoryTreeItem[],
+): ValidatedListingFilters | null {
+  if (!raw) return null;
+
+  const cats = new Map(tree.map((c) => [c.slug, c]));
+  const out: ValidatedListingFilters = {};
+
+  if (raw.recipient?.trim()) {
+    const r = parseRecipientSlug(raw.recipient.trim());
+    if (r) out.recipient = r;
+  }
+
+  let catSlug: string | undefined;
+  if (raw.category?.trim()) {
+    const c = cats.get(raw.category.trim());
+    if (c) {
+      out.category = c.slug;
+      catSlug = c.slug;
+    }
+  }
+
+  if (raw.subcategory?.trim() && catSlug) {
+    const parent = cats.get(catSlug);
+    const sub = parent?.subcategories.find((s) => s.slug === raw.subcategory.trim());
+    if (sub) out.subcategory = sub.slug;
+  } else if (raw.subcategory?.trim() && !catSlug) {
+    for (const c of tree) {
+      const sub = c.subcategories.find((s) => s.slug === raw.subcategory.trim());
+      if (sub) {
+        out.category = c.slug;
+        out.subcategory = sub.slug;
+        break;
+      }
+    }
+  }
+
+  if (raw.q?.trim()) out.q = raw.q.trim();
+
+  if (raw.sort) out.sort = raw.sort;
+
+  if (raw.price_min != null && Number.isFinite(raw.price_min) && raw.price_min >= 0) {
+    out.price_min = raw.price_min;
+  }
+  if (raw.price_max != null && Number.isFinite(raw.price_max) && raw.price_max >= 0) {
+    out.price_max = raw.price_max;
+  }
+
+  if (raw.in_stock === true) out.in_stock = true;
+
+  if (raw.occasion?.trim()) out.occasion = raw.occasion.trim().slice(0, 64);
+
+  if (raw.material?.trim()) out.material = raw.material.trim().slice(0, 64);
+
+  if (raw.rating === "4") out.rating = "4";
+
+  if (
+    !out.q &&
+    !out.category &&
+    !out.subcategory &&
+    !out.recipient &&
+    !out.sort &&
+    out.price_min === undefined &&
+    out.price_max === undefined &&
+    out.in_stock === undefined &&
+    !out.occasion &&
+    !out.material &&
+    !out.rating
+  ) {
+    return null;
+  }
+
+  return out;
+}
+
+/**
+ * Builds a storefront URL applying filters — `/for/[recipient]` when recipient is primary;
+ * otherwise `/products` with query params (works with catalogue listing facets).
+ */
+export function buildAssistantListingHref(
+  pathname: string | undefined,
+  filters: ValidatedListingFilters | null,
+): string | undefined {
+  if (!filters) return undefined;
+
+  const p = new URLSearchParams();
+
+  const pathRecipient = parseRecipientSlug(/^\/for\/([^/]+)/.exec(pathname ?? "")?.[1]);
+
+  if (filters.q) p.set("q", filters.q);
+  if (filters.category) p.set("category", filters.category);
+  if (filters.subcategory) p.set("sub", filters.subcategory);
+  if (filters.sort) p.set("sort", filters.sort);
+
+  if (filters.price_min != null) p.set("price_min", String(Math.round(filters.price_min)));
+  if (filters.price_max != null) p.set("price_max", String(Math.round(filters.price_max)));
+  if (filters.in_stock) p.set("in_stock", "true");
+  if (filters.occasion) p.set("occasion", filters.occasion);
+  if (filters.material) p.set("material", filters.material);
+  if (filters.rating === "4") p.set("rating", "4");
+
+  const recipientForPath =
+    filters.recipient ?? (/^\/for\/([^/]+)/.exec(pathname ?? "") ? pathRecipient ?? undefined : undefined);
+
+  let base =
+    recipientForPath ? `/for/${recipientForPath}` : "/products";
+
+  if (
+    /^\/for\/[^/]+/.test(pathname ?? "") &&
+    recipientForPath &&
+    pathRecipient &&
+    pathRecipient !== recipientForPath
+  ) {
+    base = `/for/${recipientForPath}`;
+  }
+
+  const qs = p.toString();
+  const href = qs ? `${base}?${qs}` : base;
+
+  /* Only navigating to /products bare is useless when no filters merged */
+  if (!qs && recipientForPath) return `/for/${recipientForPath}`;
+
+  return href;
+}
