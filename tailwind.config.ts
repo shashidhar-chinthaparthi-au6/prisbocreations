@@ -38,7 +38,7 @@ const config: Config = {
       },
       colors: {
         ink: { DEFAULT: "#1a1a1a", muted: "#6b6560" },
-        sand: { DEFAULT: "#fdfaf7", deep: "#e8e0d6" },
+        sand: { DEFAULT: "#f5f4f3", deep: "#e8e0d6" },
         accent: { DEFAULT: "#c47a2b", light: "#f5e6d0" },
         rose: { DEFAULT: "#9f1239", light: "#be185d" },
       },

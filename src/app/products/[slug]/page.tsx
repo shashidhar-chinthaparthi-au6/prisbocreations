@@ -46,8 +46,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProductPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const slug = await productSlugFromParams(params);
+  const sp = await searchParams;
+  const colorRaw = sp.color;
+  const initialColorKey =
+    typeof colorRaw === "string" && colorRaw.trim() ? colorRaw.trim() : undefined;
   if (!slug) notFound();
   await connectDb();
   const nav = await getProductBreadcrumb(slug);
@@ -125,7 +135,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ProductPageClient {...clientProps} />
+      <ProductPageClient {...clientProps} initialColorKey={initialColorKey} />
     </>
   );
 }

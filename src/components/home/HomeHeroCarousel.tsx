@@ -79,18 +79,22 @@ export function HomeHeroCarousel({ slides }: Props) {
       <div className="overflow-hidden rounded-none" ref={emblaRef}>
         <div className="flex">
           {slides.map((s, i) => (
-            <div key={`${s.image}-${i}`} className="min-w-0 shrink-0 grow-0 basis-full">
-              <div className="relative min-h-[360px] overflow-hidden md:min-h-[420px] lg:min-h-[520px]">
+            <div
+              key={`${s.image}-${i}`}
+              className="min-h-0 min-w-0 shrink-0 grow-0 basis-full self-stretch"
+            >
+              {/* Fixed viewport height every slide — images crop with object-cover; no layout shift between slides */}
+              <div className="relative h-[360px] w-full overflow-hidden md:h-[420px] lg:h-[520px]">
                 <Image
                   src={s.image}
                   alt=""
                   fill
                   priority={i === 0}
                   className="object-cover"
-                  sizes="100vw"
+                  sizes="(min-width: 1024px) 72vw, 100vw"
                 />
                 <div className="absolute inset-0 bg-[rgba(20,15,10,0.45)]" aria-hidden />
-                <div className="relative z-10 flex min-h-[360px] max-w-[540px] flex-col justify-center px-5 py-10 md:min-h-[420px] md:max-w-[420px] md:px-8 lg:min-h-[520px] lg:max-w-[540px] lg:px-10">
+                <div className="relative z-10 flex h-full max-h-full max-w-[540px] flex-col justify-center overflow-y-auto px-5 py-8 md:max-w-[420px] md:px-8 lg:max-w-[540px] lg:px-10">
                   <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--brand-amber-light)] sm:text-sm">
                     {s.kicker}
                   </p>
@@ -103,7 +107,7 @@ export function HomeHeroCarousel({ slides }: Props) {
                       {s.title}
                     </h2>
                   )}
-                  <p className="mt-4 max-w-xl text-base text-white/85 sm:text-base">{s.description}</p>
+                  <p className="mt-4 line-clamp-5 max-w-xl text-base text-white/85 sm:text-base">{s.description}</p>
                   <div className="mt-6 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:flex-wrap">
                     <Link href="/products" className="btn-primary min-h-12 w-full justify-center px-8 sm:w-auto">
                       Shop the catalog

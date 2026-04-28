@@ -159,6 +159,8 @@ textarea {
   --ink: #1a1a1a;
   --muted: #6b6560;
   --sf: #fdfaf7;
+  /* Main viewport — bright, clean base (cards/hover use --brand-surface) */
+  --brand-canvas: #ffffff;
   --bd: #e8e0d6;
   --bdd: #c8bdb0;
   --ok: #2d6a4f;
@@ -171,6 +173,7 @@ textarea {
   --brand-amber-dark: #9a5e1e;
   --brand-ink: #1a1a1a;
   --brand-muted: #6b6560;
+  /* Slightly lighter than canvas — inputs, hovers, rail rows */
   --brand-surface: #fdfaf7;
   --brand-card: #ffffff;
   --brand-border: #e8e0d6;
@@ -180,7 +183,7 @@ textarea {
   --brand-info: #1d4ed8;
   --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.07);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
-  --background: var(--brand-surface);
+  --background: var(--brand-canvas);
   --foreground: var(--brand-ink);
 }
 

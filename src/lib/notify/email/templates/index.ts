@@ -11,7 +11,7 @@ export function baseTemplate(content: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
-<body style="margin:0;padding:0;background:#F5F0EA;font-family:Inter,Arial,sans-serif">
+<body style="margin:0;padding:0;background:#FFFFFF;font-family:Inter,Arial,sans-serif">
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr><td align="center" style="padding:32px 16px">
       <table width="580" cellpadding="0" cellspacing="0"

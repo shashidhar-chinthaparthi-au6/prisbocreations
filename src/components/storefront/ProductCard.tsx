@@ -30,7 +30,14 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
   useEffect(() => {
     setPrimaryImgError(false);
     setSecondaryImgError(false);
-  }, [product.id, product.imageUrl, product.hoverImageUrl]);
+  }, [product.id, product.imageUrl, product.hoverImageUrl, product.listingColorKey]);
+
+  const productHref = useMemo(() => {
+    const q = product.listingColorKey?.trim();
+    return q
+      ? `/products/${product.slug}?color=${encodeURIComponent(q)}`
+      : `/products/${product.slug}`;
+  }, [product.slug, product.listingColorKey]);
 
   const lineId = useMemo(
     () => cartLineId(product.id, defaultOptionKey, {}),
@@ -54,7 +61,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
     e.stopPropagation();
     if (out) return;
     if (product.multi) {
-      window.location.href = `/products/${product.slug}`;
+      window.location.href = productHref;
       return;
     }
     add({
@@ -96,7 +103,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <Link href={`/products/${product.slug}`} className="card-img block shrink-0 overflow-hidden rounded-t-[9px]">
+      <Link href={productHref} className="card-img block shrink-0 overflow-hidden rounded-t-[9px]">
         <div className="relative aspect-square overflow-hidden rounded-t-[9px] bg-[var(--sf)]">
           {product.imageUrl && !primaryImgError ? (
             <>
@@ -129,7 +136,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
             <div
               className="flex h-full w-full items-center justify-center font-semibold"
               style={{
-                background: "#F5F0EA",
+                background: "var(--brand-canvas)",
                 fontSize: 32,
                 color: "#C47A2B",
               }}
@@ -151,7 +158,44 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
               New
             </span>
           ) : null}
-          <span className="absolute right-1 top-1 z-[2] md:right-1.5 md:top-1.5">
+          {product.listingColorLabel && product.listingColorKey ? (
+            <div
+              className="pointer-events-none absolute bottom-2.5 left-0 right-0 z-[4] flex justify-center px-2 md:bottom-3"
+              aria-hidden
+            >
+              <span className="max-w-[90%] truncate rounded-full border border-white/35 bg-black/35 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                {product.listingColorLabel}
+              </span>
+            </div>
+          ) : product.colorPreviewUrls != null &&
+            product.colorPreviewUrls.length >= 2 &&
+            product.imageUrl &&
+            !primaryImgError ? (
+            <div
+              className="pointer-events-none absolute bottom-2.5 left-0 right-0 z-[3] flex justify-center px-2 md:bottom-3"
+              aria-hidden
+            >
+              <div className="inline-flex max-w-full gap-1 rounded-full border border-white/35 bg-black/28 px-1.5 py-1 backdrop-blur-[8px]">
+                {product.colorPreviewUrls.slice(0, 6).map((src, i) => (
+                  <span
+                    key={`${product.id}-cv-${i}`}
+                    className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-white/95"
+                  >
+                    <StoreMedia
+                      src={src}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="28px"
+                      fetchPriority="low"
+                      eager
+                    />
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <span className="absolute right-1 top-1 z-[5] md:right-1.5 md:top-1.5">
             <WishlistHeart
               productId={product.id}
               productName={product.name}
@@ -168,7 +212,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
             {product.subcategoryName}
           </p>
         ) : null}
-        <Link href={`/products/${product.slug}`}>
+        <Link href={productHref}>
           <h3 className="card-name mt-0.5 min-h-[28px] line-clamp-2 text-[11px] font-medium leading-snug text-[var(--ink)] md:min-h-0 md:text-[13px] lg:text-sm">
             {product.name}
           </h3>

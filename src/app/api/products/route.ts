@@ -67,7 +67,13 @@ export async function GET(req: Request) {
   const ratingRaw = url.searchParams.get("rating");
   const minAverageRating =
     ratingRaw === "4" || ratingRaw === "4+" ? 4 : undefined;
-  const exclude = url.searchParams.get("exclude")?.trim() || undefined;
+  const excludeParam = url.searchParams.get("exclude")?.trim();
+  const excludeProductIdsMerged = excludeParam?.length
+    ? excludeParam
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
 
   const result = await listStorefrontProducts({
     categorySlugs: categorySlugs.length ? categorySlugs : undefined,
@@ -87,7 +93,7 @@ export async function GET(req: Request) {
     occasion,
     material,
     minAverageRating,
-    excludeProductId: exclude,
+    excludeProductIds: excludeProductIdsMerged.length ? excludeProductIdsMerged : undefined,
   });
 
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));

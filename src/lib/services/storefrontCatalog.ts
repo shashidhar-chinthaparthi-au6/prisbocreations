@@ -51,6 +51,8 @@ export type StorefrontListParams = {
   ids?: string[];
   /** Exclude one product (e.g. “You might also like”). */
   excludeProductId?: string;
+  /** Exclude many product ids (e.g. homepage “Load more” without duplicates). */
+  excludeProductIds?: string[];
   /** Matches `specValues.occasion` (normalized string). */
   occasion?: string;
   /** Matches `specValues.material` (normalized string). */
@@ -108,6 +110,13 @@ export type StorefrontProductCard = {
   hoverImageUrl?: string;
   multi: boolean;
   hasColorVariants: boolean;
+  /** Unique first-image thumbs per colour (listing swatches); set when ≥2 variants. */
+  colorPreviewUrls?: string[];
+  /** Up to 6 colour rows for home grid expansion (one card per colour). */
+  colorListingSlices?: { key: string; label: string; imageUrl: string; hoverImageUrl?: string }[];
+  /** When this card was expanded for a specific colour, link + label for PDP. */
+  listingColorKey?: string;
+  listingColorLabel?: string;
   featured: boolean;
   isNew: boolean;
   tags: string[];
@@ -178,6 +187,38 @@ export function productToStorefrontCard(
   const colorVariants = colorVariantsFromDoc(p);
   const defaultImages = Array.isArray(p.images) ? p.images : [];
   const thumb = listingPrimaryThumb(defaultImages, colorVariants) ?? defaultImages[0];
+  /** First image per colour (deduped) for catalogue swatches. */
+  let colorPreviewUrls: string[] | undefined;
+  let colorListingSlices: { key: string; label: string; imageUrl: string; hoverImageUrl?: string }[] | undefined;
+  if (colorVariants.length >= 2) {
+    const seen = new Set<string>();
+    const previews: string[] = [];
+    for (const v of colorVariants) {
+      const cand = typeof v.images[0] === "string" && v.images[0].trim().length ? v.images[0].trim() : "";
+      const u = (cand || (typeof thumb === "string" ? thumb : "")).trim();
+      if (u.length && !seen.has(u)) {
+        seen.add(u);
+        previews.push(u);
+      }
+      if (previews.length >= 6) break;
+    }
+    if (previews.length >= 2) colorPreviewUrls = previews;
+
+    const baseThumb = typeof thumb === "string" ? thumb : "";
+    const slices: { key: string; label: string; imageUrl: string; hoverImageUrl?: string }[] = [];
+    for (const v of colorVariants.slice(0, 6)) {
+      const img = (v.images[0] || baseThumb || "").trim();
+      if (!img.length) continue;
+      const h = typeof v.images[1] === "string" && v.images[1].trim().length ? v.images[1].trim() : undefined;
+      slices.push({
+        key: v.key,
+        label: v.label,
+        imageUrl: img,
+        ...(h && h !== img ? { hoverImageUrl: h } : {}),
+      });
+    }
+    if (slices.length >= 2) colorListingSlices = slices;
+  }
   const hoverCandidate = defaultImages.find((u) => u && u !== thumb) ?? defaultImages[1];
   const hoverImageUrl =
     typeof hoverCandidate === "string" && hoverCandidate.trim() && hoverCandidate !== thumb
@@ -204,6 +245,8 @@ export function productToStorefrontCard(
     ...(hoverImageUrl ? { hoverImageUrl } : {}),
     multi,
     hasColorVariants: colorVariants.length > 0,
+    ...(colorPreviewUrls ? { colorPreviewUrls } : {}),
+    ...(colorListingSlices ? { colorListingSlices } : {}),
     featured: Boolean(p.featured),
     isNew,
     tags: Array.isArray(p.tags) ? p.tags : [],
@@ -395,13 +438,25 @@ export async function listStorefrontProducts(
       ? await productIdsMeetingMinAverageRating(params.minAverageRating)
       : null;
 
+  const excludedIds = new Set<string>();
+  if (params.excludeProductId?.trim()) {
+    excludedIds.add(String(params.excludeProductId).trim());
+  }
+  if (params.excludeProductIds?.length) {
+    for (const id of params.excludeProductIds) {
+      const s = typeof id === "string" ? id.trim() : "";
+      if (s && mongoose.isValidObjectId(s)) excludedIds.add(s);
+    }
+  }
+
   let filtered = allForFilter.filter((p) => {
     const doc = p as ProductDoc;
+    const idStr = String(doc._id);
     const price = effectivePricePaise(doc);
     if (priceMin != null && price < priceMin) return false;
     if (priceMax != null && price > priceMax) return false;
     if (params.inStockOnly === true && effectiveStock(doc) <= 0) return false;
-    if (params.excludeProductId && String(doc._id) === params.excludeProductId) return false;
+    if (excludedIds.has(idStr)) return false;
     if (ratingOk && !ratingOk.has(String(doc._id))) return false;
     const occ = params.occasion?.trim().toLowerCase();
     if (occ && specValuesString(doc, "occasion").toLowerCase() !== occ) return false;

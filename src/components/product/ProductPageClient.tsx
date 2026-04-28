@@ -36,6 +36,8 @@ type Props = {
   product: PurchaseProduct;
   /** Admin product preview: no wishlist, reviews, or recently-viewed side effects. */
   adminPreview?: boolean;
+  /** Deep-link selected colour (`/products/:slug?color=`). */
+  initialColorKey?: string;
 };
 
 export function ProductPageClient({
@@ -56,14 +58,29 @@ export function ProductPageClient({
   tags,
   product,
   adminPreview = false,
+  initialColorKey,
 }: Props) {
-  const [colorKey, setColorKey] = useState(() => colorVariants[0]?.key ?? "");
+  const [colorKey, setColorKey] = useState(() => {
+    if (initialColorKey?.trim() && colorVariants.some((c) => c.key === initialColorKey.trim())) {
+      return initialColorKey.trim();
+    }
+    return colorVariants[0]?.key ?? "";
+  });
   const [packKey, setPackKey] = useState("");
 
   useEffect(() => {
     if (!colorVariants.length) return;
-    setColorKey((k) => (colorVariants.some((c) => c.key === k) ? k : colorVariants[0].key));
-  }, [colorVariants]);
+    if (initialColorKey?.trim()) {
+      const k = initialColorKey.trim();
+      if (colorVariants.some((c) => c.key === k)) {
+        setColorKey(k);
+        return;
+      }
+    }
+    setColorKey((existing) =>
+      colorVariants.some((c) => c.key === existing) ? existing : colorVariants[0]!.key,
+    );
+  }, [colorVariants, initialColorKey]);
 
   const colorSummaries = useMemo(
     () => colorVariants.map(({ key, label }) => ({ key, label })),
