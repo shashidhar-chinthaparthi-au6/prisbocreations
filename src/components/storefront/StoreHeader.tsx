@@ -18,7 +18,7 @@ function Wordmark() {
   return (
     <Link
       href="/"
-      className="flex shrink-0 items-baseline gap-0.5 font-display text-lg font-normal tracking-tight sm:text-xl"
+      className="flex min-w-0 shrink-0 max-w-full items-baseline gap-0.5 truncate font-display text-lg font-normal tracking-tight sm:text-xl"
     >
       <span className="text-[var(--brand-ink)]">Prisbo</span>
       <span className="text-[var(--brand-amber)]">Creations</span>
@@ -118,10 +118,10 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
         className="sticky-header store-rail-bg relative z-[100] border-b border-[#E8E0D6]"
         onMouseLeave={() => setHoverCat(null)}
       >
-        <div className="relative mx-auto flex h-14 w-full max-w-none items-center gap-1 px-3 sm:px-4 md:h-[60px] md:gap-2 md:px-6 lg:grid lg:h-16 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-4 lg:pl-10 lg:pr-6 xl:pl-12 xl:pr-8">
+        <div className="relative mx-auto flex h-14 w-full max-w-none items-center gap-2 px-3 sm:px-4 md:h-[60px] md:px-6 lg:h-16 lg:gap-6 lg:pl-10 lg:pr-6 xl:pl-12 xl:pr-8">
           <button
             type="button"
-            className="relative z-20 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] lg:hidden"
+            className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] lg:hidden"
             aria-label="Open menu"
             onClick={() => setMobileOpen(true)}
           >
@@ -132,14 +132,14 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
             </span>
           </button>
 
-          <div
-            className="pointer-events-auto absolute left-1/2 top-1/2 z-20 w-[min(60vw,240px)] -translate-x-1/2 -translate-y-1/2 text-center min-[400px]:w-auto lg:static lg:col-start-1 lg:row-start-1 lg:z-auto lg:w-auto lg:max-w-none lg:translate-x-0 lg:translate-y-0 lg:justify-self-start lg:text-left"
-          >
-            <Wordmark />
+          <div className="flex min-w-0 flex-1 justify-center lg:max-w-fit lg:flex-none lg:justify-start">
+            <div className="min-w-0 max-w-[min(70vw,14rem)] truncate text-center lg:max-w-none lg:text-left">
+              <Wordmark />
+            </div>
           </div>
 
           <nav
-            className="relative isolate z-10 hidden min-h-0 min-w-0 items-center gap-1 overflow-x-auto overflow-y-visible overscroll-x-contain lg:col-start-2 lg:row-start-1 lg:flex lg:w-full lg:max-w-full lg:flex-nowrap lg:justify-center lg:self-center lg:justify-self-stretch"
+            className="relative isolate z-10 hidden min-h-0 min-w-0 flex-1 flex-nowrap items-center justify-center gap-1 px-2 overflow-x-auto overflow-y-visible overscroll-x-contain lg:flex"
             aria-label="Shop by category"
           >
             <Link href="/products" className={allActive ? tabActive : tabIdle}>
@@ -154,7 +154,7 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
             ))}
           </nav>
 
-          <div className="relative isolate z-10 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-0.5 sm:gap-1 lg:col-start-3 lg:row-start-1 lg:ml-0 lg:justify-self-end">
+          <div className="relative isolate z-10 ml-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -174,12 +174,12 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
               <button
                 type="button"
                 onClick={openPrisboAssistant}
-                className="flex max-w-[min(8.5rem,calc(100vw-13rem))] min-h-[44px] shrink-0 items-center gap-1.5 rounded-full py-1.5 pl-1.5 pr-2 hover:bg-[var(--brand-amber-light)] sm:gap-2 sm:px-3 sm:py-2"
+                className="flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full py-1.5 pl-1 pr-2 hover:bg-[var(--brand-amber-light)] lg:max-w-[min(8.5rem,calc(100vw-13rem))] lg:pl-3 lg:pr-3"
                 aria-label="Open shopping assistant — gift ideas and product help"
                 title="Opens Prisbo Assistant: describe what you're looking for and jump to matching products"
               >
-                <AiAssistantGlyph className="h-[1.625rem] w-[1.625rem] shrink-0 sm:h-8 sm:w-8" />
-                <span className="truncate text-left text-[11px] font-semibold leading-tight text-[var(--brand-ink)] sm:text-[13px]">
+                <AiAssistantGlyph className="h-7 w-7 shrink-0 lg:h-8 lg:w-8" />
+                <span className="hidden truncate text-left text-[13px] font-semibold leading-tight text-[var(--brand-ink)] lg:inline">
                   Assistant
                 </span>
               </button>
