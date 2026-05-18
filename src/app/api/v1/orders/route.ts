@@ -2,6 +2,7 @@ import { z, ZodError } from "zod";
 import { connectDb } from "@/lib/db";
 import { getOptionalAuth, requireAuth } from "@/lib/api/auth";
 import { jsonOk, jsonError } from "@/lib/api/response";
+import { rateLimitMemory } from "@/lib/auth/rate-limit-memory";
 import {
   createOrderFromCart,
   listOrdersForUser,
@@ -81,6 +82,10 @@ function serializeOrder(order: Record<string, unknown>) {
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    if (!rateLimitMemory(`orders:${ip}`, 10, 60 * 60 * 1000)) {
+      return jsonError("Too many order attempts. Please try again later.", 429);
+    }
     await connectDb();
     const body = createSchema.parse(await req.json());
     const idempotencyKey = req.headers.get("x-idempotency-key")?.trim() ?? undefined;

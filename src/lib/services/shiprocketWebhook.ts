@@ -137,12 +137,12 @@ export async function applyShiprocketShipmentWebhook(rawBody: Record<string, unk
       st.includes("out for pickup"));
 
   const orderStatus = order.status;
-  if (
-    orderStatus !== "cancelled" &&
-    orderStatus !== "pending" &&
-    (looksDelivered || (looksInTransit && (orderStatus === "paid" || orderStatus === "processing")))
-  ) {
-    $set.status = "shipped";
+  if (orderStatus !== "cancelled" && orderStatus !== "pending") {
+    if (looksDelivered) {
+      $set.status = "delivered";
+    } else if (looksInTransit && (orderStatus === "paid" || orderStatus === "processing" || orderStatus === "in_production")) {
+      $set.status = "shipped";
+    }
   }
 
   await Order.findByIdAndUpdate(mongoId, { $set: $set });

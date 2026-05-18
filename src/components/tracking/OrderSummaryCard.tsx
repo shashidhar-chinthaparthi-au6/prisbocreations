@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { TrackPayload } from "@/types/track-payload";
 import { formatInrFromPaise } from "@/lib/format";
 
@@ -53,10 +54,9 @@ export function OrderSummaryCard({
         <ul className="mt-3 flex flex-wrap gap-3">
           {data.items.map((it, i) => (
             <li key={i} className="flex max-w-[200px] min-w-0 items-center gap-2 text-sm">
-              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-[#F5F0E8]">
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-[#F5F0E8]">
                 {it.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={it.imageUrl} alt="" className="h-full w-full object-cover" />
+                  <Image src={it.imageUrl} alt="" fill className="object-cover" />
                 ) : null}
               </div>
               <div className="min-w-0">

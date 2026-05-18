@@ -3,6 +3,9 @@ import { User } from "@/lib/models/User";
 import { sendEmail } from "@/lib/notify/email/ses";
 import { adminLowStockEmail } from "@/lib/notify/email/templates/admin-low-stock";
 import { adminNewOrderEmail } from "@/lib/notify/email/templates/admin-new-order";
+import { adminBulkInquiryEmail } from "@/lib/notify/email/templates/admin-bulk-inquiry";
+import { proofReadyEmail } from "@/lib/notify/email/templates/proof-ready";
+import { proofApprovedEmail } from "@/lib/notify/email/templates/proof-approved";
 import { emailChangeEmail } from "@/lib/notify/email/templates/email-change";
 import { orderCancelledEmail } from "@/lib/notify/email/templates/order-cancelled";
 import { orderDeliveredEmail } from "@/lib/notify/email/templates/order-delivered";
@@ -39,7 +42,9 @@ export type NotifyEvent =
   | "PASSWORD_RESET"
   | "EMAIL_CHANGE"
   | "ADMIN_NEW_ORDER"
-  | "ADMIN_LOW_STOCK";
+  | "ADMIN_LOW_STOCK"
+  | "PROOF_READY"
+  | "PROOF_APPROVED";
 
 function shortUrlDefault(): "0" | "1" {
   const v = process.env.MSG91_SHORT_URL_DEFAULT?.trim();
@@ -387,6 +392,41 @@ async function _dispatch(event: NotifyEvent, data: Record<string, unknown>): Pro
     case "ORDER_PACKED":
       break;
 
+    case "PROOF_READY": {
+      const tpl = proofReadyEmail({
+        firstName: String(data.firstName ?? "there"),
+        orderNumber: String(data.orderNumber ?? ""),
+        productName: String(data.productName ?? "your item"),
+        proofUrl: String(data.proofUrl ?? ""),
+      });
+      if (data.email) {
+        await sendEmail({
+          to: String(data.email),
+          subject: tpl.subject,
+          html: tpl.html,
+          log: { event, orderId: String(data.orderId ?? "") },
+        });
+      }
+      break;
+    }
+
+    case "PROOF_APPROVED": {
+      if (adminEmail) {
+        const tpl = proofApprovedEmail({
+          orderNumber: String(data.orderNumber ?? ""),
+          productName: String(data.productName ?? "item"),
+          adminOrderUrl: `${appBaseUrl()}/admin/orders`,
+        });
+        await sendEmail({
+          to: adminEmail,
+          subject: tpl.subject,
+          html: tpl.html,
+          log: { event, orderId: String(data.orderId ?? "") },
+        });
+      }
+      break;
+    }
+
     default:
       break;
   }
@@ -437,4 +477,52 @@ export async function notifyOrderShipped(order: OrderNotifyPayload & Record<stri
     trackingUrl: p.trackingUrl,
     trackUrl: p.trackUrl,
   });
+}
+
+export async function notifyBulkInquiry(inquiry: {
+  company: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  productInterest?: string;
+  quantity?: number;
+  deadlineDate?: Date;
+  notes?: string;
+  _id: { toString(): string };
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const tpl = adminBulkInquiryEmail({
+    company: inquiry.company,
+    contactName: inquiry.contactName,
+    email: inquiry.email,
+    phone: inquiry.phone,
+    productInterest: inquiry.productInterest,
+    quantity: inquiry.quantity,
+    deadlineDate: inquiry.deadlineDate?.toLocaleDateString("en-IN"),
+    notes: inquiry.notes,
+    adminInboxUrl: `${baseUrl}/admin/bulk-inquiries`,
+  });
+  const { sendEmail } = await import("@/lib/notify/email/ses");
+  await sendEmail({ to: adminEmail, subject: tpl.subject, html: tpl.html, log: { event: "BULK_INQUIRY" } });
+}
+
+export async function notifyProofReady(data: {
+  email: string;
+  firstName: string;
+  orderNumber: string;
+  productName: string;
+  proofUrl: string;
+  orderId: string;
+}): Promise<void> {
+  await notify("PROOF_READY", data);
+}
+
+export async function notifyProofApproved(data: {
+  orderNumber: string;
+  productName: string;
+  orderId: string;
+}): Promise<void> {
+  await notify("PROOF_APPROVED", data);
 }

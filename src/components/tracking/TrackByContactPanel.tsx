@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useState } from "react";
 import type { SafeContactOrderRow } from "@/lib/track-contact";
 import { STATUS_BADGE, type OrderStatusBadgeKey } from "@/lib/trackingStatus";
@@ -139,10 +140,9 @@ export function TrackByContactPanel({
                 key={o.orderNumber}
                 className="flex gap-3 rounded-xl border border-[#E8E4DC] bg-white p-4 shadow-sm"
               >
-                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-[#F5F0E8]">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-[#F5F0E8]">
                   {o.firstItemImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={o.firstItemImage} alt="" className="h-full w-full object-cover" />
+                    <Image src={o.firstItemImage} alt="" fill className="object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xl text-[#D3D1C7]">📦</div>
                   )}

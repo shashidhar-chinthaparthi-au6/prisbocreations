@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connectDb } from "@/lib/db";
 import { Category } from "@/lib/models/Category";
+import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import { effectiveCatalogImages } from "@/lib/catalog-images";
 import {
   listingWantsInStockOnly,
@@ -148,13 +149,7 @@ export default function CategoryPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   return (
-    <Suspense
-      fallback={
-        <div className="animate-pulse px-4 py-20 text-center text-sm text-[var(--brand-muted)]">
-          Loading…
-        </div>
-      }
-    >
+    <Suspense fallback={<ProductGridSkeleton />}>
       <CategoryListingSection params={params} searchParams={searchParams} />
     </Suspense>
   );

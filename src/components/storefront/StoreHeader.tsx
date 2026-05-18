@@ -259,30 +259,14 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
                       href={`/category/${activeCategory.slug}`}
                       className="group overflow-hidden rounded-[10px] border border-[var(--brand-border)] bg-[var(--brand-surface)] shadow-[var(--shadow-card)]"
                     >
-                      <div className="relative aspect-square">
-                        <Image
-                          src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&q=80"
-                          alt=""
-                          fill
-                          className="object-cover transition duration-150 group-hover:scale-105"
-                          sizes="120px"
-                        />
-                      </div>
+                      <div className="aspect-square bg-[var(--brand-sand)] transition duration-150 group-hover:scale-105" />
                       <p className="p-2 text-center text-xs font-medium text-[var(--brand-ink)]">Shop {activeCategory.name}</p>
                     </Link>
                   ))}
                 </div>
               </div>
               <div className="hidden lg:flex lg:flex-col lg:justify-between">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-[10px]">
-                  <Image
-                    src="https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=600&q=80"
-                    alt="Gift wrapping"
-                    fill
-                    className="object-cover"
-                    sizes="280px"
-                  />
-                </div>
+                <div className="aspect-[4/3] overflow-hidden rounded-[10px] bg-[var(--brand-sand)]" />
                 <Link href={`/category/${activeCategory.slug}`} className="btn-primary mt-4 w-full text-center">
                   Shop all {activeCategory.name}
                 </Link>

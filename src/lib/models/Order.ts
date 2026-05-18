@@ -20,6 +20,18 @@ const OrderItemSchema = new Schema(
     giftMessage: { type: String, trim: true, maxlength: 600 },
     customizationData: { type: Schema.Types.Mixed },
     customizationFiles: { type: Schema.Types.Mixed },
+    previewSnapshotUrl: { type: String },
+    proofStatus: {
+      type: String,
+      enum: ["pending", "sent", "approved", "rejected"],
+      default: "pending",
+    },
+    proofImageUrl: { type: String },
+    proofToken: { type: String, sparse: true, index: true },
+    proofSentAt: { type: Date },
+    proofApprovedAt: { type: Date },
+    proofRejectionNote: { type: String },
+    proofApproved: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -101,7 +113,17 @@ const OrderSchema = new Schema(
     currency: { type: String, default: "INR" },
     status: {
       type: String,
-      enum: ["pending", "paid", "processing", "shipped", "cancelled"],
+      enum: [
+        "pending",
+        "paid",
+        "processing",
+        "awaiting_proof",
+        "proof_sent",
+        "in_production",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ],
       default: "pending",
       index: true,
     },

@@ -10,6 +10,7 @@ import {
   type StorefrontSort,
 } from "@/lib/services/storefrontCatalog";
 import { StorefrontListing } from "@/components/listing/StorefrontListing";
+import { ProductGridSkeleton } from "@/components/listing/ProductGridSkeleton";
 import {
   parseCategoriesFromNextSearchParams,
   parseSubcategoryPairsFromNextSearchParams,
@@ -112,13 +113,7 @@ export default function AllProductsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-[1400px] animate-pulse px-4 py-20 text-center text-sm text-[var(--brand-muted)]">
-          Loading products…
-        </div>
-      }
-    >
+    <Suspense fallback={<ProductGridSkeleton />}>
       <ProductsListingLoader searchParams={searchParams} />
     </Suspense>
   );

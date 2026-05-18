@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { formatInrFromPaise } from "@/lib/format";
 import { OrderStatusBadge } from "@/components/account/OrderStatusBadge";
@@ -43,10 +44,9 @@ function Thumbs({ urls }: { urls: string[] }) {
   return (
     <div className="flex items-center gap-1">
       {show.map((u, i) => (
-        <div key={i} className="h-10 w-10 overflow-hidden rounded-md bg-[var(--brand-sand,#F5F0E8)]">
+        <div key={i} className="relative h-10 w-10 overflow-hidden rounded-md bg-[var(--brand-sand,#F5F0E8)]">
           {u ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={u} alt="" className="h-full w-full object-cover" />
+            <Image src={u} alt="" fill className="object-cover" />
           ) : null}
         </div>
       ))}
@@ -197,10 +197,9 @@ export function AccountOrdersView({ orders }: { orders: AccountOrderRow[] }) {
                   <ul className="mt-2 space-y-2">
                     {o.reorderItems.slice(0, 4).map((it, idx) => (
                       <li key={`${o.id}-${it.productId}-${idx}`} className="flex items-center gap-2 text-xs">
-                        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-[var(--brand-sand,#F5F0E8)]">
+                        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-[var(--brand-sand,#F5F0E8)]">
                           {it.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={it.imageUrl} alt="" className="h-full w-full object-cover" />
+                            <Image src={it.imageUrl} alt="" fill className="object-cover" />
                           ) : null}
                         </div>
                         <span className="min-w-0 flex-1 truncate text-[var(--brand-ink)]">{it.name}</span>

@@ -84,7 +84,7 @@ export default async function CheckoutSuccessPage({
       (order as { guestEmail: string }).guestEmail.trim().toLowerCase()
     : "");
   const placed = order.createdAt ? new Date(order.createdAt as Date) : new Date();
-  const estDays = "3-5";
+  const estDays = (order as { estimatedDelivery?: string }).estimatedDelivery ?? "3-5";
   const windowEnd = addDays(placed, 7);
 
   return (
@@ -115,12 +115,12 @@ export default async function CheckoutSuccessPage({
         <hr className="my-4 border-[#E8E0D6]" />
 
         {hasCustomizationUploads ? (
-          <div className="rounded-xl border border-[#E8E0D6] bg-[#FDFAF7] p-4 text-sm leading-relaxed text-[#6B6560]">
-            <p className="font-medium text-[#3D3835]">We&apos;ve received your personalisation details.</p>
-            <p className="mt-2">
-              Our team will review your files and begin production. If anything is unclear, we&apos;ll
-              contact you at{" "}
-              <span className="font-medium text-[#3D3835]">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+            <p className="font-medium">Next step: Design proof</p>
+            <p className="mt-1">
+              We&apos;ll send you a digital proof of your design within 24 hours for approval before
+              production starts. Check your email and WhatsApp at{" "}
+              <span className="font-medium">
                 {notifyEmail || "the email on your order"}
               </span>
               .

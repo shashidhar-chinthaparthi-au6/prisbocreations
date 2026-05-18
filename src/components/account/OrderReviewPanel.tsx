@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -57,10 +58,9 @@ export function OrderReviewPanel({
           {lines.map((line, idx) => (
             <li key={`${line.productId}-${idx}`} className="flex flex-wrap items-center gap-3">
               <Link href={`/products/${line.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[var(--brand-sand,#F5F0E8)]">
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[var(--brand-sand,#F5F0E8)]">
                   {line.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={line.imageUrl} alt="" className="h-full w-full object-cover" />
+                    <Image src={line.imageUrl} alt="" fill className="object-cover" />
                   ) : null}
                 </div>
                 <span className="min-w-0 truncate text-sm font-medium text-[var(--brand-ink)]">{line.name}</span>

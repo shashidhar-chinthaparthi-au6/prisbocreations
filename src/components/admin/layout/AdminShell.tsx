@@ -21,10 +21,12 @@ export function useAdminToast() {
 
 const nav = [
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/external-import", label: "External import" },
   { href: "/admin/storefront-settings", label: "Storefront" },
   { href: "/admin/home-hero", label: "Home hero" },
   { href: "/admin/setup/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/bulk-inquiries", label: "Bulk Inquiries" },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/notifications", label: "Notifications" },
   { href: "/admin/users", label: "Users" },

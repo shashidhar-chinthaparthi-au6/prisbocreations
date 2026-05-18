@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   CustomizationDataMap,
@@ -69,6 +70,7 @@ export function CustomizationForm({
 }: Props) {
   const fieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!invalidFieldKey) return;
@@ -101,6 +103,7 @@ export function CustomizationForm({
     const room = maxFiles - existingCount;
     if (room <= 0) return;
     const toUpload = arr.slice(0, room);
+    setUploadError(null);
     setUploadingKey(field.key);
     onUploadingChange?.(true);
     try {
@@ -125,7 +128,7 @@ export function CustomizationForm({
         setFiles({ [field.key]: uploaded[0]! });
       }
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Upload failed");
+      setUploadError(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setUploadingKey(null);
       onUploadingChange?.(false);
@@ -149,6 +152,9 @@ export function CustomizationForm({
 
   return (
     <div className="space-y-4">
+      {uploadError && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{uploadError}</p>
+      )}
       {fields.map((field) => {
         const err = invalidFieldKey === field.key;
         const shell = `rounded-lg border bg-white px-3 py-2.5 transition ${
@@ -208,8 +214,7 @@ export function CustomizationForm({
                       key={`${m.fileId}-${i}`}
                       className="flex items-center gap-2 rounded-md border border-[#E8E0D6] bg-white px-2 py-1.5 text-xs"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={m.url} alt="" className="h-10 w-10 rounded object-cover" />
+                      <Image src={m.url} alt="" width={40} height={40} className="rounded object-cover" />
                       <span className="min-w-0 flex-1 truncate text-[#3D3835]">{m.filename}</span>
                       <span className="text-emerald-700">✓ Uploaded</span>
                       <button

@@ -24,7 +24,12 @@ const nextConfig: NextConfig = {
   env: { ...shiprocketPublicDefaults },
   serverExternalPackages: ["sharp"],
   async redirects() {
-    return [{ source: "/product/:slug", destination: "/products/:slug", permanent: true }];
+    return [
+      { source: "/product/:slug", destination: "/products/:slug", permanent: true },
+      { source: "/privacy", destination: "/pages/privacy", permanent: true },
+      { source: "/returns", destination: "/pages/returns", permanent: true },
+      { source: "/shipping", destination: "/pages/shipping", permanent: true },
+    ];
   },
   async rewrites() {
     return [

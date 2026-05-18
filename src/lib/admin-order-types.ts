@@ -18,6 +18,11 @@ export type AdminOrderItem = {
   giftMessage?: string;
   customizationData?: Record<string, unknown>;
   customizationFiles?: Record<string, unknown>;
+  proofToken?: string;
+  proofStatus?: "pending" | "sent" | "approved" | "rejected";
+  proofImageUrl?: string;
+  proofApproved?: boolean;
+  proofRejectionNote?: string;
 };
 
 export type AdminOrderShipping = {

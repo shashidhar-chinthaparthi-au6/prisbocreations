@@ -68,6 +68,7 @@ export function AdminOrdersClient() {
   } | null>(null);
   const [cancelReason, setCancelReason] = useState("Cancelled by admin");
   const [cancelErr, setCancelErr] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
@@ -115,6 +116,20 @@ export function AdminOrdersClient() {
     }
   }
 
+  const filterChips = [
+    { label: "All", value: null },
+    { label: "Awaiting proof", value: "awaiting_proof" },
+    { label: "Proof sent", value: "proof_sent" },
+    { label: "In production", value: "in_production" },
+    { label: "Processing", value: "processing" },
+    { label: "Shipped", value: "shipped" },
+    { label: "Cancelled", value: "cancelled" },
+  ];
+
+  const visibleOrders = statusFilter
+    ? (orders ?? []).filter((o) => o.status === statusFilter)
+    : (orders ?? []);
+
   return (
     <>
       {printJob ? (
@@ -124,6 +139,25 @@ export function AdminOrdersClient() {
           onDismiss={dismissPrint}
         />
       ) : null}
+      <div className="mb-3 flex flex-wrap gap-2">
+        {filterChips.map((c) => (
+          <button
+            key={String(c.value)}
+            type="button"
+            onClick={() => setStatusFilter(c.value)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              statusFilter === c.value
+                ? "bg-ink text-white"
+                : "border border-sand-deep bg-white text-ink-muted hover:border-ink hover:text-ink"
+            }`}
+          >
+            {c.label}
+            {c.value && orders
+              ? ` (${orders.filter((o) => o.status === c.value).length})`
+              : ""}
+          </button>
+        ))}
+      </div>
       <div className="overflow-x-auto rounded-2xl border border-sand-deep bg-white shadow-sm">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-sand-deep bg-sand/50 text-xs uppercase text-ink-muted">
@@ -149,7 +183,7 @@ export function AdminOrdersClient() {
                 </td>
               </tr>
             ) : null}
-            {orders?.map((o) => (
+            {visibleOrders.map((o) => (
               <tr key={o._id} className="border-b border-sand-deep/80">
                 <td className="px-4 py-3 font-mono text-xs">
                   <button

@@ -513,15 +513,26 @@ export async function createOrderFromCart(input: {
 
   if (paymentMethod === "cod") {
     await decrementInventoryForOrderItems(items);
-    /** Must await: on serverless, a fire-and-forget task is often cut off when the HTTP response ends. */
-    await syncShiprocketForOrder(order._id.toString());
+    const needsProof = items.some(
+      (it) =>
+        (it.customizationData && Object.keys(it.customizationData as object).length > 0) ||
+        it.customerImageUrl ||
+        it.customerNotes,
+    );
+    if (needsProof) {
+      await Order.findByIdAndUpdate(order._id, { status: "awaiting_proof" });
+    } else {
+      /** Must await: on serverless, a fire-and-forget task is often cut off when the HTTP response ends. */
+      await syncShiprocketForOrder(order._id.toString());
+    }
     void notifyLowStockForProductIds(items.map((it) => it.productId.toString())).catch(() => {});
   }
 
   const plain = typeof (order as { toObject?: () => object }).toObject === "function"
     ? (order as { toObject: () => object }).toObject()
     : order;
-  void notifyOrderPlaced(plain as OrderNotifyPayload).catch(() => {});
+  /** Must await to prevent serverless function termination before SES send completes. */
+  await notifyOrderPlaced(plain as OrderNotifyPayload).catch(() => {});
 
   return order;
 }

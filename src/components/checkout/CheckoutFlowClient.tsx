@@ -26,6 +26,12 @@ import { validateClientCustomization } from "@/lib/customization-client-validate
 
 const ACCENT = "bg-[#C47A2B] hover:bg-[#b06d26]";
 
+function djb2(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (((h << 5) + h) ^ s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
 type ShipRow = {
   courierId: number;
   courierName: string;
@@ -94,6 +100,7 @@ export function CheckoutFlowClient({
   /** Shown on the shipping step only (validateShipping). `submitErr` is for review/place-order. */
   const [shippingErr, setShippingErr] = useState<string | null>(null);
   const [stockModal, setStockModal] = useState<{ items: { name: string; message: string }[] } | null>(null);
+  const [justRegistered, setJustRegistered] = useState(false);
 
   const emailDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -451,6 +458,7 @@ export function CheckoutFlowClient({
       }
       setAccountPwd("");
       setGuestAccountFullName("");
+      setJustRegistered(true);
       goToStep(0);
     } catch {
       setAuthErr("Something went wrong");
@@ -493,7 +501,8 @@ export function CheckoutFlowClient({
   }
 
   async function saveAddressIfNeeded() {
-    if (!isLoggedIn || !saveAddress) return;
+    if (!isLoggedIn && !justRegistered) return;
+    if (!saveAddress) return;
     const s = shippingForm;
     const err = validateShipping();
     if (err) throw new Error(err);
@@ -538,7 +547,9 @@ export function CheckoutFlowClient({
       setSubmitErr("Cash on delivery is not available for your area. Contact us to arrange delivery.");
       return;
     }
-    const idem = idempotencyKey ?? (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`);
+    const cartSig = lines.map(l => `${l.productId}:${l.quantity}:${l.optionKey ?? ""}`).sort().join("|");
+    const userSig = isLoggedIn ? (clientSession?.user?.id ?? "auth").slice(-8) : guestEmail.replace(/[^a-z0-9]/gi, "").slice(0, 10);
+    const idem = `ck_${djb2(cartSig)}_${djb2(userSig)}`;
     setIdempotencyKey(idem);
 
     setPlacing(true);
@@ -759,7 +770,12 @@ export function CheckoutFlowClient({
                   <button
                     type="button"
                     className="mt-2 w-full text-center text-sm text-[#6B6560] underline"
-                    onClick={() => goToStep(1)}
+                    onClick={() => {
+                      const err = validateContact();
+                      if (err) { setAuthErr(err); return; }
+                      setAuthErr(null);
+                      goToStep(1);
+                    }}
                   >
                     Continue as guest
                   </button>
@@ -787,7 +803,12 @@ export function CheckoutFlowClient({
                   <button
                     type="button"
                     className="mt-2 w-full text-center text-sm text-[#6B6560] underline"
-                    onClick={() => goToStep(1)}
+                    onClick={() => {
+                      const err = validateContact();
+                      if (err) { setAuthErr(err); return; }
+                      setAuthErr(null);
+                      goToStep(1);
+                    }}
                   >
                     Continue as guest
                   </button>
@@ -941,7 +962,7 @@ export function CheckoutFlowClient({
                 </div>
               )}
 
-              {isLoggedIn ? (
+              {(isLoggedIn || justRegistered) ? (
                 <label className="flex items-center gap-2 text-sm text-[#3D3835]">
                   <input
                     type="checkbox"
@@ -1023,12 +1044,6 @@ export function CheckoutFlowClient({
           {showPayment ? (
             <section className="space-y-4">
               <h2 className="font-display text-xl text-[#3D3835]">Payment</h2>
-              <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
-                <p className="font-medium">Online payments coming soon</p>
-                <p className="mt-1 text-xs leading-relaxed">
-                  We&apos;re setting up UPI and card payments. For now, all orders are Cash on Delivery.
-                </p>
-              </div>
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border-2 border-[#C47A2B] bg-white p-4">
                 <input type="radio" className="mt-1" checked readOnly />
                 <span>

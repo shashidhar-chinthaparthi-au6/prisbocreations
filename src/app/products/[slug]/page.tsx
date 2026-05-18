@@ -40,7 +40,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: name,
       description: desc,
       url,
-      ...(typeof img === "string" && img ? { images: [{ url: img }] } : {}),
+      ...(typeof img === "string" && img ? { images: [{ url: img, alt: name }] } : {}),
+    },
+    other: {
+      "og:type": "product",
     },
     alternates: { canonical: `/products/${slug}` },
   };
@@ -129,11 +132,27 @@ export default async function ProductPage({
     });
   }
 
+  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${base}/` },
+      ...(cat ? [{ "@type": "ListItem", position: 2, name: cat.name, item: `${base}/category/${cat.slug}` }] : []),
+      ...(sub ? [{ "@type": "ListItem", position: 3, name: sub.name, item: `${base}/category/${cat?.slug ?? ""}/${sub.slug}` }] : []),
+      { "@type": "ListItem", position: (cat ? 1 : 0) + (sub ? 1 : 0) + 2, name: p.name, item: `${base}/products/${p.slug}` },
+    ],
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
       <ProductPageClient {...clientProps} initialColorKey={initialColorKey} />
     </>

@@ -126,6 +126,29 @@ export default async function HomePage() {
         </aside>
       </section>
 
+      {/* Occasion shortcuts */}
+      <div className={`${STOREFRONT_GUTTER} mt-8`}>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: "🎂 Birthday", href: "/products?q=birthday" },
+            { label: "💍 Anniversary", href: "/products?q=anniversary" },
+            { label: "💒 Wedding", href: "/products?q=wedding" },
+            { label: "🪢 Rakhi", href: "/products?q=rakhi" },
+            { label: "🏢 Corporate", href: "/bulk" },
+            { label: "🎓 Graduation", href: "/products?q=graduation" },
+            { label: "👶 New baby", href: "/products?q=baby" },
+          ].map((o) => (
+            <Link
+              key={o.href}
+              href={o.href}
+              className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-2 text-sm font-medium text-[var(--brand-ink)] shadow-[var(--shadow-card)] transition-colors hover:border-[var(--brand-amber)] hover:text-[var(--brand-amber-dark)]"
+            >
+              {o.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <div className={`${STOREFRONT_GUTTER} mt-12 space-y-14 sm:mt-14 sm:space-y-16`}>
         {/* Featured */}
         {featured.length > 0 ? (
@@ -142,6 +165,30 @@ export default async function HomePage() {
             <HomeMostLovedSection initial={featured} />
           </section>
         ) : null}
+
+        {/* Bulk teaser */}
+        <section className="overflow-hidden rounded-2xl bg-ink px-6 py-10 sm:px-10 sm:py-12">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-accent">Corporate &amp; bulk orders</p>
+              <h2 className="mt-2 font-display text-2xl text-white sm:text-3xl">
+                Gifting for your whole team?
+              </h2>
+              <p className="mt-3 max-w-[48ch] text-sm leading-relaxed text-white/70">
+                We handle bulk personalised orders for offices, weddings, schools, and events — starting
+                from 25 pieces. Same studio quality, volume pricing. Tell us what you need.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <Link
+                href="/bulk"
+                className="inline-block rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent/90"
+              >
+                Get a quote →
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {/* Categories: title and subtitle first, cards row below */}
         <section aria-labelledby="home-shop-category-heading">

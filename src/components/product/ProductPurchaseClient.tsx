@@ -514,7 +514,15 @@ export function ProductPurchaseClient({
         )}
       </p>
       {visibleOptions.length === 0 ? (
-        <p className="mt-2 text-sm text-ink-muted">In stock: {product.stock}</p>
+        product.stock <= 0 ? (
+          <p className="mt-2 inline-block rounded-full bg-red-50 px-3 py-0.5 text-xs font-medium text-red-700">
+            Out of stock
+          </p>
+        ) : product.stock <= 5 ? (
+          <p className="mt-2 inline-block rounded-full bg-amber-50 px-3 py-0.5 text-xs font-medium text-amber-800">
+            Only {product.stock} left
+          </p>
+        ) : null
       ) : null}
 
       {colors.length > 0 && selectedColorKey !== undefined && onColorKeyChange ? (
@@ -953,6 +961,17 @@ export function ProductPurchaseClient({
             </button>
           </div>
           {cartMsg ? <p className="text-sm text-accent">{cartMsg}</p> : null}
+
+          {(hasSchema || legacyCustomize) ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
+              <p className="font-semibold">How your proof works</p>
+              <p className="mt-1">
+                After you place your order, our design team will prepare a personalised digital proof
+                within 24 hours. You&apos;ll receive it via email and WhatsApp for approval before
+                we start printing — no surprises.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-4 space-y-3 md:hidden">

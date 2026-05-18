@@ -28,6 +28,30 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
   const inv = order.invoiceNumber;
   const ship = order.shipping;
   const pm = order.paymentMethod ?? "online";
+  const [proofUploading, setProofUploading] = useState<Record<number, boolean>>({});
+  const [proofResults, setProofResults] = useState<Record<number, { url: string; proofUrl: string }>>({});
+  const [proofErrors, setProofErrors] = useState<Record<number, string>>({});
+
+  async function uploadProof(itemIdx: number, file: File) {
+    setProofUploading((p) => ({ ...p, [itemIdx]: true }));
+    setProofErrors((p) => { const n = { ...p }; delete n[itemIdx]; return n; });
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`/api/v1/admin/orders/${order._id}/items/${itemIdx}/proof`, {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
+      const j = (await res.json()) as { data?: { proofImageUrl?: string; proofUrl?: string }; error?: string };
+      if (!res.ok) throw new Error(j.error ?? "Upload failed");
+      setProofResults((p) => ({ ...p, [itemIdx]: { url: j.data?.proofImageUrl ?? "", proofUrl: j.data?.proofUrl ?? "" } }));
+    } catch (e) {
+      setProofErrors((p) => ({ ...p, [itemIdx]: e instanceof Error ? e.message : "Upload failed" }));
+    } finally {
+      setProofUploading((p) => { const n = { ...p }; delete n[itemIdx]; return n; });
+    }
+  }
   const sr = order.shiprocket && typeof order.shiprocket === "object" ? order.shiprocket : null;
   const scans = Array.isArray(sr?.webhookScans)
     ? (sr!.webhookScans as Array<{ date?: string; activity?: string; location?: string }>)
@@ -330,7 +354,7 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
                       ) : null}
                       <div className="mt-2">
                         <Link
-                          href={`/product/${it.slug}`}
+                          href={`/products/${it.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs font-medium text-accent hover:underline"
@@ -338,6 +362,71 @@ export function AdminOrderDetailSheet({ order, onClose, onRequestPrint }: Props)
                           View on storefront →
                         </Link>
                       </div>
+
+                      {/* Proof upload section */}
+                      {(it.customizationData && Object.keys(it.customizationData).length > 0) ||
+                      it.customizationFiles ||
+                      it.customerImageUrl ? (
+                        <div className="mt-3 rounded-lg border border-sand-deep bg-sand/30 p-3 text-xs">
+                          <p className="font-semibold text-ink mb-2">Design proof</p>
+
+                          {it.proofStatus === "approved" ? (
+                            <span className="inline-block rounded-full bg-green-100 px-2 py-0.5 text-green-800 font-medium">
+                              ✓ Approved by customer
+                            </span>
+                          ) : it.proofStatus === "rejected" ? (
+                            <div>
+                              <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-red-800 font-medium">
+                                ✗ Customer requested changes
+                              </span>
+                              {it.proofRejectionNote ? (
+                                <p className="mt-1 text-ink-muted whitespace-pre-wrap">{it.proofRejectionNote}</p>
+                              ) : null}
+                            </div>
+                          ) : it.proofStatus === "sent" || proofResults[i] ? (
+                            <div>
+                              <span className="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-amber-800 font-medium mb-2">
+                                Awaiting customer approval
+                              </span>
+                              {(proofResults[i]?.proofUrl || it.proofToken) ? (
+                                <p className="mt-1">
+                                  <a
+                                    href={proofResults[i]?.proofUrl ?? `/proof/${it.proofToken}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-accent hover:underline break-all"
+                                  >
+                                    {proofResults[i]?.proofUrl ?? `/proof/${it.proofToken}`}
+                                  </a>
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <p className="text-ink-muted">No proof uploaded yet.</p>
+                          )}
+
+                          {proofErrors[i] ? (
+                            <p className="mt-1 text-red-600">{proofErrors[i]}</p>
+                          ) : null}
+
+                          {it.proofStatus !== "approved" ? (
+                            <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-sand-deep bg-white px-3 py-1.5 text-xs font-medium text-ink hover:bg-sand transition-colors">
+                              {proofUploading[i] ? "Uploading…" : it.proofStatus === "sent" || proofResults[i] ? "Re-upload proof" : "Upload proof"}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="hidden"
+                                disabled={proofUploading[i]}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) void uploadProof(i, f);
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="shrink-0 text-right text-sm font-medium text-ink">
                       {formatInrFromPaise(orderLineTotalPaise(it))}
