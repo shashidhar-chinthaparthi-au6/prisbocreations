@@ -21,57 +21,100 @@ if (!uri) {
   process.exit(1);
 }
 
+/** Build an Unsplash image URL with width + quality */
+const u = (id: string) => `https://images.unsplash.com/${id}?w=900&q=80&auto=format&fit=crop`;
 
-/** Compact image helper — topic-matched Unsplash photos */
-const u = (id: string, sig?: string) =>
-  `https://images.unsplash.com/${id}${sig ? `?${sig}` : "?w=900&q=80"}`;
-
+// ---------------------------------------------------------------------------
+// Categories
+// ---------------------------------------------------------------------------
 const categories = [
   {
-    name: "Paper & Packaging",
-    slug: "paper-packaging",
-    description:
-      "Low-cost, high-volume print — wrappers, labels, tissue kits, and event stationery.",
+    name: "Photo Frames & Prints",
+    slug: "photo-frames",
+    description: "Personalized photo frames, canvas prints, and wall art to display your precious memories.",
     sortOrder: 1,
-    images: [u("photo-1549465220-1a8b9238cd48")],
+    images: [
+      u("photo-1558618666-fcd25c85cd64"),
+      u("photo-1531346878377-a5be20888e57"),
+      u("photo-1516455207990-7a41ce80f7ee"),
+    ],
+    imageUrl: u("photo-1558618666-fcd25c85cd64"),
+  },
+  {
+    name: "Mugs & Drinkware",
+    slug: "mugs",
+    description: "Custom photo mugs, magic mugs, and travel sippers for everyday gifting.",
+    sortOrder: 2,
+    images: [
+      u("photo-1514228742587-6b1558fcca3d"),
+      u("photo-1495474475677-80d4226b1d4e"),
+      u("photo-1572116469696-31de0f17cc34"),
+    ],
+    imageUrl: u("photo-1514228742587-6b1558fcca3d"),
+  },
+  {
+    name: "Cushions & Pillows",
+    slug: "cushions",
+    description: "Photo cushions, sequin pillows, and personalized soft gifts for home decor.",
+    sortOrder: 3,
+    images: [
+      u("photo-1584100936591-c65d4534f48a"),
+      u("photo-1616486338812-3dadae4b4ace"),
+      u("photo-1540574163026-643ea20ade25"),
+    ],
+    imageUrl: u("photo-1584100936591-c65d4534f48a"),
+  },
+  {
+    name: "Keychains & Accessories",
+    slug: "keychains",
+    description: "Acrylic keychains, photo keychains, and personalized accessories.",
+    sortOrder: 4,
+    images: [
+      u("photo-1590874103328-eac38a683ce7"),
+      u("photo-1578915266302-4c44cd2a89ae"),
+      u("photo-1522312346375-d1e52e2b99b3"),
+    ],
+    imageUrl: u("photo-1590874103328-eac38a683ce7"),
+  },
+  {
+    name: "Gift Sets & Hampers",
+    slug: "gift-sets",
+    description: "Curated gift hampers and combo sets for birthdays, anniversaries, and corporate gifting.",
+    sortOrder: 5,
+    images: [
+      u("photo-1549465220-1a8b9238cd48"),
+      u("photo-1607344645866-009c320b63e0"),
+      u("photo-1513201097305-4fa07f0f1b58"),
+    ],
     imageUrl: u("photo-1549465220-1a8b9238cd48"),
   },
   {
-    name: "Acrylic & Resin",
-    slug: "acrylic-resin",
-    description:
-      "Premium UV-printed acrylic — keychains, plaques, cake toppers, and desk accents.",
-    sortOrder: 2,
-    images: [u("photo-1582719478250-c89cae4dc85b")],
-    imageUrl: u("photo-1582719478250-c89cae4dc85b"),
-  },
-  {
-    name: "Stationery & Desk",
-    slug: "stationery-desk",
-    description:
-      "Journals, organizers, and desk accessories for students and professionals.",
-    sortOrder: 3,
-    images: [u("photo-1513542789411-b6a5d4f31634")],
-    imageUrl: u("photo-1513542789411-b6a5d4f31634"),
-  },
-  {
-    name: "Home Decor & Lifestyle",
-    slug: "home-decor-lifestyle",
-    description:
-      "Photo magnets, Polaroid-style print sets, and coasters for everyday spaces.",
-    sortOrder: 4,
-    images: [u("photo-1586023492125-27b2c045efd7")],
-    imageUrl: u("photo-1586023492125-27b2c045efd7"),
-  },
-  {
-    name: "Textiles & Apparel",
-    slug: "textiles-apparel",
-    description: "Sublimation gifts — cushions, mugs, caps, and tees for teams & brands.",
-    sortOrder: 5,
-    images: [u("photo-1615876234886-fd9a39fb97a0")],
-    imageUrl: u("photo-1615876234886-fd9a39fb97a0"),
+    name: "Wall Art & Décor",
+    slug: "wall-art",
+    description: "Canvas prints, posters, acrylic plaques, and personalized home décor pieces.",
+    sortOrder: 6,
+    images: [
+      u("photo-1558618666-fcd25c85cd64"),
+      u("photo-1567427017947-545c5f8d16ad"),
+      u("photo-1497366216548-37526070297c"),
+    ],
+    imageUrl: u("photo-1558618666-fcd25c85cd64"),
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Helper types
+// ---------------------------------------------------------------------------
+type ColourVariant = {
+  displayName: string;
+  hexCode: string;
+  skuSuffix: string;
+  basePrice: number;
+  mrp: number;
+  isActive: boolean;
+  displayOrder: number;
+  images: { url: string; isPrimary: boolean; displayOrder: number }[];
+};
 
 type SeedProduct = {
   sku: string;
@@ -79,443 +122,776 @@ type SeedProduct = {
   name: string;
   description: string;
   pricePaise: number;
+  compareAtPaise?: number;
   stock: number;
   images: string[];
   tags: string[];
+  featured?: boolean;
+  recipients?: string[];
+  allowCustomerCustomization?: boolean;
+  customizationTextLabel?: string;
+  customizationTextPlaceholder?: string;
+  customizationTextRequired?: boolean;
+  customizationImageRequired?: boolean;
+  colourVariants?: ColourVariant[];
+  weightKg?: number;
 };
 
-type SubSeed = {
-  name: string;
-  slug: string;
-  description: string;
-  sortOrder: number;
-  images?: string[];
-  products: SeedProduct[];
-};
+// ---------------------------------------------------------------------------
+// Products
+// ---------------------------------------------------------------------------
+const products: Record<string, SeedProduct[]> = {
 
-/** Flat list (legacy shape) — grouped into subcategories below */
-const byCat: Record<string, SeedProduct[]> = {
-  "paper-packaging": [
+  // ── Photo Frames ─────────────────────────────────────────────────────────
+  "photo-frames": [
     {
-      sku: "PAPR-CHOC-001",
-      slug: "custom-chocolate-wrappers",
-      name: "Custom Chocolate Bar Wrappers",
-      description:
-        "Foil-backed or paper wrappers for birthdays, weddings, and corporate gifting. Upload your artwork or we design for you.",
-      pricePaise: 14900,
-      stock: 500,
-      images: [
-        u("photo-1511381939415-e44015466834"),
-        u("photo-1481391319762-47dea729e417"),
-      ],
-      tags: ["chocolate", "wrappers", "events"],
-    },
-    {
-      sku: "PAPR-STK-002",
-      slug: "logo-stickers-thank-you-labels",
-      name: "Logo Stickers & Thank-you Labels",
-      description:
-        "Vinyl or paper stickers for packaging — logo rounds, thank-you seals, and QR promos.",
-      pricePaise: 8900,
-      stock: 800,
-      images: [u("photo-1611532736597-de2d42653fba"), u("photo-1586953208448-b95a79798f07")],
-      tags: ["stickers", "labels", "small-business"],
-    },
-    {
-      sku: "PAPR-TIS-003",
-      slug: "branded-tissue-paper-kit",
-      name: "Branded Tissue Paper Kit",
-      description:
-        "Tissue sets for local sellers — brand color tissue + sticker bundle for unboxing moments.",
-      pricePaise: 19900,
-      stock: 300,
-      images: [u("photo-1513201097305-4fa07f0f1b58"), u("photo-1607344645866-009c320b63e0")],
-      tags: ["tissue", "packaging", "kits"],
-    },
-    {
-      sku: "PAPR-BTL-004",
-      slug: "wine-water-bottle-labels",
-      name: "Wine & Water Bottle Labels",
-      description:
-        "Waterproof labels for parties, weddings, and corporate events — die-cut to bottle shape.",
-      pricePaise: 12900,
-      stock: 400,
-      images: [u("photo-1510812431401-41d2bd2722f3"), u("photo-1553361371-9b22f78e8b1d")],
-      tags: ["bottles", "events", "labels"],
-    },
-    {
-      sku: "PAPR-CAL-005",
-      slug: "tear-off-desk-calendars",
-      name: "Tear-off Mini Desk Calendars",
-      description:
-        "Mini calendars with your photos — perfect desk gifts and client year-end bundles.",
-      pricePaise: 24900,
-      stock: 200,
-      images: [u("photo-1506784365847-b57d9413d566"), u("photo-1434030216411-0b793f4b4173")],
-      tags: ["calendar", "desk", "photos"],
-    },
-  ],
-  "acrylic-resin": [
-    {
-      sku: "ACRY-KEY-001",
-      slug: "spotify-style-acrylic-keychain",
-      name: "Spotify-style Acrylic Keychain",
-      description:
-        "Scannable song-code style keychains — crystal clear acrylic with UV print.",
-      pricePaise: 39900,
-      stock: 250,
-      images: [u("photo-1590874103328-eac38a683ce7"), u("photo-1522312346375-d1e52e2b99b3")],
-      tags: ["keychain", "spotify", "gift"],
-    },
-    {
-      sku: "ACRY-PLQ-002",
-      slug: "acrylic-desk-plaque-led-base",
-      name: "Acrylic Desk Plaque (LED Base Option)",
-      description:
-        '"Glass look" plaque with wooden or LED base — awards, quotes, and brand signage.',
-      pricePaise: 129900,
-      stock: 80,
-      images: [u("photo-1567427017947-545c5f8d16ad"), u("photo-1517245386807-bb43f82c33c4")],
-      tags: ["plaque", "led", "office"],
-    },
-    {
-      sku: "ACRY-CAKE-003",
-      slug: "personalized-acrylic-cake-topper",
-      name: "Personalized Acrylic Cake Topper",
-      description:
-        "Mirror, glitter, or clear finishes — names, ages, and monograms for celebrations.",
-      pricePaise: 59900,
-      stock: 150,
-      images: [u("photo-1464349095431-e9a21285b5f3"), u("photo-1535254973040-607b474ea50c")],
-      tags: ["cake", "wedding", "party"],
-    },
-    {
-      sku: "ACRY-TAG-004",
-      slug: "custom-acrylic-bag-tags",
-      name: "Custom Acrylic Bag Tags",
-      description:
-        "Durable tags for school bags and luggage — bright colors and bold names.",
-      pricePaise: 34900,
-      stock: 220,
-      images: [u("photo-1553062407-98eeb64c6a62"), u("photo-1565026057447-bc90a3dceb87")],
-      tags: ["luggage", "kids", "travel"],
-    },
-    {
-      sku: "ACRY-NAM-005",
-      slug: "acrylic-name-plate-desk-door",
-      name: "Acrylic Name Plate — Desk or Door",
-      description:
-        "Professional desk wedges and door plates — frosted or clear with precision UV text.",
+      sku: "PF-001",
+      slug: "personalized-wooden-photo-frame",
+      name: "Personalized Wooden Photo Frame",
+      description: "<p>A beautifully crafted wooden frame engraved with your name, date, or message. Perfect for anniversaries, birthdays, and housewarmings.</p><ul><li>Natural mango wood finish</li><li>Laser-engraved personalization</li><li>Holds 4×6\" or 5×7\" photos</li><li>Stands upright or hangs on wall</li></ul>",
       pricePaise: 79900,
+      compareAtPaise: 99900,
       stock: 120,
-      images: [u("photo-1497215842964-222b430dc094"), u("photo-1524758631624-e2822e304c36")],
-      tags: ["name-plate", "office", "home"],
-    },
-    {
-      sku: "ACRY-MAG-006",
-      slug: "acrylic-fridge-magnets",
-      name: "Acrylic Fridge Magnets",
-      description:
-        "Rigid clear magnets with your photos — premium alternative to flexible sheets.",
-      pricePaise: 29900,
-      stock: 300,
-      images: [u("photo-1571902943202-507ec2618e8f"), u("photo-1582735689369-4fe89db7114c")],
-      tags: ["magnets", "photos", "kitchen"],
-    },
-  ],
-  "stationery-desk": [
-    {
-      sku: "STAT-JRN-001",
-      slug: "personalized-leatherette-journal",
-      name: "Personalized Journal / Notebook",
-      description:
-        "Debossed or printed covers with names — dot, lined, or blank interiors.",
-      pricePaise: 69900,
-      stock: 180,
-      images: [u("photo-1544816155-12dbf7329eb2"), u("photo-1512820790803-83ca734da794")],
-      tags: ["journal", "notebook", "gift"],
-    },
-    {
-      sku: "STAT-BMK-002",
-      slug: "photo-bookmark-silk-tassel",
-      name: "Photo Bookmark with Silk Tassel",
-      description:
-        "Metal or cardstock bookmarks with your photo and optional quote — silk tassel finish.",
-      pricePaise: 24900,
-      stock: 400,
-      images: [u("photo-1506883910386-79dacab61d2d"), u("photo-1524995997946-a1c2e315a42f")],
-      tags: ["bookmark", "reading", "gift"],
-    },
-    {
-      sku: "STAT-ORG-003",
-      slug: "personalized-desk-organizer",
-      name: "Personalized Desk Organizer",
-      description:
-        "MDF or acrylic organizers engraved with a name — pens, phones, and notes in one place.",
-      pricePaise: 89900,
-      stock: 90,
-      images: [u("photo-1497366216548-37526070297c"), u("photo-1593640408182-31ccc728baf7")],
-      tags: ["organizer", "desk", "wfh"],
-    },
-    {
-      sku: "STAT-MSE-004",
-      slug: "custom-photo-mousepad",
-      name: "Custom Photo Mousepad",
-      description:
-        "Smooth fabric top with non-slip base — family photos or workspace aesthetics.",
-      pricePaise: 44900,
-      stock: 350,
-      images: [u("photo-1593640408182-31ccc728baf7"), u("photo-1527864550417-7fd91fc2a46e")],
-      tags: ["mousepad", "desk", "photo"],
-    },
-    {
-      sku: "STAT-PEN-005",
-      slug: "laser-engraved-metal-bamboo-pen",
-      name: "Laser-engraved Custom Pens",
-      description:
-        "Metal or bamboo barrels with precision laser names — great for corporate gifting.",
-      pricePaise: 34900,
-      stock: 500,
-      images: [u("photo-1585336261022-68180d7c14c9"), u("photo-1565610222536-ef125c59da2e")],
-      tags: ["pen", "engraving", "corporate"],
-    },
-  ],
-  "home-decor-lifestyle": [
-    {
-      sku: "HOME-MAG-001",
-      slug: "flexible-photo-fridge-magnets",
-      name: "Flexible Photo Fridge Magnets",
-      description:
-        "Sheet magnets printed with your photos — affordable and great for family collages.",
-      pricePaise: 19900,
-      stock: 600,
-      images: [u("photo-1578662996442-48f60103fc96"), u("photo-1556910103-1c02745aae4d")],
-      tags: ["magnets", "photos", "kitchen"],
-    },
-    {
-      sku: "HOME-POL-002",
-      slug: "polaroid-style-print-box-set",
-      name: "Polaroid-style Print Box Set",
-      description:
-        "Sets of 10–20 mini prints in a custom keepsake box — wedding and baby milestones.",
-      pricePaise: 79900,
-      stock: 140,
-      images: [u("photo-1526170375885-4d8ecf77b99f"), u("photo-1493863641943-9b68992a8d28")],
-      tags: ["polaroid", "prints", "gift-box"],
-    },
-    {
-      sku: "HOME-CST-003",
-      slug: "custom-wood-cork-acrylic-coasters",
-      name: "Custom Coasters — Wood, Cork, or Acrylic",
-      description:
-        "Laser-engraved or UV-printed coasters — monograms, maps, and brand marks.",
-      pricePaise: 54900,
-      stock: 260,
-      images: [u("photo-1509440159529-c21ea989e455"), u("photo-1558642452-9d2a7deb7f62")],
-      tags: ["coasters", "home", "bar"],
-    },
-  ],
-  "textiles-apparel": [
-    {
-      sku: "TEX-CUS-001",
-      slug: "personalized-sequin-cushion",
-      name: "Personalized Sequin & Photo Cushions",
-      description:
-        "Flip-sequin reveals or classic sublimation photo pillows — soft, vivid, washable covers.",
-      pricePaise: 99900,
-      stock: 160,
-      images: [u("photo-1584100936591-c65d4534f48a"), u("photo-1616486338812-3dadae4b4ace")],
-      tags: ["cushion", "sublimation", "gift"],
-    },
-    {
-      sku: "TEX-MUG-002",
-      slug: "custom-mug-travel-sipper",
-      name: "Custom Mug & Travel Sipper",
-      description:
-        "Classic ceramic mugs and insulated sippers — full-wrap prints for teams and startups.",
-      pricePaise: 44900,
-      stock: 400,
-      images: [u("photo-1514228742587-6b1558fcca3d"), u("photo-1495474475677-80d4226b1d4e")],
-      tags: ["mug", "sipper", "sublimation"],
-    },
-    {
-      sku: "TEX-TEE-003",
-      slug: "branded-t-shirts-startups",
-      name: "Branded T-shirts",
-      description:
-        "Cotton-blend tees with vibrant sublimation or DTF — great for startups and sports teams.",
-      pricePaise: 69900,
-      stock: 220,
-      images: [u("photo-1521572163474-6864f9cf17ab"), u("photo-1503341504253-dff4815485f1")],
-      tags: ["tshirt", "apparel", "teams"],
-    },
-    {
-      sku: "TEX-CAP-004",
-      slug: "branded-caps-teams",
-      name: "Branded Caps",
-      description:
-        "Structured caps with embroidered or printed logos — batch-friendly for local leagues.",
-      pricePaise: 54900,
-      stock: 180,
-      images: [u("photo-1588850561407-ed78c886e0b4"), u("photo-1521369908759-2f4ee4776204")],
-      tags: ["cap", "headwear", "teams"],
-    },
-  ],
-};
-
-const catalog: Record<string, SubSeed[]> = {
-  "paper-packaging": [
-    {
-      name: "Confectionery & bar wraps",
-      slug: "confectionery-wraps",
-      description: "Chocolate and candy wraps for parties, weddings, and retail.",
-      sortOrder: 1,
-      images: [byCat["paper-packaging"][0].images[0]],
-      products: [byCat["paper-packaging"][0]],
-    },
-    {
-      name: "Stickers & seals",
-      slug: "stickers-seals",
-      description: "Logo stickers, thank-you seals, and promo labels.",
-      sortOrder: 2,
-      images: [byCat["paper-packaging"][1].images[0]],
-      products: [byCat["paper-packaging"][1]],
-    },
-    {
-      name: "Tissue & unboxing kits",
-      slug: "tissue-kits",
-      description: "Branded tissue and packaging kits for sellers.",
-      sortOrder: 3,
-      images: [byCat["paper-packaging"][2].images[0]],
-      products: [byCat["paper-packaging"][2]],
-    },
-    {
-      name: "Bottle & beverage labels",
-      slug: "bottle-labels",
-      description: "Event and corporate labels for bottles.",
-      sortOrder: 4,
-      images: [byCat["paper-packaging"][3].images[0]],
-      products: [byCat["paper-packaging"][3]],
-    },
-    {
-      name: "Calendars & desk gifts",
-      slug: "calendars-desk",
-      description: "Photo calendars and tear-off desk pads.",
-      sortOrder: 5,
-      images: [byCat["paper-packaging"][4].images[0]],
-      products: [byCat["paper-packaging"][4]],
-    },
-  ],
-  "acrylic-resin": [
-    {
-      name: "Travel & everyday carry",
-      slug: "travel-carry",
-      description: "Keychains and bag tags in crystal-clear acrylic.",
-      sortOrder: 1,
-      images: [byCat["acrylic-resin"][0].images[0]],
-      products: [byCat["acrylic-resin"][0], byCat["acrylic-resin"][3]],
-    },
-    {
-      name: "Desk & office signage",
-      slug: "desk-office",
-      description: "Plaques, LED bases, and name plates.",
-      sortOrder: 2,
-      images: [byCat["acrylic-resin"][1].images[0]],
-      products: [byCat["acrylic-resin"][1], byCat["acrylic-resin"][4]],
-    },
-    {
-      name: "Parties & celebrations",
-      slug: "parties",
-      description: "Cake toppers and event accents.",
-      sortOrder: 3,
-      images: [byCat["acrylic-resin"][2].images[0]],
-      products: [byCat["acrylic-resin"][2]],
-    },
-    {
-      name: "Acrylic magnets",
-      slug: "acrylic-magnets",
-      description: "Rigid photo magnets for fridges and lockers.",
-      sortOrder: 4,
-      images: [byCat["acrylic-resin"][5].images[0]],
-      products: [byCat["acrylic-resin"][5]],
-    },
-  ],
-  "stationery-desk": [
-    {
-      name: "Writing & reading",
-      slug: "writing-reading",
-      description: "Journals, bookmarks, and engraved pens.",
-      sortOrder: 1,
-      images: [byCat["stationery-desk"][0].images[0]],
-      products: [
-        byCat["stationery-desk"][0],
-        byCat["stationery-desk"][1],
-        byCat["stationery-desk"][4],
+      featured: true,
+      recipients: ["her", "him", "couples"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Text to engrave (name, date, or message)",
+      customizationTextPlaceholder: "e.g. Priya & Rohan | 14 Feb 2024",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1558618666-fcd25c85cd64"),
+        u("photo-1531346878377-a5be20888e57"),
+        u("photo-1516455207990-7a41ce80f7ee"),
+        u("photo-1513519245088-0e12902e5a38"),
+        u("photo-1581591524425-c7e0978865fc"),
       ],
+      tags: ["frame", "wood", "anniversary", "personalized"],
     },
     {
-      name: "Desk organizers & surfaces",
-      slug: "desk-surfaces",
-      description: "Organizers and custom mousepads.",
-      sortOrder: 2,
-      images: [byCat["stationery-desk"][2].images[0]],
-      products: [byCat["stationery-desk"][2], byCat["stationery-desk"][3]],
+      sku: "PF-002",
+      slug: "couple-collage-photo-frame",
+      name: "Couple Collage Photo Frame",
+      description: "<p>A stunning collage frame for couples — fits 4–6 photos with a romantic layout. Ideal as a Valentine's Day or anniversary gift.</p><ul><li>High-quality MDF with gloss finish</li><li>Custom text at bottom</li><li>Multiple photo slots</li><li>Gift-ready packaging</li></ul>",
+      pricePaise: 129900,
+      compareAtPaise: 159900,
+      stock: 80,
+      featured: true,
+      recipients: ["her", "couples"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Caption (names or message)",
+      customizationTextPlaceholder: "e.g. Forever & Always",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1519682337058-a94d519337bc"),
+        u("photo-1481627834876-b7833e8f5570"),
+        u("photo-1456513080510-7bf3a84b82f8"),
+        u("photo-1524995997946-a1c2e315a42f"),
+      ],
+      tags: ["collage", "couple", "valentine", "anniversary"],
+    },
+    {
+      sku: "PF-003",
+      slug: "canvas-photo-print",
+      name: "Premium Canvas Photo Print",
+      description: "<p>Turn your favorite photo into a gallery-quality canvas print. Museum-grade inks, thick 1.5\" frame — ready to hang.</p><ul><li>300 GSM artist canvas</li><li>UV-resistant inks</li><li>Available in multiple sizes</li><li>Arrives ready to hang</li></ul>",
+      pricePaise: 149900,
+      compareAtPaise: 199900,
+      stock: 60,
+      featured: false,
+      recipients: ["her", "him", "couples", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Custom caption (optional)",
+      customizationTextPlaceholder: "e.g. Our Happy Place",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1578662996442-48f60103fc96"),
+        u("photo-1526506118085-60ce8714f8c5"),
+        u("photo-1516455207990-7a41ce80f7ee"),
+        u("photo-1506905925346-21bda4d32df4"),
+      ],
+      tags: ["canvas", "print", "wall-art", "photo"],
+    },
+    {
+      sku: "PF-004",
+      slug: "family-name-photo-frame",
+      name: "Family Name Photo Frame",
+      description: "<p>A heartwarming family frame that spells out your family name in bold letters, with photo slots for each member.</p><ul><li>Natural pine wood</li><li>Laser-cut 3D letters</li><li>Holds 3–5 family photos</li><li>Handcrafted finish</li></ul>",
+      pricePaise: 169900,
+      stock: 40,
+      recipients: ["her", "him", "kids", "couples"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Family surname",
+      customizationTextPlaceholder: "e.g. The Sharma Family",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1513542789411-b6a5d4f31634"),
+        u("photo-1534435493923-4ce4cc4b4e06"),
+        u("photo-1581591524425-c7e0978865fc"),
+        u("photo-1558618666-fcd25c85cd64"),
+      ],
+      tags: ["family", "frame", "wood", "personalized"],
     },
   ],
-  "home-decor-lifestyle": [
+
+  // ── Mugs & Drinkware ─────────────────────────────────────────────────────
+  "mugs": [
     {
-      name: "Photos & magnets",
-      slug: "photos-magnets",
-      description: "Flexible magnets and Polaroid-style print sets.",
-      sortOrder: 1,
-      images: [byCat["home-decor-lifestyle"][0].images[0]],
-      products: [byCat["home-decor-lifestyle"][0], byCat["home-decor-lifestyle"][1]],
+      sku: "MUG-001",
+      slug: "personalized-photo-mug",
+      name: "Personalized Photo Mug",
+      description: "<p>Start every morning with a smile — your favorite photo printed on a premium ceramic mug. Dishwasher-safe and fade-resistant.</p><ul><li>11oz white ceramic</li><li>Full-wrap photo print</li><li>Dishwasher & microwave safe</li><li>Add your photo + optional text</li></ul>",
+      pricePaise: 44900,
+      compareAtPaise: 59900,
+      stock: 300,
+      featured: true,
+      recipients: ["her", "him", "couples", "kids", "corporate"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Caption / name to print",
+      customizationTextPlaceholder: "e.g. World's Best Dad ❤️",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      colourVariants: [
+        {
+          displayName: "Classic White",
+          hexCode: "#FFFFFF",
+          skuSuffix: "WHT",
+          basePrice: 44900,
+          mrp: 59900,
+          isActive: true,
+          displayOrder: 0,
+          images: [
+            { url: u("photo-1514228742587-6b1558fcca3d"), isPrimary: true, displayOrder: 0 },
+            { url: u("photo-1495474475677-80d4226b1d4e"), isPrimary: false, displayOrder: 1 },
+          ],
+        },
+        {
+          displayName: "Midnight Black",
+          hexCode: "#1A1A1A",
+          skuSuffix: "BLK",
+          basePrice: 49900,
+          mrp: 64900,
+          isActive: true,
+          displayOrder: 1,
+          images: [
+            { url: u("photo-1572116469696-31de0f17cc34"), isPrimary: true, displayOrder: 0 },
+            { url: u("photo-1455090392996-5e285c89ef2b"), isPrimary: false, displayOrder: 1 },
+          ],
+        },
+        {
+          displayName: "Pastel Pink",
+          hexCode: "#F9C5D1",
+          skuSuffix: "PNK",
+          basePrice: 49900,
+          mrp: 64900,
+          isActive: true,
+          displayOrder: 2,
+          images: [
+            { url: u("photo-1607344645866-009c320b63e0"), isPrimary: true, displayOrder: 0 },
+            { url: u("photo-1513201097305-4fa07f0f1b58"), isPrimary: false, displayOrder: 1 },
+          ],
+        },
+      ],
+      images: [
+        u("photo-1514228742587-6b1558fcca3d"),
+        u("photo-1495474475677-80d4226b1d4e"),
+        u("photo-1572116469696-31de0f17cc34"),
+        u("photo-1455090392996-5e285c89ef2b"),
+        u("photo-1607344645866-009c320b63e0"),
+      ],
+      tags: ["mug", "ceramic", "photo", "gift"],
     },
     {
-      name: "Coasters & table",
-      slug: "coasters-table",
-      description: "Custom coasters in wood, cork, or acrylic.",
-      sortOrder: 2,
-      images: [byCat["home-decor-lifestyle"][2].images[0]],
-      products: [byCat["home-decor-lifestyle"][2]],
+      sku: "MUG-002",
+      slug: "magic-color-changing-mug",
+      name: "Magic Color-Changing Photo Mug",
+      description: "<p>Pour in a hot drink and watch your hidden photo appear! A fun and surprising gift for friends and family.</p><ul><li>Heat-sensitive coating</li><li>Photo hidden when cold</li><li>Reveals with hot liquids</li><li>Perfect surprise gift</li></ul>",
+      pricePaise: 64900,
+      compareAtPaise: 84900,
+      stock: 150,
+      featured: true,
+      recipients: ["her", "him", "couples", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Secret message (optional)",
+      customizationTextPlaceholder: "e.g. I Love You!",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1514228742587-6b1558fcca3d"),
+        u("photo-1578662996442-48f60103fc96"),
+        u("photo-1495474475677-80d4226b1d4e"),
+        u("photo-1556910103-1c02745aae4d"),
+      ],
+      tags: ["magic-mug", "color-changing", "surprise", "photo"],
+    },
+    {
+      sku: "MUG-003",
+      slug: "custom-travel-sipper-bottle",
+      name: "Custom Photo Travel Sipper",
+      description: "<p>Stay hydrated in style with your photo on a premium stainless steel sipper. Keeps drinks cold 24 hrs, hot 12 hrs.</p><ul><li>500ml double-wall insulated</li><li>BPA-free stainless steel</li><li>Leak-proof lid</li><li>Full-wrap sublimation print</li></ul>",
+      pricePaise: 89900,
+      compareAtPaise: 119900,
+      stock: 100,
+      featured: false,
+      recipients: ["him", "corporate", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Name or text to print",
+      customizationTextPlaceholder: "e.g. Rahul's Coffee",
+      customizationTextRequired: false,
+      customizationImageRequired: false,
+      colourVariants: [
+        {
+          displayName: "Silver",
+          hexCode: "#C0C0C0",
+          skuSuffix: "SLV",
+          basePrice: 89900,
+          mrp: 119900,
+          isActive: true,
+          displayOrder: 0,
+          images: [
+            { url: u("photo-1572116469696-31de0f17cc34"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+        {
+          displayName: "Rose Gold",
+          hexCode: "#B76E79",
+          skuSuffix: "RSG",
+          basePrice: 94900,
+          mrp: 124900,
+          isActive: true,
+          displayOrder: 1,
+          images: [
+            { url: u("photo-1607344645866-009c320b63e0"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+        {
+          displayName: "Matte Black",
+          hexCode: "#2D2D2D",
+          skuSuffix: "MBK",
+          basePrice: 94900,
+          mrp: 124900,
+          isActive: true,
+          displayOrder: 2,
+          images: [
+            { url: u("photo-1455090392996-5e285c89ef2b"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+      ],
+      images: [
+        u("photo-1572116469696-31de0f17cc34"),
+        u("photo-1607344645866-009c320b63e0"),
+        u("photo-1455090392996-5e285c89ef2b"),
+        u("photo-1514228742587-6b1558fcca3d"),
+      ],
+      tags: ["sipper", "travel", "insulated", "photo"],
+    },
+    {
+      sku: "MUG-004",
+      slug: "couple-set-two-mugs",
+      name: "Couple Mug Set (Set of 2)",
+      description: "<p>His and Hers mug set — perfect for couples! Customize each mug with individual names and a sweet message.</p><ul><li>Set of 2 ceramic mugs</li><li>His & Hers design</li><li>Individual personalization</li><li>Gift box included</li></ul>",
+      pricePaise: 79900,
+      compareAtPaise: 99900,
+      stock: 80,
+      featured: false,
+      recipients: ["couples", "her"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Names for Mug 1 & Mug 2",
+      customizationTextPlaceholder: "e.g. Mug 1: Priya | Mug 2: Rohan",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1495474475677-80d4226b1d4e"),
+        u("photo-1514228742587-6b1558fcca3d"),
+        u("photo-1455090392996-5e285c89ef2b"),
+        u("photo-1572116469696-31de0f17cc34"),
+      ],
+      tags: ["couple", "mug-set", "his-hers", "gift"],
     },
   ],
-  "textiles-apparel": [
+
+  // ── Cushions & Pillows ───────────────────────────────────────────────────
+  "cushions": [
     {
-      name: "Cushions & soft gifts",
-      slug: "cushions",
-      description: "Photo and sequin cushions.",
-      sortOrder: 1,
-      images: [byCat["textiles-apparel"][0].images[0]],
-      products: [byCat["textiles-apparel"][0]],
+      sku: "CUS-001",
+      slug: "personalized-photo-cushion",
+      name: "Personalized Photo Cushion",
+      description: "<p>A plush cushion printed with your most treasured photo. Soft, huggable, and beautifully vivid — a gift that says a thousand words.</p><ul><li>40×40 cm or 30×50 cm</li><li>Sublimation print on velvet/satin</li><li>Removable zippered cover</li><li>Comes with premium filler</li></ul>",
+      pricePaise: 89900,
+      compareAtPaise: 119900,
+      stock: 160,
+      featured: true,
+      recipients: ["her", "him", "couples", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Caption to print below photo (optional)",
+      customizationTextPlaceholder: "e.g. Forever in My Heart",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      colourVariants: [
+        {
+          displayName: "White Satin",
+          hexCode: "#FAFAFA",
+          skuSuffix: "WHT",
+          basePrice: 89900,
+          mrp: 119900,
+          isActive: true,
+          displayOrder: 0,
+          images: [
+            { url: u("photo-1584100936591-c65d4534f48a"), isPrimary: true, displayOrder: 0 },
+            { url: u("photo-1616486338812-3dadae4b4ace"), isPrimary: false, displayOrder: 1 },
+          ],
+        },
+        {
+          displayName: "Velvet Black",
+          hexCode: "#1A1A1A",
+          skuSuffix: "BLK",
+          basePrice: 94900,
+          mrp: 124900,
+          isActive: true,
+          displayOrder: 1,
+          images: [
+            { url: u("photo-1540574163026-643ea20ade25"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+        {
+          displayName: "Blush Pink",
+          hexCode: "#FFB6C1",
+          skuSuffix: "PNK",
+          basePrice: 94900,
+          mrp: 124900,
+          isActive: true,
+          displayOrder: 2,
+          images: [
+            { url: u("photo-1586023492125-27b2c045efd7"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+      ],
+      images: [
+        u("photo-1584100936591-c65d4534f48a"),
+        u("photo-1616486338812-3dadae4b4ace"),
+        u("photo-1540574163026-643ea20ade25"),
+        u("photo-1586023492125-27b2c045efd7"),
+        u("photo-1556910103-1c02745aae4d"),
+      ],
+      tags: ["cushion", "photo", "sublimation", "soft-gift"],
     },
     {
-      name: "Mugs & drinkware",
-      slug: "mugs-drinkware",
-      description: "Ceramic mugs and travel sippers.",
-      sortOrder: 2,
-      images: [byCat["textiles-apparel"][1].images[0]],
-      products: [byCat["textiles-apparel"][1]],
+      sku: "CUS-002",
+      slug: "sequin-flip-photo-cushion",
+      name: "Sequin Flip Photo Cushion",
+      description: "<p>Run your hand across this magical cushion to reveal your hidden photo! Gold-silver or rose-gold sequins make it a showstopper.</p><ul><li>Flip-sequin photo reveal</li><li>Reversible design</li><li>Super soft filling</li><li>40×40 cm</li></ul>",
+      pricePaise: 119900,
+      compareAtPaise: 149900,
+      stock: 80,
+      featured: true,
+      recipients: ["her", "couples", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Caption (optional)",
+      customizationTextPlaceholder: "e.g. My Sunshine",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      colourVariants: [
+        {
+          displayName: "Gold & Silver",
+          hexCode: "#FFD700",
+          skuSuffix: "GLD",
+          basePrice: 119900,
+          mrp: 149900,
+          isActive: true,
+          displayOrder: 0,
+          images: [
+            { url: u("photo-1584100936591-c65d4534f48a"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+        {
+          displayName: "Rose Gold",
+          hexCode: "#B76E79",
+          skuSuffix: "RSG",
+          basePrice: 119900,
+          mrp: 149900,
+          isActive: true,
+          displayOrder: 1,
+          images: [
+            { url: u("photo-1616486338812-3dadae4b4ace"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+      ],
+      images: [
+        u("photo-1616486338812-3dadae4b4ace"),
+        u("photo-1584100936591-c65d4534f48a"),
+        u("photo-1540574163026-643ea20ade25"),
+        u("photo-1586023492125-27b2c045efd7"),
+      ],
+      tags: ["sequin", "magic", "reveal", "cushion"],
     },
     {
-      name: "Apparel",
-      slug: "apparel",
-      description: "T-shirts and caps for teams and brands.",
-      sortOrder: 3,
-      images: [byCat["textiles-apparel"][2].images[0]],
-      products: [byCat["textiles-apparel"][2], byCat["textiles-apparel"][3]],
+      sku: "CUS-003",
+      slug: "heart-shaped-photo-cushion",
+      name: "Heart-Shaped Photo Cushion",
+      description: "<p>A heart-shaped cushion brimming with love — print your favorite photo or couple portrait on this romantic gift.</p><ul><li>Heart silhouette cut</li><li>Premium sublimation print</li><li>Soft microfiber cover</li><li>Ideal for Valentine's Day & anniversaries</li></ul>",
+      pricePaise: 99900,
+      compareAtPaise: 129900,
+      stock: 60,
+      featured: false,
+      recipients: ["her", "couples"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Sweet message (optional)",
+      customizationTextPlaceholder: "e.g. You're My Person",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1540574163026-643ea20ade25"),
+        u("photo-1586023492125-27b2c045efd7"),
+        u("photo-1584100936591-c65d4534f48a"),
+        u("photo-1616486338812-3dadae4b4ace"),
+      ],
+      tags: ["heart", "cushion", "romantic", "valentine"],
+    },
+  ],
+
+  // ── Keychains & Accessories ──────────────────────────────────────────────
+  "keychains": [
+    {
+      sku: "KEY-001",
+      slug: "acrylic-photo-keychain",
+      name: "Acrylic Photo Keychain",
+      description: "<p>Carry a memory wherever you go! Crystal-clear acrylic keychains printed with your photo or message. Great for gifting and bulk orders.</p><ul><li>Crystal-clear 5mm acrylic</li><li>UV-resistant photo print</li><li>Steel split ring + chain</li><li>Multiple shapes available</li></ul>",
+      pricePaise: 29900,
+      compareAtPaise: 39900,
+      stock: 500,
+      featured: true,
+      recipients: ["her", "him", "kids", "couples", "corporate"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Name or text to print",
+      customizationTextPlaceholder: "e.g. Best Friends Forever",
+      customizationTextRequired: false,
+      customizationImageRequired: false,
+      colourVariants: [
+        {
+          displayName: "Round",
+          hexCode: "#E8F4FD",
+          skuSuffix: "RND",
+          basePrice: 29900,
+          mrp: 39900,
+          isActive: true,
+          displayOrder: 0,
+          images: [
+            { url: u("photo-1590874103328-eac38a683ce7"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+        {
+          displayName: "Rectangle",
+          hexCode: "#E8F4FD",
+          skuSuffix: "RCT",
+          basePrice: 29900,
+          mrp: 39900,
+          isActive: true,
+          displayOrder: 1,
+          images: [
+            { url: u("photo-1578915266302-4c44cd2a89ae"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+        {
+          displayName: "Heart",
+          hexCode: "#FFF0F3",
+          skuSuffix: "HRT",
+          basePrice: 34900,
+          mrp: 44900,
+          isActive: true,
+          displayOrder: 2,
+          images: [
+            { url: u("photo-1522312346375-d1e52e2b99b3"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+      ],
+      images: [
+        u("photo-1590874103328-eac38a683ce7"),
+        u("photo-1578915266302-4c44cd2a89ae"),
+        u("photo-1522312346375-d1e52e2b99b3"),
+        u("photo-1553062407-98eeb64c6a62"),
+      ],
+      tags: ["keychain", "acrylic", "photo", "personalized"],
+    },
+    {
+      sku: "KEY-002",
+      slug: "spotify-song-code-keychain",
+      name: "Spotify Song Code Keychain",
+      description: "<p>Turn your favorite song into a scannable Spotify code keychain — the most personal gift for music lovers.</p><ul><li>5mm UV-printed acrylic</li><li>Scan with Spotify app</li><li>Song name printed below</li><li>Perfect couples gift</li></ul>",
+      pricePaise: 39900,
+      compareAtPaise: 54900,
+      stock: 200,
+      featured: true,
+      recipients: ["her", "him", "couples"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Song name + artist (we'll generate the Spotify code)",
+      customizationTextPlaceholder: "e.g. Tum Hi Ho by Arijit Singh",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1522312346375-d1e52e2b99b3"),
+        u("photo-1590874103328-eac38a683ce7"),
+        u("photo-1578915266302-4c44cd2a89ae"),
+        u("photo-1553062407-98eeb64c6a62"),
+      ],
+      tags: ["spotify", "music", "keychain", "couple"],
+    },
+    {
+      sku: "KEY-003",
+      slug: "leather-name-tag-keychain",
+      name: "Engraved Leather Name Keychain",
+      description: "<p>Premium genuine leather keychain with your name laser-engraved. Minimal, classy, and built to last.</p><ul><li>Genuine leather (brown/black)</li><li>Precision laser engraving</li><li>Gold or silver ring hardware</li><li>Great corporate gift</li></ul>",
+      pricePaise: 49900,
+      compareAtPaise: 69900,
+      stock: 150,
+      featured: false,
+      recipients: ["him", "corporate", "her"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Name or initials to engrave",
+      customizationTextPlaceholder: "e.g. Arjun K.",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      colourVariants: [
+        {
+          displayName: "Tan Brown",
+          hexCode: "#A0522D",
+          skuSuffix: "TAN",
+          basePrice: 49900,
+          mrp: 69900,
+          isActive: true,
+          displayOrder: 0,
+          images: [
+            { url: u("photo-1553062407-98eeb64c6a62"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+        {
+          displayName: "Midnight Black",
+          hexCode: "#1A1A1A",
+          skuSuffix: "BLK",
+          basePrice: 49900,
+          mrp: 69900,
+          isActive: true,
+          displayOrder: 1,
+          images: [
+            { url: u("photo-1590874103328-eac38a683ce7"), isPrimary: true, displayOrder: 0 },
+          ],
+        },
+      ],
+      images: [
+        u("photo-1553062407-98eeb64c6a62"),
+        u("photo-1590874103328-eac38a683ce7"),
+        u("photo-1578915266302-4c44cd2a89ae"),
+        u("photo-1522312346375-d1e52e2b99b3"),
+      ],
+      tags: ["leather", "engraved", "corporate", "minimal"],
+    },
+  ],
+
+  // ── Gift Sets & Hampers ───────────────────────────────────────────────────
+  "gift-sets": [
+    {
+      sku: "GFT-001",
+      slug: "birthday-gift-hamper",
+      name: "Birthday Celebration Gift Hamper",
+      description: "<p>A thoughtfully curated birthday hamper — a personalized mug, photo frame, and a heartfelt card, all beautifully wrapped.</p><ul><li>1 personalized photo mug</li><li>1 wooden photo frame</li><li>1 handwritten card</li><li>Premium satin ribbon wrapping</li></ul>",
+      pricePaise: 199900,
+      compareAtPaise: 259900,
+      stock: 60,
+      featured: true,
+      recipients: ["her", "him", "couples", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Birthday message for the card",
+      customizationTextPlaceholder: "e.g. Wishing you a year full of joy, laughter, and love!",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1549465220-1a8b9238cd48"),
+        u("photo-1607344645866-009c320b63e0"),
+        u("photo-1513201097305-4fa07f0f1b58"),
+        u("photo-1578662996442-48f60103fc96"),
+        u("photo-1526170375885-4d8ecf77b99f"),
+      ],
+      tags: ["hamper", "birthday", "combo", "gift-set"],
+    },
+    {
+      sku: "GFT-002",
+      slug: "anniversary-love-combo",
+      name: "Anniversary Love Combo",
+      description: "<p>Mark your milestone in style — our anniversary combo includes a couple cushion, photo frame, and a personalized card in an elegant gift box.</p><ul><li>1 photo cushion (40×40)</li><li>1 couple photo frame</li><li>1 personalized anniversary card</li><li>Luxury gift box</li></ul>",
+      pricePaise: 299900,
+      compareAtPaise: 399900,
+      stock: 40,
+      featured: true,
+      recipients: ["couples", "her"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Your love story in one line",
+      customizationTextPlaceholder: "e.g. Together since June 2018 ♥",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1526170375885-4d8ecf77b99f"),
+        u("photo-1493863641943-9b68992a8d28"),
+        u("photo-1584100936591-c65d4534f48a"),
+        u("photo-1531346878377-a5be20888e57"),
+      ],
+      tags: ["anniversary", "couple", "combo", "luxury"],
+    },
+    {
+      sku: "GFT-003",
+      slug: "corporate-desk-gift-set",
+      name: "Corporate Desk Gift Set",
+      description: "<p>Elegant corporate gifts that leave an impression — an engraved pen, leather keychain, and branded mug in a premium black gift box.</p><ul><li>1 laser-engraved pen</li><li>1 leather name keychain</li><li>1 branded mug</li><li>Premium black gift box</li><li>Bulk pricing available</li></ul>",
+      pricePaise: 249900,
+      compareAtPaise: 299900,
+      stock: 100,
+      featured: false,
+      recipients: ["corporate", "him"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Name or company to print",
+      customizationTextPlaceholder: "e.g. Rahul Sharma | Acme Corp",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1497366216548-37526070297c"),
+        u("photo-1553062407-98eeb64c6a62"),
+        u("photo-1514228742587-6b1558fcca3d"),
+        u("photo-1524758631624-e2822e304c36"),
+      ],
+      tags: ["corporate", "office", "bulk", "branded"],
+    },
+    {
+      sku: "GFT-004",
+      slug: "new-baby-gift-hamper",
+      name: "New Baby Gift Hamper",
+      description: "<p>Welcome the little one with the sweetest personalized gift set — a baby name cushion, first photo frame, and a milestone card.</p><ul><li>1 baby name cushion</li><li>1 birth detail photo frame</li><li>1 milestone card</li><li>Pastel gift wrapping</li></ul>",
+      pricePaise: 279900,
+      compareAtPaise: 349900,
+      stock: 30,
+      featured: false,
+      recipients: ["kids", "her"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Baby's name + birth date + weight",
+      customizationTextPlaceholder: "e.g. Aryan | 12 Jan 2024 | 3.2 kg",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1607344645866-009c320b63e0"),
+        u("photo-1549465220-1a8b9238cd48"),
+        u("photo-1584100936591-c65d4534f48a"),
+        u("photo-1513201097305-4fa07f0f1b58"),
+      ],
+      tags: ["baby", "newborn", "hamper", "baby-gift"],
+    },
+  ],
+
+  // ── Wall Art & Décor ─────────────────────────────────────────────────────
+  "wall-art": [
+    {
+      sku: "WAL-001",
+      slug: "acrylic-led-night-lamp-photo",
+      name: "Acrylic LED Night Lamp with Photo",
+      description: "<p>A glowing acrylic base lamp that illuminates your photo in a warm amber glow — a bedside memory that shines all night.</p><ul><li>Crystal-clear 5mm acrylic</li><li>USB-powered LED base</li><li>Colour-changing modes (7 colours)</li><li>Photo + name engraved</li></ul>",
+      pricePaise: 129900,
+      compareAtPaise: 169900,
+      stock: 80,
+      featured: true,
+      recipients: ["her", "him", "couples", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Names or message to engrave",
+      customizationTextPlaceholder: "e.g. Arjun & Priya | Forever",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1567427017947-545c5f8d16ad"),
+        u("photo-1517245386807-bb43f82c33c4"),
+        u("photo-1497366858526-56e1c0c2b627"),
+        u("photo-1558618666-fcd25c85cd64"),
+      ],
+      tags: ["lamp", "led", "acrylic", "night-light"],
+    },
+    {
+      sku: "WAL-002",
+      slug: "polaroid-collage-wall-set",
+      name: "Polaroid-Style Photo Collage Set",
+      description: "<p>A set of 15 mini polaroid-style prints in a kraft box — string lights sold separately, but your memories shine on their own.</p><ul><li>Set of 15 polaroid prints</li><li>4×4\" borderless prints</li><li>Hand-dated borders option</li><li>Kraft keepsake box</li></ul>",
+      pricePaise: 79900,
+      compareAtPaise: 99900,
+      stock: 120,
+      featured: false,
+      recipients: ["her", "couples", "kids"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Caption for each print (comma-separated, up to 15)",
+      customizationTextPlaceholder: "e.g. Goa 2023, Our First Date, Forever 💛",
+      customizationTextRequired: false,
+      customizationImageRequired: true,
+      images: [
+        u("photo-1526170375885-4d8ecf77b99f"),
+        u("photo-1493863641943-9b68992a8d28"),
+        u("photo-1516455207990-7a41ce80f7ee"),
+        u("photo-1526506118085-60ce8714f8c5"),
+      ],
+      tags: ["polaroid", "collage", "print-set", "wall-decor"],
+    },
+    {
+      sku: "WAL-003",
+      slug: "personalized-family-name-sign",
+      name: "Personalized Family Name Sign",
+      description: "<p>A statement wooden sign that spells your family name in beautiful laser-cut lettering — a centrepiece for any home.</p><ul><li>Solid pine or MDF</li><li>Laser-cut 3D letters</li><li>Stained, painted, or natural finish</li><li>Multiple size options</li></ul>",
+      pricePaise: 199900,
+      compareAtPaise: 249900,
+      stock: 40,
+      featured: false,
+      recipients: ["her", "him", "couples"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "Family surname + year established (optional)",
+      customizationTextPlaceholder: "e.g. The Sharma Family | Est. 2018",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1497366216548-37526070297c"),
+        u("photo-1524758631624-e2822e304c36"),
+        u("photo-1558618666-fcd25c85cd64"),
+        u("photo-1531346878377-a5be20888e57"),
+      ],
+      tags: ["family", "sign", "wood", "laser-cut"],
+    },
+    {
+      sku: "WAL-004",
+      slug: "custom-map-art-city-print",
+      name: "Custom City Map Art Print",
+      description: "<p>A minimalist map of the city where your story began — printed on premium matte paper and ready to frame.</p><ul><li>300 GSM matte paper</li><li>Minimalist map design</li><li>Custom city + date + coordinates</li><li>A3 or A2 size</li></ul>",
+      pricePaise: 99900,
+      compareAtPaise: 129900,
+      stock: 90,
+      featured: false,
+      recipients: ["couples", "him", "her"],
+      allowCustomerCustomization: true,
+      customizationTextLabel: "City name + significant date + custom text",
+      customizationTextPlaceholder: "e.g. Mumbai | 14 Feb 2020 | Where We Began",
+      customizationTextRequired: true,
+      customizationImageRequired: false,
+      images: [
+        u("photo-1506905925346-21bda4d32df4"),
+        u("photo-1516455207990-7a41ce80f7ee"),
+        u("photo-1567427017947-545c5f8d16ad"),
+        u("photo-1558618666-fcd25c85cd64"),
+      ],
+      tags: ["map", "city", "print", "minimal"],
     },
   ],
 };
 
+// ---------------------------------------------------------------------------
+// Admin user seed
+// ---------------------------------------------------------------------------
 async function seedAdminUser(required: boolean) {
   const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim();
   const adminPass = process.env.SEED_ADMIN_PASSWORD;
   if (!adminEmail || !adminPass) {
     if (required) {
-      console.error(
-        "Admin-only mode: set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in .env.local"
-      );
+      console.error("Admin-only mode: set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in .env.local");
       process.exit(1);
     }
     console.log("Skip admin seed (set SEED_ADMIN_EMAIL + SEED_ADMIN_PASSWORD in .env.local)");
@@ -524,15 +900,8 @@ async function seedAdminUser(required: boolean) {
   const hash = await bcrypt.hash(adminPass, 12);
   await User.findOneAndUpdate(
     { email: adminEmail.toLowerCase() },
-    {
-      $set: {
-        email: adminEmail.toLowerCase(),
-        passwordHash: hash,
-        name: "Prisbo Admin",
-        role: "admin",
-      },
-    },
-    { upsert: true }
+    { $set: { email: adminEmail.toLowerCase(), passwordHash: hash, name: "Prisbo Admin", role: "admin" } },
+    { upsert: true },
   );
   console.log(`Admin upserted: ${adminEmail}`);
 }
@@ -545,8 +914,11 @@ function isAdminOnlySeed(): boolean {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
 async function main() {
-  await mongoose.connect(uri);
+  await mongoose.connect(uri!);
 
   if (isAdminOnlySeed()) {
     console.log("Connected. Admin-only: upserting user (catalog unchanged)…");
@@ -566,122 +938,52 @@ async function main() {
   for (const c of categories) {
     const doc = await Category.create(c);
     catMap.set(c.slug, doc._id);
+    console.log(`  Category: ${c.name}`);
   }
 
-  for (const [catSlug, subs] of Object.entries(catalog)) {
+  let totalProducts = 0;
+  for (const [catSlug, prods] of Object.entries(products)) {
     const cid = catMap.get(catSlug);
-    if (!cid) continue;
-    for (const sub of subs) {
-      const subImages = sub.images?.length ? sub.images : [];
-      const sdoc = await Subcategory.create({
+    if (!cid) {
+      console.warn(`  WARNING: no category for slug "${catSlug}"`);
+      continue;
+    }
+
+    for (const p of prods) {
+      await Product.create({
         categoryId: cid,
-        name: sub.name,
-        slug: sub.slug,
-        description: sub.description,
-        sortOrder: sub.sortOrder,
-        images: subImages,
-        imageUrl: subImages[0],
+        name: p.name,
+        slug: p.slug,
+        description: p.description,
+        pricePaise: p.pricePaise,
+        compareAtPaise: p.compareAtPaise,
+        sku: p.sku,
+        stock: p.stock,
+        images: p.images,
+        tags: p.tags,
+        featured: p.featured ?? false,
+        isActive: true,
+        status: "PUBLISHED",
+        publishedAt: new Date(),
+        currency: "INR",
+        recipients: p.recipients ?? [],
+        allowCustomerCustomization: p.allowCustomerCustomization ?? false,
+        customizationTextLabel: p.customizationTextLabel ?? "Notes / text to print",
+        customizationTextPlaceholder: p.customizationTextPlaceholder ?? "",
+        customizationTextRequired: p.customizationTextRequired ?? false,
+        customizationImageRequired: p.customizationImageRequired ?? false,
+        colourVariants: p.colourVariants ?? [],
+        weightKg: p.weightKg ?? 0.4,
+        hasColourVariants: (p.colourVariants?.length ?? 0) > 0,
       });
-      for (const p of sub.products) {
-        await Product.create({
-          categoryId: cid,
-          subcategoryId: sdoc._id,
-          name: p.name,
-          slug: p.slug,
-          description: p.description,
-          pricePaise: p.pricePaise,
-          sku: p.sku,
-          stock: p.stock,
-          images: p.images,
-          tags: p.tags,
-          isActive: true,
-          currency: "INR",
-        });
-      }
+      console.log(`    Product: ${p.name}`);
+      totalProducts++;
     }
   }
-
-  const giftSchemaPairs: {
-    categorySlug: string;
-    subSlug: string;
-    fields: {
-      key: string;
-      label: string;
-      fieldType: "text" | "select" | "number" | "boolean";
-      options?: string[];
-      isHighlight?: boolean;
-      isRequired?: boolean;
-    }[];
-  }[] = [
-    {
-      categorySlug: "paper-packaging",
-      subSlug: "confectionery-wraps",
-      fields: [
-        { key: "finish", label: "Finish", fieldType: "select", options: ["Matte", "Gloss"], isHighlight: true, isRequired: true },
-        { key: "bar_size", label: "Bar size", fieldType: "select", options: ["45g", "100g", "Custom"], isHighlight: true },
-        { key: "min_order_qty", label: "Minimum order", fieldType: "number", isRequired: false },
-      ],
-    },
-    {
-      categorySlug: "paper-packaging",
-      subSlug: "stickers-seals",
-      fields: [
-        { key: "material", label: "Material", fieldType: "select", options: ["Paper", "Vinyl"], isHighlight: true, isRequired: true },
-        { key: "shape", label: "Shape", fieldType: "select", options: ["Round", "Square", "Die-cut"], isHighlight: true },
-        { key: "waterproof", label: "Waterproof", fieldType: "boolean", isRequired: false },
-      ],
-    },
-    {
-      categorySlug: "acrylic-resin",
-      subSlug: "travel-carry",
-      fields: [
-        { key: "thickness_mm", label: "Thickness (mm)", fieldType: "select", options: ["3", "4", "5"], isHighlight: true },
-        { key: "hardware", label: "Hardware", fieldType: "select", options: ["Split ring", "Lobster clasp"], isHighlight: true },
-        { key: "double_sided", label: "Double-sided print", fieldType: "boolean", isRequired: false },
-      ],
-    },
-    {
-      categorySlug: "acrylic-resin",
-      subSlug: "desk-office",
-      fields: [
-        { key: "base_type", label: "Base", fieldType: "select", options: ["Wood", "LED", "None"], isHighlight: true, isRequired: true },
-        { key: "size_label", label: "Size", fieldType: "select", options: ["A5", "A4", "Custom"], isHighlight: true },
-        { key: "engraving", label: "Engraving line", fieldType: "text", isRequired: false },
-      ],
-    },
-  ];
-
-  let seededSubs = 0;
-  for (const pair of giftSchemaPairs) {
-    const cat = await Category.findOne({ slug: pair.categorySlug }).select("_id").lean();
-    if (!cat) continue;
-    const sub = await Subcategory.findOne({
-      categoryId: cat._id,
-      slug: pair.subSlug,
-    })
-      .select("_id")
-      .lean();
-    if (!sub) continue;
-    let i = 0;
-    for (const f of pair.fields) {
-      await SchemaField.create({
-        subcategoryId: sub._id,
-        key: f.key,
-        label: f.label,
-        fieldType: f.fieldType,
-        options: f.options ?? [],
-        isHighlight: f.isHighlight ?? false,
-        isRequired: f.isRequired ?? false,
-        displayOrder: i++,
-      });
-    }
-    seededSubs += 1;
-  }
-  console.log(`Seeded schema fields for ${seededSubs} subcategories (gift catalog sample).`);
 
   await seedAdminUser(false);
 
-  console.log("Seed complete.");
+  console.log(`\nSeed complete: ${categories.length} categories, ${totalProducts} products.`);
   await mongoose.disconnect();
 }
 

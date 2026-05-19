@@ -91,8 +91,8 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
 
   const cardClass = useMemo(
     () =>
-      `product-card group flex h-full min-h-0 flex-col rounded-[12px] bg-[var(--brand-card)] shadow-[var(--shadow-card)] transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(0,0,0,0.12)] ${
-        out ? "opacity-95" : ""
+      `product-card group flex h-full min-h-0 flex-col rounded-[14px] bg-[var(--brand-card)] border border-[var(--brand-border)] shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-[3px] hover:shadow-[var(--shadow-card-hover)] hover:border-[var(--brand-border-dark)] ${
+        out ? "opacity-90" : ""
       }`,
     [out],
   );
@@ -146,15 +146,15 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
             </div>
           )}
           {out ? (
-            <span className="absolute left-1.5 top-1.5 rounded-[20px] bg-[#FEF2F2] px-[7px] py-0.5 text-[9px] font-semibold text-[#991B1B] md:left-2 md:top-2">
-              Out of stock
+            <span className="absolute left-1.5 top-1.5 rounded-full bg-[#18120e]/80 px-[7px] py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/90 backdrop-blur-[4px] md:left-2 md:top-2">
+              Sold out
             </span>
           ) : low ? (
-            <span className="absolute left-1.5 top-1.5 rounded-[20px] bg-[#FEF3C7] px-[7px] py-0.5 text-[9px] font-semibold text-[#92400E] md:left-2 md:top-2">
-              Low stock
+            <span className="absolute left-1.5 top-1.5 rounded-full bg-[#8a4d12]/85 px-[7px] py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white backdrop-blur-[4px] md:left-2 md:top-2">
+              Almost gone
             </span>
           ) : product.isNew ? (
-            <span className="absolute left-1.5 top-1.5 rounded-[20px] bg-[#E6F1FB] px-[7px] py-0.5 text-[9px] font-semibold text-[#185FA5] md:left-2 md:top-2">
+            <span className="absolute left-1.5 top-1.5 rounded-full bg-[#18120e] px-[7px] py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/90 md:left-2 md:top-2">
               New
             </span>
           ) : null}
@@ -225,16 +225,16 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           />
         ) : null}
         <div className="card-price mt-2 flex flex-wrap items-baseline gap-1.5 md:gap-2">
-          <span className="font-mono text-[12px] font-semibold text-[var(--ink)] md:text-[13px]">
+          <span className="font-mono text-[12px] font-bold text-[var(--ink)] md:text-[13px]">
             {formatInrFromPaise(product.listPricePaise)}
           </span>
           {product.compareAtPaise && product.compareAtPaise > product.listPricePaise ? (
             <>
-              <span className="font-mono text-[11px] text-[var(--muted)] line-through md:text-[13px]">
+              <span className="font-mono text-[11px] text-[var(--muted)] line-through md:text-[12px]">
                 {formatInrFromPaise(product.compareAtPaise)}
               </span>
               {discountPct != null ? (
-                <span className="text-[11px] font-semibold text-[var(--ok)] md:text-xs">{discountPct}% off</span>
+                <span className="rounded-full bg-[#faeee0] px-[5px] py-px text-[9px] font-bold text-[#8a4d12] md:text-[10px]">{discountPct}% off</span>
               ) : null}
             </>
           ) : null}
@@ -283,8 +283,10 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           <button
             type="button"
             onClick={onAdd}
-            className={`card-add mt-2.5 w-full rounded-[20px] border-none py-[5px] text-[10px] font-medium text-white md:mt-3 md:h-[34px] md:py-0 md:text-[11px] ${
-              justAdded ? "bg-[var(--ok)]" : "bg-[var(--am)] hover:opacity-95"
+            className={`card-add mt-2.5 w-full rounded-[20px] border-none py-[5px] text-[10px] font-semibold tracking-wide text-white transition-all duration-150 md:mt-3 md:h-[34px] md:py-0 md:text-[11px] ${
+              justAdded
+                ? "bg-[var(--ok)] shadow-none"
+                : "bg-[var(--am)] shadow-[0_1px_3px_rgba(24,12,4,0.18)] hover:bg-[var(--amd)] hover:-translate-y-px"
             }`}
           >
             {justAdded ? "✓ Added" : "Add to cart"}

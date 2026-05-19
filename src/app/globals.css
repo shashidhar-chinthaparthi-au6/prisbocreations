@@ -153,36 +153,39 @@ textarea {
 
 :root {
   /* Short storefront tokens (spec) — keep in sync with --brand-* */
-  --am: #c47a2b;
-  --aml: #f5e6d0;
-  --amd: #9a5e1e;
-  --ink: #1a1a1a;
-  --muted: #6b6560;
-  --sf: #fdfaf7;
-  /* Main viewport — bright, clean base (cards/hover use --brand-surface) */
-  --brand-canvas: #ffffff;
-  --bd: #e8e0d6;
-  --bdd: #c8bdb0;
-  --ok: #2d6a4f;
+  --am: #b5661a;
+  --aml: #faeee0;
+  --amd: #8a4d12;
+  --ink: #18120e;
+  --muted: #6b6258;
+  --sf: #fdfaf6;
+  /* Main viewport — warm ivory base */
+  --brand-canvas: #fefdfb;
+  --bd: #ece3d8;
+  --bdd: #d4c7b8;
+  --ok: #246a45;
 
   /* Sticky block = announcement (~34px) + header; keep filter below it when scrolling. */
   --listing-sticky-top: calc(env(safe-area-inset-top) + 5.75rem);
 
-  --brand-amber: #c47a2b;
-  --brand-amber-light: #f5e6d0;
-  --brand-amber-dark: #9a5e1e;
-  --brand-ink: #1a1a1a;
-  --brand-muted: #6b6560;
-  /* Slightly lighter than canvas — inputs, hovers, rail rows */
-  --brand-surface: #fdfaf7;
+  /* Premium copper/bronze accent — deeper and more sophisticated than pure amber */
+  --brand-amber: #b5661a;
+  --brand-amber-light: #faeee0;
+  --brand-amber-dark: #8a4d12;
+  --brand-ink: #18120e;
+  --brand-muted: #6b6258;
+  /* Warm ivory — slightly warmer than pure white */
+  --brand-surface: #fdfaf6;
   --brand-card: #ffffff;
-  --brand-border: #e8e0d6;
-  --brand-border-dark: #c8bdb0;
-  --brand-success: #2d6a4f;
+  --brand-border: #ece3d8;
+  --brand-border-dark: #d4c7b8;
+  --brand-success: #246a45;
   --brand-error: #b91c1c;
   --brand-info: #1d4ed8;
-  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.07);
-  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
+  /* Refined elevation — warm toned shadows for a premium feel */
+  --shadow-card: 0 1px 3px rgba(24, 12, 4, 0.06), 0 2px 8px rgba(24, 12, 4, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(24, 12, 4, 0.12), 0 1px 4px rgba(24, 12, 4, 0.06);
+  --shadow-modal: 0 8px 40px rgba(24, 12, 4, 0.18);
   --background: var(--brand-canvas);
   --foreground: var(--brand-ink);
 }
@@ -296,7 +299,7 @@ textarea {
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, #f0ece6 25%, #e8e2da 50%, #f0ece6 75%);
+  background: linear-gradient(90deg, #f4ede4 25%, #ecdfd4 50%, #f4ede4 75%);
   background-size: 200% 100%;
   animation: shimmer-bg 1.4s infinite;
   border-radius: 8px;
@@ -350,27 +353,49 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply inline-flex min-h-[38px] items-center justify-center rounded-full px-6 py-2.5 text-sm font-medium tracking-wide text-white transition duration-150;
-    /* Darker amber for WCAG AA contrast on button text */
+    @apply inline-flex min-h-[40px] items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold tracking-wide text-white transition-all duration-150;
     background-color: var(--brand-amber-dark);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.025em;
+    box-shadow: 0 1px 2px rgba(24,12,4,0.14), inset 0 1px 0 rgba(255,255,255,0.10);
   }
   .btn-primary:hover {
-    background-color: #7f4f18;
+    background-color: #73400f;
+    box-shadow: 0 2px 6px rgba(24,12,4,0.22), inset 0 1px 0 rgba(255,255,255,0.10);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(24,12,4,0.14);
   }
   .btn-secondary {
-    @apply inline-flex min-h-[38px] items-center justify-center rounded-full border-[1.5px] border-[var(--brand-amber)] bg-transparent px-6 py-2.5 text-sm font-medium tracking-wide text-[var(--brand-amber)] transition duration-150;
-    letter-spacing: 0.02em;
+    @apply inline-flex min-h-[40px] items-center justify-center rounded-full border-[1.5px] border-[var(--brand-amber)] bg-transparent px-6 py-2.5 text-sm font-semibold tracking-wide text-[var(--brand-amber)] transition-all duration-150;
+    letter-spacing: 0.025em;
   }
   .btn-secondary:hover {
     background-color: var(--brand-amber-light);
+    border-color: var(--brand-amber-dark);
+    color: var(--brand-amber-dark);
+    transform: translateY(-1px);
   }
   .btn-ghost {
-    @apply inline-flex min-h-[38px] items-center justify-center rounded-full bg-transparent px-6 py-2.5 text-sm font-medium tracking-wide text-[var(--brand-ink)] transition duration-150;
-    letter-spacing: 0.02em;
+    @apply inline-flex min-h-[40px] items-center justify-center rounded-full bg-transparent px-6 py-2.5 text-sm font-semibold tracking-wide text-[var(--brand-ink)] transition-all duration-150;
+    letter-spacing: 0.025em;
   }
   .btn-ghost:hover {
     background-color: var(--brand-amber-light);
+    color: var(--brand-amber-dark);
+  }
+
+  /* Premium card shell — use as base for product and content cards */
+  .card-premium {
+    @apply rounded-2xl bg-white transition-all duration-200;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--brand-border);
+  }
+  .card-premium:hover {
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--brand-border-dark);
+    transform: translateY(-2px);
   }
 }
 

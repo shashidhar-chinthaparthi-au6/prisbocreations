@@ -37,10 +37,11 @@ const config: Config = {
         "hero-marquee-r": "hero-marquee-r 62s linear infinite",
       },
       colors: {
-        ink: { DEFAULT: "#1a1a1a", muted: "#6b6560" },
-        sand: { DEFAULT: "#f5f4f3", deep: "#e8e0d6" },
-        accent: { DEFAULT: "#c47a2b", light: "#f5e6d0" },
+        ink: { DEFAULT: "#18120e", muted: "#6b6258" },
+        sand: { DEFAULT: "#fdfaf6", deep: "#ece3d8" },
+        accent: { DEFAULT: "#b5661a", light: "#faeee0", dark: "#8a4d12" },
         rose: { DEFAULT: "#9f1239", light: "#be185d" },
+        copper: { DEFAULT: "#b5661a", dark: "#8a4d12", light: "#faeee0" },
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],

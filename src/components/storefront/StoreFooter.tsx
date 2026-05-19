@@ -8,7 +8,7 @@ const instagram = process.env.NEXT_PUBLIC_INSTAGRAM_URL ?? "https://instagram.co
 export function StoreFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-auto border-t border-[var(--brand-border)] bg-[var(--brand-card)]">
+    <footer className="mt-auto border-t border-[var(--brand-border)] bg-[var(--brand-surface)]">
       <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:grid lg:grid-cols-4 lg:gap-8 lg:px-8">
         <div className="space-y-3">
           <p className="font-display text-lg">

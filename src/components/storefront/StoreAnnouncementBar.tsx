@@ -68,9 +68,10 @@ export function StoreAnnouncementBar() {
       aria-hidden={dismissed}
     >
       <div
-        className={`relative flex h-[30px] w-full items-center justify-center bg-[#C47A2B] px-10 text-[11px] leading-none tracking-[0.01em] text-white max-[374px]:hidden sm:h-[34px] sm:text-[12px] ${
+        className={`relative flex h-[30px] w-full items-center justify-center px-10 text-[11px] leading-none tracking-[0.08em] text-white/95 max-[374px]:hidden sm:h-[34px] sm:text-[12px] ${
           dismissed ? "pointer-events-none invisible" : ""
         }`}
+        style={{ background: "linear-gradient(90deg, #1c0d04 0%, #2e1508 40%, #1c0d04 100%)" }}
         role="region"
         aria-label="Announcements"
       >

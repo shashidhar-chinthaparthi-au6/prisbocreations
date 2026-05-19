@@ -18,7 +18,7 @@ function Wordmark() {
   return (
     <Link
       href="/"
-      className="flex min-w-0 shrink-0 max-w-full items-baseline gap-0.5 truncate font-display text-lg font-normal tracking-tight sm:text-xl"
+      className="flex min-w-0 shrink-0 max-w-full items-baseline gap-0.5 truncate font-display text-lg font-bold tracking-tight sm:text-[21px]"
     >
       <span className="text-[var(--brand-ink)]">Prisbo</span>
       <span className="text-[var(--brand-amber)]">Creations</span>
@@ -27,12 +27,12 @@ function Wordmark() {
 }
 
 const tabBase =
-  "inline-flex items-center rounded-[100px] px-3 py-1.5 text-[13px] transition-colors";
-const tabIdle = `${tabBase} font-normal text-[#6B6560] hover:bg-[#F5E6D0] hover:text-[#9A5E1E]`;
-const tabActive = `${tabBase} bg-[#F5E6D0] font-medium text-[#C47A2B]`;
+  "inline-flex items-center rounded-[100px] px-3 py-1.5 text-[13px] font-medium transition-all duration-150";
+const tabIdle = `${tabBase} text-[#6b6258] hover:bg-[#faeee0] hover:text-[#8a4d12]`;
+const tabActive = `${tabBase} bg-[#faeee0] text-[#8a4d12]`;
 
 function HeaderDivider() {
-  return <span className="hidden h-5 w-px shrink-0 bg-[#E8E0D6] lg:block" aria-hidden />;
+  return <span className="hidden h-5 w-px shrink-0 bg-[#ece3d8] lg:block" aria-hidden />;
 }
 
 function Chevron({ open }: { open: boolean }) {
