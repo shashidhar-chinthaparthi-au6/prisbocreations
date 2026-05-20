@@ -15,7 +15,7 @@ export function StoreAnnouncementBar() {
   const [dismissed, setDismissed] = useState(true);
   const [idx, setIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [fade, setFade] = useState(1);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -37,11 +37,11 @@ export function StoreAnnouncementBar() {
   useEffect(() => {
     if (dismissed) return;
     const t = setInterval(() => {
-      setFade(0);
+      setVisible(false);
       window.setTimeout(() => {
         setIdx((i) => (i + 1) % MESSAGES.length);
-        setFade(1);
-      }, 280);
+        setVisible(true);
+      }, 300);
     }, 4000);
     return () => clearInterval(t);
   }, [dismissed]);
@@ -59,36 +59,67 @@ export function StoreAnnouncementBar() {
     return <div className="h-0 w-full shrink-0" aria-hidden />;
   }
 
-  /* Below 375px: omit bar to avoid cramped layout; dismissed: collapse height */
   return (
     <div
       className={`w-full shrink-0 overflow-hidden transition-[max-height] duration-200 ease-out max-[374px]:max-h-0 ${
-        dismissed ? "max-h-0" : "max-h-[40px] sm:max-h-[36px]"
+        dismissed ? "max-h-0" : "max-h-[40px] sm:max-h-[38px]"
       }`}
       aria-hidden={dismissed}
     >
       <div
-        className={`relative flex h-[30px] w-full items-center justify-center px-10 text-[11px] leading-none tracking-[0.08em] text-white/95 max-[374px]:hidden sm:h-[34px] sm:text-[12px] ${
+        className={`relative flex h-[30px] w-full items-center justify-center px-12 max-[374px]:hidden sm:h-[34px] ${
           dismissed ? "pointer-events-none invisible" : ""
         }`}
-        style={{ background: "linear-gradient(90deg, #1c0d04 0%, #2e1508 40%, #1c0d04 100%)" }}
+        style={{
+          background: "linear-gradient(90deg, #140b06 0%, #1e0e08 35%, #2a1209 60%, #140b06 100%)",
+        }}
         role="region"
         aria-label="Announcements"
       >
+        {/* Dot separator flair — two flanking amber dots */}
+        <span
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-y-1/2 select-none"
+          style={{ transform: "translateX(-50%) translateY(-50%)" }}
+          aria-hidden
+        />
+
         <p
-          key={idx}
-          className="pointer-events-none max-w-[calc(100%-3rem)] text-center transition-opacity duration-300 ease-out"
-          style={{ opacity: fade }}
+          className="pointer-events-none max-w-[calc(100%-4rem)] text-center text-[11px] font-normal tracking-[0.1em] text-white/90 transition-opacity duration-300 ease-in-out sm:text-[12px]"
+          style={{ opacity: visible ? 1 : 0 }}
+          aria-live="polite"
+          aria-atomic="true"
         >
+          <span
+            className="mr-2 text-[9px]"
+            style={{ color: "var(--brand-amber)", opacity: 0.85 }}
+            aria-hidden
+          >
+            ●
+          </span>
           {MESSAGES[idx]}
+          <span
+            className="ml-2 text-[9px]"
+            style={{ color: "var(--brand-amber)", opacity: 0.85 }}
+            aria-hidden
+          >
+            ●
+          </span>
         </p>
+
         <button
           type="button"
           onClick={dismiss}
-          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-lg leading-none text-white hover:bg-white/15"
+          className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-sm leading-none text-white/70 transition-colors duration-150 hover:bg-white/20 hover:text-white sm:h-7 sm:w-7"
           aria-label="Dismiss announcements"
         >
-          ×
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+            <path
+              d="M1.5 1.5l7 7M8.5 1.5l-7 7"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
         </button>
       </div>
     </div>

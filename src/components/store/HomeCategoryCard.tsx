@@ -14,32 +14,36 @@ type Props = {
 
 export function HomeCategoryCard({ href, name, slug, imageSrc }: Props) {
   const [showImage, setShowImage] = useState(true);
-  const fallbackBg = CATEGORY_CARD_FALLBACK_BG[slug] ?? "#888888";
+  const fallbackBg = CATEGORY_CARD_FALLBACK_BG[slug] ?? "#c4a265";
 
   return (
-    <Link
-      href={href}
-      className="group relative flex h-full min-h-[160px] w-[160px] shrink-0 flex-col overflow-hidden rounded-2xl md:h-[160px] md:w-auto md:flex-none"
-    >
-      <div className="relative min-h-[120px] flex-1 md:aspect-auto md:min-h-[160px] md:h-full md:flex-none">
-        <div
-          className="absolute inset-0 z-0"
-          style={{ backgroundColor: fallbackBg }}
-          aria-hidden
+    <Link href={href} className="group relative block h-[220px] overflow-hidden rounded-[20px] lg:h-[260px]">
+      {/* Fallback background */}
+      <div className="absolute inset-0 z-0" style={{ backgroundColor: fallbackBg }} />
+
+      {/* Product image */}
+      {showImage && (
+        <Image
+          src={imageSrc}
+          alt={name}
+          fill
+          className="z-[1] object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+          sizes="(max-width: 767px) 160px, (max-width: 1023px) 30vw, 20vw"
+          onError={() => setShowImage(false)}
         />
-        {showImage ? (
-          <Image
-            src={imageSrc}
-            alt={name}
-            fill
-            className="z-[1] object-cover transition duration-150 group-hover:scale-[1.03]"
-            sizes="(max-width: 767px) 160px, (max-width: 1023px) 30vw, 20vw"
-            onError={() => setShowImage(false)}
-          />
-        ) : null}
-        <div className="absolute inset-0 z-[2] bg-[rgba(0,0,0,0.35)]" aria-hidden />
-        <p className="absolute inset-x-0 bottom-0 z-[3] flex items-end justify-center p-3 text-center text-sm font-bold text-white">
-          {name}
+      )}
+
+      {/* Gradient overlay: transparent top → rich dark bottom */}
+      <div className="absolute inset-0 z-[2] bg-gradient-to-t from-[rgba(15,8,4,0.75)] via-[rgba(15,8,4,0.2)] to-transparent" />
+
+      {/* Text */}
+      <div className="absolute inset-x-0 bottom-0 z-[3] p-4">
+        <p className="text-[15px] font-semibold text-white leading-tight">{name}</p>
+        <p className="mt-1 flex items-center gap-1 text-[12px] text-white/75 group-hover:text-white transition-colors">
+          Shop now
+          <span className="inline-block transition-transform duration-200 group-hover:translate-x-1" aria-hidden>
+            →
+          </span>
         </p>
       </div>
     </Link>

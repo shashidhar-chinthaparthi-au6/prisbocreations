@@ -1,8 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { HeaderCart } from "@/components/HeaderCart";
 import { HeaderAccountIcon } from "@/components/layout/HeaderAccountIcon";
@@ -14,41 +13,119 @@ import { useSwipeToClose } from "@/hooks/useSwipeToClose";
 
 type NavCategory = { slug: string; name: string; subcategories: { slug: string; name: string }[] };
 
+/* ─── Logo ─────────────────────────────────────────────────────────────── */
 function Wordmark() {
   return (
     <Link
       href="/"
-      className="flex min-w-0 shrink-0 max-w-full items-baseline gap-0.5 truncate font-display text-lg font-bold tracking-tight sm:text-[21px]"
+      className="flex items-center gap-0 font-sans text-[18px] font-bold tracking-tight"
     >
-      <span className="text-[var(--brand-ink)]">Prisbo</span>
-      <span className="text-[var(--brand-amber)]">Creations</span>
+      <span style={{ color: "var(--brand-ink)" }}>Prisbo</span>
+      <span
+        style={{ color: "var(--brand-amber)", margin: "0 3px", fontSize: "14px", lineHeight: 1 }}
+      >
+        ·
+      </span>
+      <span style={{ color: "var(--brand-ink)" }}>Creations</span>
     </Link>
   );
 }
 
-const tabBase =
-  "inline-flex items-center rounded-[100px] px-3 py-1.5 text-[13px] font-medium transition-all duration-150";
-const tabIdle = `${tabBase} text-[#6b6258] hover:bg-[#faeee0] hover:text-[#8a4d12]`;
-const tabActive = `${tabBase} bg-[#faeee0] text-[#8a4d12]`;
+/* ─── Nav pill styles ───────────────────────────────────────────────────── */
+const pillBase =
+  "inline-flex items-center rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-150 whitespace-nowrap";
+const pillIdle = `${pillBase} text-[var(--brand-muted)] hover:bg-[var(--brand-amber-light)] hover:text-[var(--brand-amber-dark)]`;
+const pillActive = `${pillBase} bg-[var(--brand-amber-light)] text-[var(--brand-amber-dark)]`;
 
+/* ─── Header divider ────────────────────────────────────────────────────── */
 function HeaderDivider() {
-  return <span className="hidden h-5 w-px shrink-0 bg-[#ece3d8] lg:block" aria-hidden />;
+  return <span className="hidden h-5 w-px shrink-0 bg-[var(--brand-border)] lg:block" aria-hidden />;
 }
 
+/* ─── Chevron for accordion ─────────────────────────────────────────────── */
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      className={`shrink-0 text-[var(--brand-muted)] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+      width="18"
+      height="18"
+      className={`shrink-0 text-[var(--brand-muted)] transition-transform duration-200 ${
+        open ? "rotate-180" : ""
+      }`}
       aria-hidden
     >
-      <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M6 9l6 6 6-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
+/* ─── Search icon ───────────────────────────────────────────────────────── */
+function SearchIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="text-[var(--brand-ink)]"
+    >
+      <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="m16 16 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/* ─── Wishlist icon ─────────────────────────────────────────────────────── */
+function HeartIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="text-[var(--brand-ink)]"
+    >
+      <path
+        d="M12 21s-6.716-4.196-9-8.5C.8 8.236 2.28 4 6.5 4c2.28 0 3.866 1.582 5.5 3.5C13.634 5.582 15.22 4 17.5 4 21.72 4 23.2 8.236 21 12.5 18.716 16.804 12 21 12 21Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/* ─── Icon button wrapper ───────────────────────────────────────────────── */
+function IconBtn({
+  onClick,
+  ariaLabel,
+  children,
+}: {
+  onClick?: () => void;
+  ariaLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] transition-colors duration-150"
+      aria-label={ariaLabel}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ─── Main component ────────────────────────────────────────────────────── */
 export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: boolean }) {
   const pathname = usePathname() ?? "";
   const hideCart = pathname.startsWith("/checkout");
@@ -57,10 +134,20 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoverCat, setHoverCat] = useState<string | null>(null);
   const [openAccordionSlug, setOpenAccordionSlug] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const megaLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wishCount = useWishlistStore((s) => s.ids.length);
   const setSidebarOpen = useAssistantChatStore((s) => s.setSidebarOpen);
   const navSwipe = useSwipeToClose(() => setMobileOpen(false), "left", 80);
 
+  /* Scroll shadow */
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  /* Fetch nav */
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -77,10 +164,12 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
     };
   }, []);
 
+  /* Close mobile on route change */
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
+  /* Lock body scroll when mobile drawer open */
   useEffect(() => {
     if (!mobileOpen) {
       setOpenAccordionSlug(null);
@@ -95,14 +184,16 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
 
   const activeCategory = nav.find((c) => c.slug === hoverCat);
   const allActive = pathname === "/products";
-
   const categoryActive = (slug: string) =>
     pathname === `/category/${slug}` || pathname.startsWith(`/category/${slug}/`);
 
   function openPrisboAssistant() {
     if (!assistantEnabled) return;
     if (pathname === "/assistant") {
-      document.getElementById("prisbo-assistant-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("prisbo-assistant-panel")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       return;
     }
     setSidebarOpen(true);
@@ -112,350 +203,450 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
     setOpenAccordionSlug((s) => (s === slug ? null : slug));
   }
 
+  /* Mega-menu: delay hide so mouse can travel from nav pill to panel */
+  function onNavLeave() {
+    megaLeaveTimer.current = setTimeout(() => setHoverCat(null), 120);
+  }
+  function onNavEnter(slug: string) {
+    if (megaLeaveTimer.current) clearTimeout(megaLeaveTimer.current);
+    setHoverCat(slug);
+  }
+  function onMegaEnter() {
+    if (megaLeaveTimer.current) clearTimeout(megaLeaveTimer.current);
+  }
+  function onMegaLeave() {
+    megaLeaveTimer.current = setTimeout(() => setHoverCat(null), 80);
+  }
+
   return (
     <>
+      {/* ── Main header bar ─────────────────────────────────────────────── */}
       <header
-        className="sticky-header store-rail-bg relative z-[100] border-b border-[#E8E0D6]"
-        onMouseLeave={() => setHoverCat(null)}
+        className={`sticky top-0 z-[100] w-full bg-white border-b border-[var(--brand-border)] transition-shadow duration-200 ${
+          scrolled ? "shadow-[0_2px_8px_rgba(24,12,4,0.08)]" : ""
+        }`}
       >
-        <div className="relative mx-auto flex h-14 w-full max-w-none items-center gap-2 px-3 sm:px-4 md:h-[60px] md:px-6 lg:h-16 lg:gap-6 lg:pl-10 lg:pr-6 xl:pl-12 xl:pr-8">
+        <div className="relative mx-auto flex h-[60px] w-full max-w-none items-center gap-2 px-3 sm:px-4 md:px-6 lg:h-[68px] lg:gap-4 lg:pl-10 lg:pr-6 xl:pl-12 xl:pr-8">
+
+          {/* Hamburger — mobile only */}
           <button
             type="button"
-            className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] lg:hidden"
+            className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] transition-colors duration-150 lg:hidden"
             aria-label="Open menu"
             onClick={() => setMobileOpen(true)}
           >
-            <span className="flex flex-col gap-1">
-              <span className="block h-0.5 w-5 bg-[var(--brand-ink)]" />
-              <span className="block h-0.5 w-5 bg-[var(--brand-ink)]" />
-              <span className="block h-0.5 w-5 bg-[var(--brand-ink)]" />
+            <span className="flex flex-col gap-[5px]">
+              <span className="block h-[1.5px] w-[18px] rounded-full bg-[var(--brand-ink)]" />
+              <span className="block h-[1.5px] w-[18px] rounded-full bg-[var(--brand-ink)]" />
+              <span className="block h-[1.5px] w-[13px] rounded-full bg-[var(--brand-ink)]" />
             </span>
           </button>
 
+          {/* Logo */}
           <div className="flex min-w-0 flex-1 justify-center lg:max-w-fit lg:flex-none lg:justify-start">
-            <div className="min-w-0 max-w-[min(70vw,14rem)] truncate text-center lg:max-w-none lg:text-left">
+            <div className="min-w-0 max-w-[min(70vw,15rem)] truncate text-center lg:max-w-none lg:text-left">
               <Wordmark />
             </div>
           </div>
 
+          {/* Desktop nav pills */}
           <nav
-            className="relative isolate z-10 hidden min-h-0 min-w-0 flex-1 flex-nowrap items-center justify-center gap-1 px-2 overflow-x-auto overflow-y-visible overscroll-x-contain lg:flex"
+            className="relative isolate z-10 hidden min-h-0 min-w-0 flex-1 flex-nowrap items-center justify-center gap-0.5 overflow-x-auto overflow-y-visible overscroll-x-contain lg:flex"
             aria-label="Shop by category"
+            onMouseLeave={onNavLeave}
           >
-            <Link href="/products" className={allActive ? tabActive : tabIdle}>
+            <Link href="/products" className={allActive ? pillActive : pillIdle}>
               All
             </Link>
             {nav.map((c) => (
-              <div key={c.slug} className="shrink-0" onMouseEnter={() => setHoverCat(c.slug)}>
-                <Link href={`/category/${c.slug}`} className={categoryActive(c.slug) ? tabActive : tabIdle}>
+              <div key={c.slug} className="shrink-0" onMouseEnter={() => onNavEnter(c.slug)}>
+                <Link
+                  href={`/category/${c.slug}`}
+                  className={categoryActive(c.slug) ? pillActive : pillIdle}
+                >
                   {c.name}
                 </Link>
               </div>
             ))}
           </nav>
 
+          {/* Right icon strip */}
           <div className="relative isolate z-10 ml-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              className="flex h-11 min-w-[44px] items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)]"
-              aria-label="Search"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden className="text-[var(--brand-ink)]">
-                <path
-                  d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Zm0-2a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z"
-                  fill="currentColor"
-                />
-                <path d="m16.5 16.5 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
+            {/* Search */}
+            <IconBtn onClick={() => setSearchOpen(true)} ariaLabel="Search">
+              <SearchIcon />
+            </IconBtn>
 
-            {assistantEnabled ?
+            {/* AI Assistant */}
+            {assistantEnabled && (
               <button
                 type="button"
                 onClick={openPrisboAssistant}
-                className="flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-full py-1.5 pl-1 pr-2 hover:bg-[var(--brand-amber-light)] lg:max-w-[min(8.5rem,calc(100vw-13rem))] lg:pl-3 lg:pr-3"
-                aria-label="Open shopping assistant — gift ideas and product help"
-                title="Opens Prisbo Assistant: describe what you're looking for and jump to matching products"
+                className="flex min-h-[40px] shrink-0 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 hover:bg-[var(--brand-amber-light)] transition-colors duration-150 lg:pl-2.5 lg:pr-3"
+                aria-label="Open shopping assistant"
               >
-                <AiAssistantGlyph className="h-7 w-7 shrink-0 lg:h-8 lg:w-8" />
-                <span className="hidden truncate text-left text-[13px] font-semibold leading-tight text-[var(--brand-ink)] lg:inline">
+                <AiAssistantGlyph className="h-7 w-7 shrink-0" />
+                <span className="hidden text-[13px] font-semibold text-[var(--brand-ink)] lg:inline">
                   Assistant
                 </span>
               </button>
-            : null}
+            )}
 
-            {assistantEnabled ? <HeaderDivider /> : null}
+            {assistantEnabled && <HeaderDivider />}
 
+            {/* Track order — desktop only */}
             <Link
               href="/track"
-              className="hidden h-11 items-center rounded-full px-3 text-[13px] font-medium text-[var(--brand-muted)] hover:bg-[var(--brand-amber-light)] hover:text-[var(--brand-ink)] lg:inline-flex"
+              className="hidden h-10 items-center rounded-full px-3 text-[13px] font-medium text-[var(--brand-muted)] hover:bg-[var(--brand-amber-light)] hover:text-[var(--brand-ink)] transition-colors duration-150 lg:inline-flex"
             >
               Track order
             </Link>
 
             <HeaderDivider />
 
+            {/* Account — desktop only */}
             <div className="hidden lg:block">
               <HeaderAccountIcon />
             </div>
 
             <HeaderDivider />
 
+            {/* Wishlist */}
             <Link
               href="/account/wishlist"
-              className="relative hidden h-11 min-w-[44px] items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] md:flex"
-              aria-label="Wishlist"
+              className="relative hidden h-10 w-10 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] transition-colors duration-150 md:flex"
+              aria-label={wishCount > 0 ? `Wishlist, ${wishCount} items` : "Wishlist"}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden className="text-[var(--brand-ink)]">
-                <path
-                  d="M12 21s-6.716-4.196-9-8.5C.8 8.236 2.28 4 6.5 4c2.28 0 3.866 1.582 5.5 3.5C13.634 5.582 15.22 4 17.5 4 21.72 4 23.2 8.236 21 12.5 18.716 16.804 12 21 12 21Z"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <HeartIcon />
               <span
-                className={`absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-[#C47A2B] px-0.5 text-[9px] font-semibold leading-none text-white ${wishCount > 0 ? "opacity-100" : "opacity-0"}`}
-                aria-label={wishCount > 0 ? `${wishCount} items in wishlist` : "Wishlist"}
+                className={`absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C47A2B] px-0.5 text-[9px] font-semibold leading-none text-white transition-opacity duration-150 ${
+                  wishCount > 0 ? "opacity-100" : "opacity-0"
+                }`}
               >
                 {wishCount > 99 ? "99+" : wishCount}
               </span>
             </Link>
 
+            {/* Cart */}
             {hideCart ? null : <HeaderCart />}
           </div>
         </div>
 
-        {hoverCat && activeCategory ? (
-          <div
-            className="store-rail-bg absolute left-0 right-0 top-full z-[90] border-b border-[#E8E0D6] shadow-[var(--shadow-modal)] animate-in fade-in duration-150"
-            onMouseEnter={() => setHoverCat(hoverCat)}
-            onMouseLeave={() => setHoverCat(null)}
-          >
-            <div className="mx-auto grid w-full max-w-none gap-8 px-6 py-8 lg:grid-cols-[220px_1fr_280px] lg:px-8">
+        {/* ── Mega-menu ──────────────────────────────────────────────────── */}
+        <div
+          className={`absolute left-0 right-0 top-full z-[90] w-full overflow-hidden border-b border-[var(--brand-border)] bg-white shadow-[0_8px_24px_rgba(24,12,4,0.10)] transition-all duration-200 ease-out ${
+            hoverCat && activeCategory
+              ? "pointer-events-auto max-h-[400px] opacity-100 translate-y-0"
+              : "pointer-events-none max-h-0 opacity-0 -translate-y-1"
+          }`}
+          onMouseEnter={onMegaEnter}
+          onMouseLeave={onMegaLeave}
+          aria-hidden={!(hoverCat && activeCategory)}
+        >
+          {activeCategory && (
+            <div className="mx-auto grid w-full max-w-[1400px] grid-cols-[220px_1fr_260px] gap-10 px-10 py-8 xl:px-12">
+              {/* Subcategories list */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--brand-muted)]">In {activeCategory.name}</p>
-                <ul className="mt-3 space-y-1">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                  In {activeCategory.name}
+                </p>
+                <ul className="space-y-0.5">
                   {activeCategory.subcategories.map((s) => (
                     <li key={s.slug}>
                       <Link
                         href={`/category/${activeCategory.slug}/${s.slug}`}
-                        className="flex items-center justify-between rounded-lg py-2 text-sm font-medium text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
+                        className="group flex items-center justify-between rounded-lg px-2 py-2 text-[13px] font-medium text-[var(--brand-ink)] transition-colors duration-100 hover:bg-[var(--brand-amber-light)] hover:text-[var(--brand-amber-dark)]"
                       >
                         {s.name}
-                        <span aria-hidden>→</span>
+                        <span
+                          className="text-[var(--brand-amber)] opacity-0 transition-opacity duration-100 group-hover:opacity-100"
+                          aria-hidden
+                        >
+                          →
+                        </span>
                       </Link>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="hidden lg:block">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--brand-muted)]">Featured picks</p>
-                <div className="mt-3 grid grid-cols-3 gap-3">
+
+              {/* Featured picks placeholder */}
+              <div>
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                  Popular picks
+                </p>
+                <div className="grid grid-cols-3 gap-3">
                   {[0, 1, 2].map((i) => (
                     <Link
                       key={i}
                       href={`/category/${activeCategory.slug}`}
-                      className="group overflow-hidden rounded-[10px] border border-[var(--brand-border)] bg-[var(--brand-surface)] shadow-[var(--shadow-card)]"
+                      className="group overflow-hidden rounded-[10px] border border-[var(--brand-border)] bg-[var(--brand-surface)] transition-shadow duration-150 hover:shadow-md"
                     >
-                      <div className="aspect-square bg-[var(--brand-sand)] transition duration-150 group-hover:scale-105" />
-                      <p className="p-2 text-center text-xs font-medium text-[var(--brand-ink)]">Shop {activeCategory.name}</p>
+                      <div className="aspect-square bg-[var(--brand-amber-light)]/60 transition duration-200 group-hover:brightness-95" />
+                      <p className="p-2 text-center text-[11px] font-medium text-[var(--brand-ink)]">
+                        {activeCategory.name}
+                      </p>
                     </Link>
                   ))}
                 </div>
               </div>
-              <div className="hidden lg:flex lg:flex-col lg:justify-between">
-                <div className="aspect-[4/3] overflow-hidden rounded-[10px] bg-[var(--brand-sand)]" />
-                <Link href={`/category/${activeCategory.slug}`} className="btn-primary mt-4 w-full text-center">
-                  Shop all {activeCategory.name}
-                </Link>
+
+              {/* Editorial card */}
+              <div className="flex flex-col justify-between">
+                <div>
+                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                    Featured
+                  </p>
+                  <div className="aspect-[4/3] overflow-hidden rounded-[12px] bg-[var(--brand-amber-light)]" />
+                </div>
+                <div className="mt-4">
+                  <p className="text-base font-semibold text-[var(--brand-ink)]">
+                    {activeCategory.name}
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-[var(--brand-muted)]">
+                    Handcrafted & personalised
+                  </p>
+                  <Link
+                    href={`/category/${activeCategory.slug}`}
+                    className="mt-3 inline-flex h-9 items-center rounded-full bg-[var(--brand-amber)] px-5 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--brand-amber-dark)]"
+                  >
+                    Shop all {activeCategory.name}
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ) : null}
+          )}
+        </div>
       </header>
 
-      {mobileOpen ? (
+      {/* ── Mobile drawer ───────────────────────────────────────────────── */}
+      {mobileOpen && (
         <div
           className="fixed inset-0 z-[200] lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
         >
+          {/* Backdrop */}
           <button
             type="button"
-            className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             aria-label="Close menu"
             onClick={() => setMobileOpen(false)}
           />
+
+          {/* Drawer panel */}
           <div
-            className="store-rail-bg absolute left-0 top-0 flex h-full w-[min(320px,85vw)] max-w-[85vw] flex-col shadow-2xl ring-1 ring-[#E8E0D6] transition-transform duration-300 ease-out"
+            className="absolute left-0 top-0 flex h-full w-[300px] max-w-[85vw] flex-col bg-white shadow-2xl"
             {...navSwipe}
           >
-            <div className="flex items-center justify-between border-b border-[#E8E0D6] px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-              <span className="text-sm font-semibold text-[var(--brand-ink)]">Menu</span>
+            {/* Drawer header */}
+            <div className="flex items-center justify-between border-b border-[var(--brand-border)] px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+              <Wordmark />
               <button
                 type="button"
-                className="flex h-11 min-w-[44px] items-center justify-center rounded-full text-2xl text-[var(--brand-ink)]"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--brand-muted)] hover:bg-[var(--brand-amber-light)] hover:text-[var(--brand-ink)] transition-colors duration-150"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
               >
-                ×
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path
+                    d="M2 2l12 12M14 2L2 14"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </button>
             </div>
-            {assistantEnabled ?
-              <div className="border-b border-[var(--brand-border)] px-3 py-3">
+
+            {/* AI Assistant promo */}
+            {assistantEnabled && (
+              <div className="border-b border-[var(--brand-border)] px-4 py-3">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileOpen(false);
                     setSidebarOpen(true);
                   }}
-                  className="flex w-full items-center gap-3 rounded-lg border border-[color-mix(in_srgb,var(--brand-amber)_28%,var(--brand-border))] bg-[color-mix(in_srgb,var(--brand-amber-light)_45%,white)] px-4 py-3 text-left"
+                  className="flex w-full items-center gap-3 rounded-xl border border-[color-mix(in_srgb,var(--brand-amber)_30%,var(--brand-border))] bg-[color-mix(in_srgb,var(--brand-amber-light)_50%,white)] px-3 py-3 text-left transition-colors duration-150 hover:bg-[var(--brand-amber-light)]"
                 >
                   <AiAssistantGlyph className="h-9 w-9 shrink-0" aria-hidden />
                   <span>
-                    <span className="block text-sm font-semibold text-[var(--brand-ink)]">Prisbo Assistant</span>
-                    <span className="text-xs text-[var(--brand-muted)]">Gift ideas &amp; catalogue help · opens on the right</span>
+                    <span className="block text-[13px] font-semibold text-[var(--brand-ink)]">
+                      Prisbo Assistant
+                    </span>
+                    <span className="text-[11px] text-[var(--brand-muted)]">
+                      Gift ideas & catalogue help
+                    </span>
                   </span>
                 </button>
                 <Link
                   href="/assistant"
-                  className="mt-2 block w-full py-2 text-center text-sm font-medium text-[var(--brand-amber-dark)] underline decoration-[color-mix(in_srgb,var(--brand-amber)_40%,transparent)] underline-offset-2"
+                  className="mt-2 block w-full py-1.5 text-center text-[12px] font-medium text-[var(--brand-amber-dark)] underline underline-offset-2"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Full-page conversational shopping
+                  Open full-page assistant
                 </Link>
               </div>
-            : null}
-            <div className="border-b border-[var(--brand-border)] px-3 py-3">
+            )}
+
+            {/* Search bar */}
+            <div className="border-b border-[var(--brand-border)] px-4 py-3">
               <button
                 type="button"
                 onClick={() => {
                   setMobileOpen(false);
                   setSearchOpen(true);
                 }}
-                className="flex h-12 w-full items-center rounded-lg border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 text-left text-sm text-[var(--brand-muted)]"
+                className="flex h-11 w-full items-center gap-2.5 rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 text-left text-[13px] text-[var(--brand-muted)] transition-colors duration-150 hover:border-[var(--brand-border-dark)]"
               >
+                <SearchIcon />
                 Search products, categories…
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <p className="px-1 text-xs font-semibold uppercase tracking-wider text-[var(--brand-muted)]">All products</p>
-              <ul className="mt-1 space-y-0">
-                <li className="border-b border-[var(--brand-border)] py-2">
-                  <Link
-                    href="/products"
-                    className="block py-2 text-base font-medium text-[var(--brand-ink)]"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    All
-                  </Link>
-                </li>
-                {nav.map((c) => {
-                  const open = openAccordionSlug === c.slug;
-                  return (
-                    <li key={c.slug} className="border-b border-[var(--brand-border)]">
-                      <button
-                        type="button"
-                        onClick={() => toggleAccordion(c.slug)}
-                        className="flex w-full items-center justify-between gap-2 py-3 text-left text-base font-medium text-[var(--brand-ink)]"
-                        aria-expanded={open}
-                      >
-                        {c.name}
-                        <Chevron open={open} />
-                      </button>
-                      <div
-                        className={`overflow-hidden transition-[max-height] duration-300 ease-out ${
-                          open ? "max-h-[500px]" : "max-h-0"
-                        }`}
-                      >
-                        <ul className="border-l border-[var(--brand-border)] pb-3 pl-3">
-                          <li>
-                            <Link
-                              href={`/category/${c.slug}`}
-                              className="block py-2 text-sm font-medium text-[var(--brand-ink)]"
-                              onClick={() => setMobileOpen(false)}
-                            >
-                              Shop all {c.name}
-                            </Link>
-                          </li>
-                          {c.subcategories.map((s) => (
-                            <li key={s.slug}>
-                              <Link
-                                href={`/category/${c.slug}/${s.slug}`}
-                                className="block py-2 text-sm text-[var(--brand-muted)]"
-                                onClick={() => setMobileOpen(false)}
-                              >
-                                {s.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
 
-              <p className="mt-6 px-1 text-xs font-semibold uppercase tracking-wider text-[var(--brand-muted)]">
-                Shop by recipient
-              </p>
-              <ul className="mt-2 space-y-1">
-                {(["him", "her", "kids", "couples"] as const).map((r) => (
-                  <li key={r}>
+            {/* Nav list */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+              <div className="px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
+                <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                  Shop
+                </p>
+                <ul className="space-y-0">
+                  <li className="border-b border-[var(--brand-border)]">
                     <Link
-                      href={`/for/${r}`}
-                      className="block rounded-lg py-3 capitalize text-[var(--brand-ink)]"
+                      href="/products"
+                      className="block py-3 text-[14px] font-medium text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
                       onClick={() => setMobileOpen(false)}
                     >
-                      For {r}
+                      All products
                     </Link>
                   </li>
-                ))}
-              </ul>
+                  {nav.map((c) => {
+                    const isOpen = openAccordionSlug === c.slug;
+                    return (
+                      <li key={c.slug} className="border-b border-[var(--brand-border)]">
+                        <button
+                          type="button"
+                          onClick={() => toggleAccordion(c.slug)}
+                          className="flex w-full items-center justify-between gap-2 py-3 text-left text-[14px] font-medium text-[var(--brand-ink)]"
+                          aria-expanded={isOpen}
+                        >
+                          {c.name}
+                          <Chevron open={isOpen} />
+                        </button>
+                        <div
+                          className={`overflow-hidden transition-[max-height] duration-300 ease-out ${
+                            isOpen ? "max-h-[500px]" : "max-h-0"
+                          }`}
+                        >
+                          <ul className="border-l-2 border-[var(--brand-amber-light)] pb-3 pl-4">
+                            <li>
+                              <Link
+                                href={`/category/${c.slug}`}
+                                className="block py-2 text-[13px] font-medium text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
+                                onClick={() => setMobileOpen(false)}
+                              >
+                                Shop all {c.name}
+                              </Link>
+                            </li>
+                            {c.subcategories.map((s) => (
+                              <li key={s.slug}>
+                                <Link
+                                  href={`/category/${c.slug}/${s.slug}`}
+                                  className="block py-2 text-[13px] text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
+                                  onClick={() => setMobileOpen(false)}
+                                >
+                                  {s.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
 
-              <div className="mt-6 space-y-1 border-t border-[var(--brand-border)] pt-4 text-sm">
-                <Link href="/track" className="block py-2 text-[var(--brand-ink)]" onClick={() => setMobileOpen(false)}>
-                  Track order
-                </Link>
-                <Link href="/login" className="block py-2 text-[var(--brand-ink)]" onClick={() => setMobileOpen(false)}>
-                  Account / Sign in
-                </Link>
-                <Link
-                  href="/account/wishlist"
-                  className="flex items-center justify-between py-2 text-[var(--brand-ink)]"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <span>Wishlist</span>
-                  {wishCount > 0 ? (
-                    <span className="rounded-full bg-[var(--brand-amber-light)] px-2 py-0.5 text-xs font-semibold text-[var(--brand-amber-dark)]">
-                      {wishCount}
+                {/* Shop by recipient */}
+                <p className="mb-2 mt-6 px-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+                  Shop by recipient
+                </p>
+                <ul className="space-y-0.5">
+                  {(["him", "her", "kids", "couples"] as const).map((r) => (
+                    <li key={r}>
+                      <Link
+                        href={`/for/${r}`}
+                        className="block rounded-lg py-2.5 text-[14px] capitalize text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        For {r}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Account / utility links */}
+                <div className="mt-5 space-y-1 border-t border-[var(--brand-border)] pt-4">
+                  <Link
+                    href="/track"
+                    className="block rounded-lg py-2.5 text-[14px] text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Track order
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="block rounded-lg py-2.5 text-[14px] text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Account / Sign in
+                  </Link>
+                  <Link
+                    href="/account/wishlist"
+                    className="flex items-center justify-between rounded-lg py-2.5 text-[14px] text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <span>Wishlist</span>
+                    {wishCount > 0 && (
+                      <span className="rounded-full bg-[var(--brand-amber-light)] px-2 py-0.5 text-[11px] font-semibold text-[var(--brand-amber-dark)]">
+                        {wishCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
+
+                {/* Footer links */}
+                <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-[var(--brand-border)] pt-4">
+                  {[
+                    { href: "/pages/faq", label: "FAQ" },
+                    { href: "/pages/contact", label: "Contact" },
+                    { href: "/pages/about", label: "About" },
+                  ].map(({ href, label }, i, arr) => (
+                    <span key={href} className="flex items-center gap-3">
+                      <Link
+                        href={href}
+                        className="text-[12px] text-[var(--brand-muted)] hover:text-[var(--brand-ink)]"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {label}
+                      </Link>
+                      {i < arr.length - 1 && (
+                        <span className="text-[var(--brand-border-dark)]" aria-hidden>
+                          ·
+                        </span>
+                      )}
                     </span>
-                  ) : null}
-                </Link>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-[var(--brand-border)] pt-4 text-sm text-[var(--brand-muted)]">
-                <Link href="/pages/faq" className="hover:text-[var(--brand-ink)]" onClick={() => setMobileOpen(false)}>
-                  FAQ
-                </Link>
-                <span aria-hidden>·</span>
-                <Link href="/pages/contact" className="hover:text-[var(--brand-ink)]" onClick={() => setMobileOpen(false)}>
-                  Contact
-                </Link>
-                <span aria-hidden>·</span>
-                <Link href="/pages/about" className="hover:text-[var(--brand-ink)]" onClick={() => setMobileOpen(false)}>
-                  About
-                </Link>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {searchOpen ? <StoreSearchOverlayFull onClose={() => setSearchOpen(false)} /> : null}
+      {/* Search overlay */}
+      {searchOpen && <StoreSearchOverlayFull onClose={() => setSearchOpen(false)} />}
 
       <span className="sr-only" aria-live="polite" id="cart-live" />
     </>

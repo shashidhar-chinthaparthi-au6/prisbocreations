@@ -89,22 +89,15 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
     setQty(lineId, inCartQty + 1);
   };
 
-  const cardClass = useMemo(
-    () =>
-      `product-card group flex h-full min-h-0 flex-col rounded-[14px] bg-[var(--brand-card)] border border-[var(--brand-border)] shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-[3px] hover:shadow-[var(--shadow-card-hover)] hover:border-[var(--brand-border-dark)] ${
-        out ? "opacity-90" : ""
-      }`,
-    [out],
-  );
-
   return (
     <article
-      className={cardClass}
+      className={`group relative flex flex-col overflow-hidden rounded-[16px] bg-white border border-[var(--brand-border)] shadow-[0_1px_3px_rgba(24,12,4,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(24,12,4,0.12)] hover:border-[var(--brand-border-dark)] ${out ? "opacity-80" : ""}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <Link href={productHref} className="card-img block shrink-0 overflow-hidden rounded-t-[9px]">
-        <div className="relative aspect-square overflow-hidden rounded-t-[9px] bg-[var(--sf)]">
+      {/* Image wrapper */}
+      <Link href={productHref} className="block shrink-0 overflow-hidden">
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#f7f2ec]">
           {product.imageUrl && !primaryImgError ? (
             <>
               <StoreMedia
@@ -123,7 +116,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
                   src={secondaryImg}
                   alt=""
                   fill
-                  className={`img-secondary transition-opacity duration-[250ms] ease-out ${
+                  className={`object-cover transition-opacity duration-[250ms] ease-out ${
                     hover ? "opacity-100" : "opacity-0"
                   }`}
                   sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -135,32 +128,32 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           ) : (
             <div
               className="flex h-full w-full items-center justify-center font-semibold"
-              style={{
-                background: "var(--brand-canvas)",
-                fontSize: 32,
-                color: "#C47A2B",
-              }}
+              style={{ background: "#f7f2ec", fontSize: 32, color: "#C47A2B" }}
               aria-hidden
             >
               {(product.name.trim()[0] ?? "?").toUpperCase()}
             </div>
           )}
+
+          {/* Badges — top-left */}
           {out ? (
-            <span className="absolute left-1.5 top-1.5 rounded-full bg-[#18120e]/80 px-[7px] py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/90 backdrop-blur-[4px] md:left-2 md:top-2">
+            <span className="absolute top-2 left-2 z-10 rounded-full bg-[#18120e]/80 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
               Sold out
             </span>
           ) : low ? (
-            <span className="absolute left-1.5 top-1.5 rounded-full bg-[#8a4d12]/85 px-[7px] py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white backdrop-blur-[4px] md:left-2 md:top-2">
+            <span className="absolute top-2 left-2 z-10 rounded-full bg-[#92400e]/85 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
               Almost gone
             </span>
           ) : product.isNew ? (
-            <span className="absolute left-1.5 top-1.5 rounded-full bg-[#18120e] px-[7px] py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/90 md:left-2 md:top-2">
+            <span className="absolute top-2 left-2 z-10 rounded-full bg-[#18120e] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
               New
             </span>
           ) : null}
+
+          {/* Color previews — bottom center */}
           {product.listingColorLabel && product.listingColorKey ? (
             <div
-              className="pointer-events-none absolute bottom-2.5 left-0 right-0 z-[4] flex justify-center px-2 md:bottom-3"
+              className="pointer-events-none absolute bottom-2 left-0 right-0 z-[4] flex justify-center"
               aria-hidden
             >
               <span className="max-w-[90%] truncate rounded-full border border-white/35 bg-black/35 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
@@ -172,21 +165,21 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
             product.imageUrl &&
             !primaryImgError ? (
             <div
-              className="pointer-events-none absolute bottom-2.5 left-0 right-0 z-[3] flex justify-center px-2 md:bottom-3"
+              className="pointer-events-none absolute bottom-2 left-0 right-0 z-[3] flex justify-center"
               aria-hidden
             >
               <div className="inline-flex max-w-full gap-1 rounded-full border border-white/35 bg-black/28 px-1.5 py-1 backdrop-blur-[8px]">
                 {product.colorPreviewUrls.slice(0, 6).map((src, i) => (
                   <span
                     key={`${product.id}-cv-${i}`}
-                    className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-white/95"
+                    className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full ring-2 ring-white/95"
                   >
                     <StoreMedia
                       src={src}
                       alt=""
                       fill
                       className="object-cover"
-                      sizes="28px"
+                      sizes="24px"
                       fetchPriority="low"
                       eager
                     />
@@ -195,7 +188,9 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
               </div>
             </div>
           ) : null}
-          <span className="absolute right-1 top-1 z-[5] md:right-1.5 md:top-1.5">
+
+          {/* Wishlist heart — top-right */}
+          <span className="absolute top-2 right-2 z-10">
             <WishlistHeart
               productId={product.id}
               productName={product.name}
@@ -206,67 +201,92 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           </span>
         </div>
       </Link>
-      <div className="card-body flex flex-1 flex-col px-[7px] pb-2 pt-1.5 md:px-2 md:pb-3 md:pt-3">
+
+      {/* Card body */}
+      <div className="flex flex-col gap-1.5 p-3 pt-2.5">
+        {/* Subcategory label */}
         {product.subcategoryName ? (
-          <p className="text-[10px] font-medium uppercase tracking-wide text-[var(--muted)] line-clamp-1">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--brand-muted)] line-clamp-1">
             {product.subcategoryName}
           </p>
         ) : null}
+
+        {/* Product name */}
         <Link href={productHref}>
-          <h3 className="card-name mt-0.5 min-h-[28px] line-clamp-2 text-[11px] font-medium leading-snug text-[var(--ink)] md:min-h-0 md:text-[13px] lg:text-sm">
+          <h3 className="text-[13px] font-medium leading-snug text-[var(--brand-ink)] line-clamp-2 min-h-[36px]">
             {product.name}
           </h3>
         </Link>
+
+        {/* Stars */}
         {product.avgRating != null && product.reviewCount != null && product.reviewCount >= 1 ? (
           <StarRatingRow
             rating={product.avgRating}
             reviewCount={product.reviewCount}
-            className="mt-1.5"
+            className="mt-0.5"
           />
         ) : null}
-        <div className="card-price mt-2 flex flex-wrap items-baseline gap-1.5 md:gap-2">
-          <span className="font-mono text-[12px] font-bold text-[var(--ink)] md:text-[13px]">
+
+        {/* Price row */}
+        <div className="flex items-baseline gap-1.5 mt-0.5">
+          <span className="text-[15px] font-bold text-[var(--brand-ink)]">
             {formatInrFromPaise(product.listPricePaise)}
           </span>
           {product.compareAtPaise && product.compareAtPaise > product.listPricePaise ? (
             <>
-              <span className="font-mono text-[11px] text-[var(--muted)] line-through md:text-[12px]">
+              <span className="text-[12px] text-[var(--brand-muted)] line-through">
                 {formatInrFromPaise(product.compareAtPaise)}
               </span>
               {discountPct != null ? (
-                <span className="rounded-full bg-[#faeee0] px-[5px] py-px text-[9px] font-bold text-[#8a4d12] md:text-[10px]">{discountPct}% off</span>
+                <span className="rounded-full bg-[#fef3c7] px-1.5 py-0.5 text-[10px] font-bold text-[#92400e]">
+                  {discountPct}% off
+                </span>
               ) : null}
             </>
           ) : null}
         </div>
+
+        {/* Add-to-cart / stepper */}
         {out ? (
           onStockNotify ? (
-            <button type="button" onClick={onStockNotify} className="btn-primary mt-3 w-full">
+            <button
+              type="button"
+              onClick={onStockNotify}
+              className="w-full rounded-full border border-[var(--brand-amber)] bg-transparent py-2 text-[12px] font-semibold text-[var(--brand-amber-dark)] transition-all duration-150 hover:bg-[var(--brand-amber-light)] mt-1"
+            >
               Notify me
             </button>
           ) : (
-            <button type="button" disabled className="btn-primary mt-3 w-full cursor-not-allowed opacity-60">
+            <button
+              type="button"
+              disabled
+              className="w-full rounded-full border border-[var(--brand-border)] bg-transparent py-2 text-[12px] font-semibold text-[var(--brand-muted)] cursor-not-allowed opacity-60 mt-1"
+            >
               Notify me
             </button>
           )
         ) : product.multi ? (
-          <button type="button" onClick={onAdd} className="btn-primary mt-3 w-full">
+          <button
+            type="button"
+            onClick={onAdd}
+            className="w-full rounded-full bg-[var(--brand-amber-dark)] py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:bg-[#73400f] mt-1"
+          >
             Choose options
           </button>
         ) : inCartQty >= 1 ? (
           <div
-            className="mt-3 inline-flex w-full items-center justify-between rounded-full border border-[var(--brand-border)] bg-[var(--brand-card)] p-1 shadow-[var(--shadow-card)]"
+            className="mt-1 flex items-center justify-between rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface)] p-1"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               aria-label="Decrease quantity"
               onClick={onDec}
-              className="inline-flex h-9 min-w-9 flex-1 items-center justify-center rounded-full bg-[var(--brand-surface)] text-base font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-amber-light)] sm:h-10 sm:min-w-10"
+              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[var(--brand-amber-light)] text-base font-bold text-[var(--brand-ink)]"
             >
               −
             </button>
-            <span className="min-w-[2rem] flex-1 text-center text-sm font-semibold tabular-nums text-[var(--brand-ink)] sm:text-base">
+            <span className="min-w-[2rem] text-center text-sm font-semibold tabular-nums text-[var(--brand-ink)]">
               {inCartQty}
             </span>
             <button
@@ -274,7 +294,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
               aria-label="Increase quantity"
               onClick={onInc}
               disabled={inCartQty >= maxQty}
-              className="inline-flex h-9 min-w-9 flex-1 items-center justify-center rounded-full bg-[var(--brand-amber)] text-base font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 sm:h-10 sm:min-w-10"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-amber)] text-white hover:bg-[var(--brand-amber-dark)] text-base font-bold disabled:cursor-not-allowed disabled:opacity-45"
             >
               +
             </button>
@@ -283,10 +303,10 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           <button
             type="button"
             onClick={onAdd}
-            className={`card-add mt-2.5 w-full rounded-[20px] border-none py-[5px] text-[10px] font-semibold tracking-wide text-white transition-all duration-150 md:mt-3 md:h-[34px] md:py-0 md:text-[11px] ${
+            className={`w-full rounded-full py-2 text-[12px] font-semibold text-white transition-all duration-150 mt-1 ${
               justAdded
-                ? "bg-[var(--ok)] shadow-none"
-                : "bg-[var(--am)] shadow-[0_1px_3px_rgba(24,12,4,0.18)] hover:bg-[var(--amd)] hover:-translate-y-px"
+                ? "bg-[var(--brand-success)]"
+                : "bg-[var(--brand-amber-dark)] hover:bg-[#73400f]"
             }`}
           >
             {justAdded ? "✓ Added" : "Add to cart"}

@@ -470,6 +470,10 @@ async function main(): Promise<void> {
     seedSubcategory,
   });
 
+  // ── Apparel catalog (17 varieties: 10 t-shirts + 7 caps) ─────────────────
+  const { seedApparelCatalog } = await import("./seed-apparel-catalog");
+  await seedApparelCatalog(catTextile);
+
   await upsertCoupons();
 
   const variantArrays = await Product.find({}).select("colourVariants").lean();

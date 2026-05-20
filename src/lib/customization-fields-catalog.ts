@@ -525,6 +525,52 @@ const BY_SUBCATEGORY: Record<string, CustomizationFieldDef[]> = {
       maxChars: 200,
     },
   ],
+  "Custom T-Shirts": [
+    {
+      key: "logo_file",
+      type: "image",
+      label: "Your logo or design",
+      required: true,
+      hint: "PNG with transparent background for best results.",
+    },
+    {
+      key: "name_text",
+      type: "text",
+      label: "Name or text under logo",
+      required: false,
+      maxChars: 30,
+    },
+    {
+      key: "notes",
+      type: "textarea",
+      label: "Print placement notes",
+      required: false,
+      maxChars: 200,
+    },
+  ],
+  "Branded Caps & Headwear": [
+    {
+      key: "logo_file",
+      type: "image",
+      label: "Your logo",
+      required: true,
+      hint: "PNG with transparent background preferred. High resolution.",
+    },
+    {
+      key: "text",
+      type: "text",
+      label: "Text (if no logo)",
+      required: false,
+      maxChars: 20,
+    },
+    {
+      key: "notes",
+      type: "textarea",
+      label: "Design notes",
+      required: false,
+      maxChars: 200,
+    },
+  ],
 };
 
 /** Seed + runtime: resolve personalization fields for a catalog subcategory name. */

@@ -188,6 +188,17 @@ textarea {
   --shadow-modal: 0 8px 40px rgba(24, 12, 4, 0.18);
   --background: var(--brand-canvas);
   --foreground: var(--brand-ink);
+
+  /* Design system additions */
+  --radius-card: 16px;
+  --radius-btn: 100px;
+  --transition-base: 150ms cubic-bezier(0.4,0,0.2,1);
+  --transition-slow: 300ms cubic-bezier(0.4,0,0.2,1);
+  --header-h: 64px;
+  --shadow-sm: 0 1px 2px rgba(24,12,4,0.06);
+  --shadow-md: 0 4px 12px rgba(24,12,4,0.10), 0 1px 3px rgba(24,12,4,0.06);
+  --shadow-lg: 0 8px 24px rgba(24,12,4,0.14), 0 2px 6px rgba(24,12,4,0.06);
+  --shadow-xl: 0 20px 48px rgba(24,12,4,0.18), 0 4px 12px rgba(24,12,4,0.08);
 }
 
 @media (min-width: 1024px) {
@@ -281,25 +292,32 @@ textarea {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1279px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
 }
 
 @media (max-width: 1023px) {
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 12px;
   }
 }
 
 @media (max-width: 639px) {
   .product-grid {
-    gap: 7px;
+    gap: 8px;
   }
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(90deg, #f4ede4 25%, #ecdfd4 50%, #f4ede4 75%);
+  background: linear-gradient(90deg, #f5ede3 25%, #edddd0 50%, #f5ede3 75%);
   background-size: 200% 100%;
   animation: shimmer-bg 1.4s infinite;
   border-radius: 8px;
@@ -353,50 +371,158 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply inline-flex min-h-[40px] items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold tracking-wide text-white transition-all duration-150;
-    background-color: var(--brand-amber-dark);
-    letter-spacing: 0.025em;
-    box-shadow: 0 1px 2px rgba(24,12,4,0.14), inset 0 1px 0 rgba(255,255,255,0.10);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 24px;
+    background: var(--brand-amber-dark);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border-radius: var(--radius-btn);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(24,12,4,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all var(--transition-base);
   }
   .btn-primary:hover {
-    background-color: #73400f;
-    box-shadow: 0 2px 6px rgba(24,12,4,0.22), inset 0 1px 0 rgba(255,255,255,0.10);
+    background: #73400f;
+    box-shadow: 0 4px 12px rgba(24,12,4,0.25), inset 0 1px 0 rgba(255,255,255,0.1);
     transform: translateY(-1px);
   }
   .btn-primary:active {
     transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(24,12,4,0.14);
   }
+
   .btn-secondary {
-    @apply inline-flex min-h-[40px] items-center justify-center rounded-full border-[1.5px] border-[var(--brand-amber)] bg-transparent px-6 py-2.5 text-sm font-semibold tracking-wide text-[var(--brand-amber)] transition-all duration-150;
-    letter-spacing: 0.025em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 24px;
+    background: transparent;
+    color: var(--brand-amber-dark);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border-radius: var(--radius-btn);
+    border: 1.5px solid var(--brand-amber);
+    cursor: pointer;
+    transition: all var(--transition-base);
   }
   .btn-secondary:hover {
-    background-color: var(--brand-amber-light);
+    background: var(--brand-amber-light);
     border-color: var(--brand-amber-dark);
-    color: var(--brand-amber-dark);
     transform: translateY(-1px);
   }
+
   .btn-ghost {
-    @apply inline-flex min-h-[40px] items-center justify-center rounded-full bg-transparent px-6 py-2.5 text-sm font-semibold tracking-wide text-[var(--brand-ink)] transition-all duration-150;
-    letter-spacing: 0.025em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 20px;
+    background: transparent;
+    color: var(--brand-ink);
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--radius-btn);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-base);
   }
   .btn-ghost:hover {
-    background-color: var(--brand-amber-light);
+    background: var(--brand-amber-light);
     color: var(--brand-amber-dark);
   }
 
   /* Premium card shell — use as base for product and content cards */
   .card-premium {
-    @apply rounded-2xl bg-white transition-all duration-200;
-    box-shadow: var(--shadow-card);
+    background: white;
     border: 1px solid var(--brand-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
   }
   .card-premium:hover {
-    box-shadow: var(--shadow-card-hover);
+    box-shadow: var(--shadow-md);
     border-color: var(--brand-border-dark);
     transform: translateY(-2px);
   }
+}
+
+/* ── Responsive horizontal padding that respects safe areas and caps at 1440px ── */
+.store-section {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .store-section {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .store-section {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+@media (min-width: 1280px) {
+  .store-section {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+@media (min-width: 1536px) {
+  .store-section {
+    padding-left: max(3rem, calc((100vw - 1440px) / 2));
+    padding-right: max(3rem, calc((100vw - 1440px) / 2));
+  }
+}
+
+/* ── Section typography ── */
+.section-title {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--brand-ink);
+  line-height: 1.2;
+}
+
+.section-subtitle {
+  font-size: 15px;
+  color: var(--brand-muted);
+  margin-top: 6px;
+}
+
+/* ── Badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.badge-new {
+  background: var(--brand-ink);
+  color: white;
+}
+.badge-sale {
+  background: #dc2626;
+  color: white;
+}
+.badge-hot {
+  background: #b5661a;
+  color: white;
+}
+.badge-low {
+  background: #92400e;
+  color: white;
 }
 
 .glass {

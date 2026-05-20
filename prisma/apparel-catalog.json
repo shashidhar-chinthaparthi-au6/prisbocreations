@@ -1,0 +1,1814 @@
+[
+  {
+    "varietyNumber": 1,
+    "type": "Round Neck Half Sleeve T-shirt",
+    "category": "tshirts",
+    "sku": "APP-RN-HS-001",
+    "slug": "custom-round-neck-tshirt-half-sleeve",
+    "prisboName": "Custom Printed Round Neck T-shirt — Half Sleeve",
+    "prisboDescription": "<p>Wear your story on every thread. Prisbo's round neck half-sleeve is the canvas India's teams, startups, and college fests reach for first — crafted in 180 GSM combed cotton that breathes through Hyderabad summers and boardroom energy alike. A true-to-size regular fit that looks sharp whether you're 50 heads at an offsite or one bold individual making a statement.</p><ul><li>180 GSM 100% combed cotton — premium softness, all-day breathable comfort</li><li>Vibrant DTF or screen print that survives 50+ washes without fading</li><li>True-to-size regular fit — XS to 3XL, no guesswork</li><li>10+ stock colours — your brand, your palette, your rules</li></ul>",
+    "pricePaise": 39900,
+    "compareAtPaise": 54900,
+    "stock": 300,
+    "fabric": "180 GSM 100% combed cotton",
+    "gsm": 180,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Screen Print", "Sublimation"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White", "Black", "Navy Blue", "Red", "Royal Blue", "Grey Melange", "Bottle Green", "Maroon", "Yellow", "Orange", "Sky Blue", "Olive Green"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80",
+      "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80",
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80",
+      "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80",
+      "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80"
+    ],
+    "tags": ["tshirt", "round-neck", "half-sleeve", "corporate", "team", "custom", "cotton", "regular-fit"],
+    "recipients": ["him", "her", "corporate", "kids"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or name to print (optional)",
+    "customizationTextPlaceholder": "e.g. Team Prisbo | Batch 2024",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "180 GSM 100% combed cotton"},
+      {"key": "Fit", "value": "Regular — true to size"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Print", "value": "DTF / Screen print / Sublimation"},
+      {"key": "Care", "value": "Machine wash cold, inside out, do not bleach"}
+    ],
+    "featureLines": [
+      "180 GSM premium combed cotton — soft, breathable, built for India's climate",
+      "Vibrant print that lasts 50+ washes without cracking or fading",
+      "True-to-size regular fit — XS to 3XL, comfortable all day",
+      "10+ stock colours — perfect for teams, fests, and brand merchandise"
+    ],
+    "colourVariants": [
+      {
+        "displayName": "White",
+        "hexCode": "#FFFFFF",
+        "skuSuffix": "WHT",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 50}, {"size": "S", "stock": 80}, {"size": "M", "stock": 100},
+          {"size": "L", "stock": 100}, {"size": "XL", "stock": 80}, {"size": "2XL", "stock": 60}, {"size": "3XL", "stock": 30}
+        ]
+      },
+      {
+        "displayName": "Black",
+        "hexCode": "#1A1A1A",
+        "skuSuffix": "BLK",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 45}, {"size": "S", "stock": 70}, {"size": "M", "stock": 90},
+          {"size": "L", "stock": 90}, {"size": "XL", "stock": 70}, {"size": "2XL", "stock": 50}, {"size": "3XL", "stock": 25}
+        ]
+      },
+      {
+        "displayName": "Navy Blue",
+        "hexCode": "#003153",
+        "skuSuffix": "NVY",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 40}, {"size": "S", "stock": 65}, {"size": "M", "stock": 85},
+          {"size": "L", "stock": 85}, {"size": "XL", "stock": 65}, {"size": "2XL", "stock": 45}, {"size": "3XL", "stock": 20}
+        ]
+      },
+      {
+        "displayName": "Red",
+        "hexCode": "#CC0000",
+        "skuSuffix": "RED",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 30}, {"size": "S", "stock": 50}, {"size": "M", "stock": 70},
+          {"size": "L", "stock": 70}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}
+        ]
+      },
+      {
+        "displayName": "Royal Blue",
+        "hexCode": "#4169E1",
+        "skuSuffix": "RYL",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 30}, {"size": "S", "stock": 50}, {"size": "M", "stock": 70},
+          {"size": "L", "stock": 70}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}
+        ]
+      },
+      {
+        "displayName": "Grey Melange",
+        "hexCode": "#9E9E9E",
+        "skuSuffix": "GRY",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 35}, {"size": "S", "stock": 55}, {"size": "M", "stock": 75},
+          {"size": "L", "stock": 75}, {"size": "XL", "stock": 55}, {"size": "2XL", "stock": 40}, {"size": "3XL", "stock": 18}
+        ]
+      },
+      {
+        "displayName": "Bottle Green",
+        "hexCode": "#006A4E",
+        "skuSuffix": "GRN",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 25}, {"size": "S", "stock": 45}, {"size": "M", "stock": 60},
+          {"size": "L", "stock": 60}, {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Maroon",
+        "hexCode": "#800000",
+        "skuSuffix": "MRN",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 25}, {"size": "S", "stock": 45}, {"size": "M", "stock": 60},
+          {"size": "L", "stock": 60}, {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Yellow",
+        "hexCode": "#FFD700",
+        "skuSuffix": "YLW",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 8,
+        "images": [{"url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 20}, {"size": "S", "stock": 35}, {"size": "M", "stock": 50},
+          {"size": "L", "stock": 50}, {"size": "XL", "stock": 35}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Orange",
+        "hexCode": "#FF6600",
+        "skuSuffix": "ORG",
+        "basePrice": 39900,
+        "mrp": 54900,
+        "isActive": true,
+        "displayOrder": 9,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 20}, {"size": "S", "stock": 35}, {"size": "M", "stock": 50},
+          {"size": "L", "stock": 50}, {"size": "XL", "stock": 35}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      }
+    ]
+  },
+  {
+    "varietyNumber": 2,
+    "type": "Round Neck Full Sleeve T-shirt",
+    "category": "tshirts",
+    "sku": "APP-RN-FS-002",
+    "slug": "custom-round-neck-tshirt-full-sleeve",
+    "prisboName": "Custom Printed Round Neck T-shirt — Full Sleeve",
+    "prisboDescription": "<p>For the ones who mean business year-round. Prisbo's full-sleeve round neck brings the same 180 GSM combed cotton warmth to winter campaigns, college cultural events, and cool-climate corporate drives — a complete canvas from wrist to wrist, expressive from every angle. Your brand travels further when it covers more.</p><ul><li>180 GSM 100% combed cotton — warm, structured, and all-day breathable</li><li>Full-sleeve canvas — front, back, and sleeve print options</li><li>Regular fit — tailored for Indian body proportions</li><li>Ideal for winter fests, corporate gifting, and team uniforms</li></ul>",
+    "pricePaise": 54900,
+    "compareAtPaise": 74900,
+    "stock": 250,
+    "fabric": "180 GSM 100% combed cotton",
+    "gsm": 180,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Screen Print"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White", "Black", "Navy Blue", "Red", "Royal Blue", "Grey Melange", "Bottle Green", "Maroon", "Yellow", "Orange", "Olive Green", "Sky Blue"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80",
+      "https://images.unsplash.com/photo-1560243563-062bfc001d68?w=800&q=80",
+      "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80",
+      "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80"
+    ],
+    "tags": ["tshirt", "round-neck", "full-sleeve", "corporate", "team", "custom", "cotton", "regular-fit", "winter"],
+    "recipients": ["him", "her", "corporate"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or name to print (optional)",
+    "customizationTextPlaceholder": "e.g. Marketing Squad | Hyderabad 2024",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "180 GSM 100% combed cotton"},
+      {"key": "Fit", "value": "Regular — true to size"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Sleeve", "value": "Full sleeve"},
+      {"key": "Print", "value": "DTF / Screen print"},
+      {"key": "Care", "value": "Machine wash cold, inside out, do not tumble dry"}
+    ],
+    "featureLines": [
+      "180 GSM combed cotton — premium warmth without bulk",
+      "Full-sleeve canvas — print front, back, or sleeve for maximum visibility",
+      "Regular fit cut for Indian proportions — XS to 3XL",
+      "Perfect for winter campaigns, college fests, and team uniforms"
+    ],
+    "colourVariants": [
+      {
+        "displayName": "White",
+        "hexCode": "#FFFFFF",
+        "skuSuffix": "WHT",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 40}, {"size": "S", "stock": 65}, {"size": "M", "stock": 85},
+          {"size": "L", "stock": 85}, {"size": "XL", "stock": 65}, {"size": "2XL", "stock": 45}, {"size": "3XL", "stock": 20}
+        ]
+      },
+      {
+        "displayName": "Black",
+        "hexCode": "#1A1A1A",
+        "skuSuffix": "BLK",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1560243563-062bfc001d68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 35}, {"size": "S", "stock": 60}, {"size": "M", "stock": 80},
+          {"size": "L", "stock": 80}, {"size": "XL", "stock": 60}, {"size": "2XL", "stock": 40}, {"size": "3XL", "stock": 18}
+        ]
+      },
+      {
+        "displayName": "Navy Blue",
+        "hexCode": "#003153",
+        "skuSuffix": "NVY",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 30}, {"size": "S", "stock": 50}, {"size": "M", "stock": 70},
+          {"size": "L", "stock": 70}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}
+        ]
+      },
+      {
+        "displayName": "Red",
+        "hexCode": "#CC0000",
+        "skuSuffix": "RED",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 25}, {"size": "S", "stock": 45}, {"size": "M", "stock": 60},
+          {"size": "L", "stock": 60}, {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Royal Blue",
+        "hexCode": "#4169E1",
+        "skuSuffix": "RYL",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 25}, {"size": "S", "stock": 45}, {"size": "M", "stock": 60},
+          {"size": "L", "stock": 60}, {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Grey Melange",
+        "hexCode": "#9E9E9E",
+        "skuSuffix": "GRY",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 30}, {"size": "S", "stock": 50}, {"size": "M", "stock": 65},
+          {"size": "L", "stock": 65}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}
+        ]
+      },
+      {
+        "displayName": "Bottle Green",
+        "hexCode": "#006A4E",
+        "skuSuffix": "GRN",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 20}, {"size": "S", "stock": 38}, {"size": "M", "stock": 55},
+          {"size": "L", "stock": 55}, {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Maroon",
+        "hexCode": "#800000",
+        "skuSuffix": "MRN",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1560243563-062bfc001d68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 20}, {"size": "S", "stock": 38}, {"size": "M", "stock": 55},
+          {"size": "L", "stock": 55}, {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Olive Green",
+        "hexCode": "#6B6B2A",
+        "skuSuffix": "OLV",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 8,
+        "images": [{"url": "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 18}, {"size": "S", "stock": 32}, {"size": "M", "stock": 48},
+          {"size": "L", "stock": 48}, {"size": "XL", "stock": 32}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}
+        ]
+      }
+    ]
+  },
+  {
+    "varietyNumber": 3,
+    "type": "Polo / Collar T-shirt",
+    "category": "tshirts",
+    "sku": "APP-PL-RS-003",
+    "slug": "custom-polo-collar-tshirt",
+    "prisboName": "Custom Printed Polo / Collar T-shirt",
+    "prisboDescription": "<p>Command every room in the Prisbo Polo — the go-to uniform for corporate teams, sales forces, and hospitality crews who demand presence without a full suit. Crafted in 200 GSM pique cotton with a clean collar and placket that holds its shape through long days and repeat washes. Embroider your logo on the chest and own every handshake.</p><ul><li>200 GSM premium pique cotton — structured, breathable, professionally crisp</li><li>Chest embroidery or DTF print — sharp logo placement every time</li><li>Regular fit with ribbed collar — retains shape after 60+ washes</li><li>Corporate staple from S to 3XL — one size chart, zero compromise</li></ul>",
+    "pricePaise": 54900,
+    "compareAtPaise": 74900,
+    "stock": 250,
+    "fabric": "200 GSM 100% pique cotton",
+    "gsm": 200,
+    "fitType": "Regular",
+    "printMethods": ["Embroidery", "DTF", "Screen Print"],
+    "availableSizes": ["S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White", "Black", "Navy Blue", "Sky Blue", "Dark Grey", "Royal Blue", "Bottle Green", "Maroon", "Red", "Olive Green"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800&q=80",
+      "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80",
+      "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80",
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80"
+    ],
+    "tags": ["polo", "collar", "corporate", "team", "custom", "pique-cotton", "embroidery", "uniform"],
+    "recipients": ["him", "her", "corporate"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or logo instruction (optional)",
+    "customizationTextPlaceholder": "e.g. Company Name | Left Chest Logo",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "200 GSM 100% pique cotton"},
+      {"key": "Fit", "value": "Regular — structured collar fit"},
+      {"key": "Sizes", "value": "S to 3XL"},
+      {"key": "Print", "value": "Embroidery / DTF / Screen print"},
+      {"key": "Collar", "value": "Ribbed polo collar with 3-button placket"},
+      {"key": "Care", "value": "Machine wash cold, do not bleach, low iron on print area"}
+    ],
+    "featureLines": [
+      "200 GSM pique cotton — crisp, breathable, and professionally structured",
+      "Embroidery-ready chest panel — your logo, sharp and permanent",
+      "Ribbed collar holds shape across 60+ washes — zero sag",
+      "The definitive corporate uniform — S to 3XL, boardroom to field"
+    ],
+    "colourVariants": [
+      {
+        "displayName": "White",
+        "hexCode": "#FFFFFF",
+        "skuSuffix": "WHT",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 70}, {"size": "M", "stock": 90}, {"size": "L", "stock": 90},
+          {"size": "XL", "stock": 70}, {"size": "2XL", "stock": 50}, {"size": "3XL", "stock": 25}
+        ]
+      },
+      {
+        "displayName": "Black",
+        "hexCode": "#1A1A1A",
+        "skuSuffix": "BLK",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 65}, {"size": "M", "stock": 85}, {"size": "L", "stock": 85},
+          {"size": "XL", "stock": 65}, {"size": "2XL", "stock": 45}, {"size": "3XL", "stock": 20}
+        ]
+      },
+      {
+        "displayName": "Navy Blue",
+        "hexCode": "#003153",
+        "skuSuffix": "NVY",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 60}, {"size": "M", "stock": 80}, {"size": "L", "stock": 80},
+          {"size": "XL", "stock": 60}, {"size": "2XL", "stock": 40}, {"size": "3XL", "stock": 18}
+        ]
+      },
+      {
+        "displayName": "Sky Blue",
+        "hexCode": "#87CEEB",
+        "skuSuffix": "SKY",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 55}, {"size": "M", "stock": 75}, {"size": "L", "stock": 75},
+          {"size": "XL", "stock": 55}, {"size": "2XL", "stock": 38}, {"size": "3XL", "stock": 15}
+        ]
+      },
+      {
+        "displayName": "Dark Grey",
+        "hexCode": "#555555",
+        "skuSuffix": "DGY",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 50}, {"size": "M", "stock": 70}, {"size": "L", "stock": 70},
+          {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 14}
+        ]
+      },
+      {
+        "displayName": "Royal Blue",
+        "hexCode": "#4169E1",
+        "skuSuffix": "RYL",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 45}, {"size": "M", "stock": 65}, {"size": "L", "stock": 65},
+          {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Bottle Green",
+        "hexCode": "#006A4E",
+        "skuSuffix": "GRN",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 40}, {"size": "M", "stock": 58}, {"size": "L", "stock": 58},
+          {"size": "XL", "stock": 40}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Maroon",
+        "hexCode": "#800000",
+        "skuSuffix": "MRN",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 38}, {"size": "M", "stock": 55}, {"size": "L", "stock": 55},
+          {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Red",
+        "hexCode": "#CC0000",
+        "skuSuffix": "RED",
+        "basePrice": 54900,
+        "mrp": 74900,
+        "isActive": true,
+        "displayOrder": 8,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 35}, {"size": "M", "stock": 52}, {"size": "L", "stock": 52},
+          {"size": "XL", "stock": 35}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}
+        ]
+      }
+    ]
+  },
+  {
+    "varietyNumber": 4,
+    "type": "Oversized / Boxy Fit Round Neck — Half Sleeve",
+    "category": "tshirts",
+    "sku": "APP-OS-HS-004",
+    "slug": "custom-oversized-tshirt-half-sleeve",
+    "prisboName": "Custom Printed Oversized T-shirt — Boxy Fit Half Sleeve",
+    "prisboDescription": "<p>Drop shoulders, extended body, maximum attitude. Prisbo's oversized boxy tee is the streetwear-meets-brand-statement pick for Gen Z launches, youth fests, music events, and culture-first startups. Cut wide in 220 GSM cotton blend with a canvas that demands big graphics, bold slogans, and zero holding back. Wear it large, wear it proud.</p><ul><li>220 GSM cotton-polyester blend — heavy drape, premium street feel</li><li>Boxy drop-shoulder cut — the silhouette India's youth culture craves</li><li>Oversized canvas perfect for full-front graphic prints and large artwork</li><li>Available in trending neutral and bold colourways — S to 3XL</li></ul>",
+    "pricePaise": 54900,
+    "compareAtPaise": 79900,
+    "stock": 220,
+    "fabric": "220 GSM 65% cotton 35% polyester blend",
+    "gsm": 220,
+    "fitType": "Oversized",
+    "printMethods": ["DTF", "Screen Print"],
+    "availableSizes": ["S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White", "Black", "Sand / Beige", "Dusty Pink", "Sage Green", "Lavender", "Slate Blue", "Charcoal", "Off-White / Cream", "Rust Orange"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80",
+      "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80",
+      "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80",
+      "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80",
+      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80",
+      "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80"
+    ],
+    "tags": ["tshirt", "oversized", "boxy", "streetwear", "half-sleeve", "youth", "custom", "cotton-blend", "drop-shoulder"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or slogan to print (optional)",
+    "customizationTextPlaceholder": "e.g. Born Different | The Culture Crew",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "220 GSM 65% cotton 35% polyester blend"},
+      {"key": "Fit", "value": "Oversized boxy — drop shoulder, extended body"},
+      {"key": "Sizes", "value": "S to 3XL (size up from regular for extra oversized look)"},
+      {"key": "Print", "value": "DTF / Screen print — large format friendly"},
+      {"key": "Care", "value": "Machine wash cold, inside out, hang dry to preserve drape"}
+    ],
+    "featureLines": [
+      "220 GSM cotton-poly blend — heavy drape, premium street-culture feel",
+      "Boxy drop-shoulder cut — the silhouette India's youth culture craves",
+      "Jumbo canvas for full-front artwork, bold slogans, large prints",
+      "10 trending colourways from neutrals to statement shades"
+    ],
+    "colourVariants": [
+      {
+        "displayName": "White",
+        "hexCode": "#FFFFFF",
+        "skuSuffix": "WHT",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 55}, {"size": "M", "stock": 75}, {"size": "L", "stock": 80},
+          {"size": "XL", "stock": 65}, {"size": "2XL", "stock": 45}, {"size": "3XL", "stock": 20}
+        ]
+      },
+      {
+        "displayName": "Black",
+        "hexCode": "#1A1A1A",
+        "skuSuffix": "BLK",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 50}, {"size": "M", "stock": 70}, {"size": "L", "stock": 75},
+          {"size": "XL", "stock": 60}, {"size": "2XL", "stock": 40}, {"size": "3XL", "stock": 18}
+        ]
+      },
+      {
+        "displayName": "Sand / Beige",
+        "hexCode": "#C4A265",
+        "skuSuffix": "SND",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 45}, {"size": "M", "stock": 65}, {"size": "L", "stock": 70},
+          {"size": "XL", "stock": 55}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}
+        ]
+      },
+      {
+        "displayName": "Dusty Pink",
+        "hexCode": "#C17A8A",
+        "skuSuffix": "PNK",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 40}, {"size": "M", "stock": 60}, {"size": "L", "stock": 65},
+          {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 32}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Sage Green",
+        "hexCode": "#8FAF8F",
+        "skuSuffix": "SGR",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 38}, {"size": "M", "stock": 55}, {"size": "L", "stock": 60},
+          {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Lavender",
+        "hexCode": "#9E91C8",
+        "skuSuffix": "LVN",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 35}, {"size": "M", "stock": 50}, {"size": "L", "stock": 55},
+          {"size": "XL", "stock": 42}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Charcoal",
+        "hexCode": "#3D3D3D",
+        "skuSuffix": "CHR",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 35}, {"size": "M", "stock": 52}, {"size": "L", "stock": 58},
+          {"size": "XL", "stock": 44}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Off-White / Cream",
+        "hexCode": "#FAF0E6",
+        "skuSuffix": "CRM",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 32}, {"size": "M", "stock": 48}, {"size": "L", "stock": 52},
+          {"size": "XL", "stock": 40}, {"size": "2XL", "stock": 24}, {"size": "3XL", "stock": 8}
+        ]
+      },
+      {
+        "displayName": "Rust Orange",
+        "hexCode": "#C0572A",
+        "skuSuffix": "RST",
+        "basePrice": 54900,
+        "mrp": 79900,
+        "isActive": true,
+        "displayOrder": 8,
+        "images": [{"url": "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "S", "stock": 28}, {"size": "M", "stock": 42}, {"size": "L", "stock": 48},
+          {"size": "XL", "stock": 36}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}
+        ]
+      }
+    ]
+  },
+  {
+    "varietyNumber": 5,
+    "type": "V-Neck Half Sleeve T-shirt",
+    "category": "tshirts",
+    "sku": "APP-VN-HS-005",
+    "slug": "custom-vneck-tshirt-half-sleeve",
+    "prisboName": "Custom Printed V-Neck T-shirt — Half Sleeve",
+    "prisboDescription": "<p>Sharp neckline, sharper statement. The Prisbo V-Neck is the effortlessly crafted tee for individuals who want a little more edge in their everyday wear — equally at home at startup demo days, brand launches, and casual Fridays. 180 GSM combed cotton with a clean V-cut that flatters every build and carries your print with confidence.</p><ul><li>180 GSM combed cotton — soft, breathable, and perfectly draping</li><li>Clean V-neckline — contemporary cut that flatters every build</li><li>DTF or screen print — vibrant, wash-resistant, true-to-colour</li><li>10+ colours for individuals, teams, and gifting collections</li></ul>",
+    "pricePaise": 42900,
+    "compareAtPaise": 57900,
+    "stock": 200,
+    "fabric": "180 GSM 100% combed cotton",
+    "gsm": 180,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Screen Print"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White", "Black", "Navy Blue", "Grey Melange", "Royal Blue", "Red", "Maroon", "Sky Blue", "Bottle Green", "Lavender"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80",
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80",
+      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80",
+      "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80"
+    ],
+    "tags": ["tshirt", "v-neck", "half-sleeve", "custom", "cotton", "regular-fit", "individual", "gifting"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or name to print (optional)",
+    "customizationTextPlaceholder": "e.g. Your Name | Your Vibe",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "180 GSM 100% combed cotton"},
+      {"key": "Fit", "value": "Regular — V-neckline, contemporary cut"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Print", "value": "DTF / Screen print"},
+      {"key": "Care", "value": "Machine wash cold, inside out, do not wring"}
+    ],
+    "featureLines": [
+      "180 GSM combed cotton — soft, breathable, all-day comfortable",
+      "Clean V-neckline — contemporary cut that flatters every build",
+      "Vibrant DTF or screen print — wash-resistant and true-to-colour",
+      "10+ colours for individuals, teams, and curated gifting collections"
+    ],
+    "colourVariants": [
+      {
+        "displayName": "White",
+        "hexCode": "#FFFFFF",
+        "skuSuffix": "WHT",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 40}, {"size": "S", "stock": 60}, {"size": "M", "stock": 80},
+          {"size": "L", "stock": 80}, {"size": "XL", "stock": 60}, {"size": "2XL", "stock": 40}, {"size": "3XL", "stock": 18}
+        ]
+      },
+      {
+        "displayName": "Black",
+        "hexCode": "#1A1A1A",
+        "skuSuffix": "BLK",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 38}, {"size": "S", "stock": 58}, {"size": "M", "stock": 75},
+          {"size": "L", "stock": 75}, {"size": "XL", "stock": 58}, {"size": "2XL", "stock": 38}, {"size": "3XL", "stock": 16}
+        ]
+      },
+      {
+        "displayName": "Navy Blue",
+        "hexCode": "#003153",
+        "skuSuffix": "NVY",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 32}, {"size": "S", "stock": 50}, {"size": "M", "stock": 68},
+          {"size": "L", "stock": 68}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 32}, {"size": "3XL", "stock": 14}
+        ]
+      },
+      {
+        "displayName": "Grey Melange",
+        "hexCode": "#9E9E9E",
+        "skuSuffix": "GRY",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 30}, {"size": "S", "stock": 48}, {"size": "M", "stock": 65},
+          {"size": "L", "stock": 65}, {"size": "XL", "stock": 48}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Royal Blue",
+        "hexCode": "#4169E1",
+        "skuSuffix": "RYL",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 28}, {"size": "S", "stock": 44}, {"size": "M", "stock": 60},
+          {"size": "L", "stock": 60}, {"size": "XL", "stock": 44}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Red",
+        "hexCode": "#CC0000",
+        "skuSuffix": "RED",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 25}, {"size": "S", "stock": 40}, {"size": "M", "stock": 55},
+          {"size": "L", "stock": 55}, {"size": "XL", "stock": 40}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Maroon",
+        "hexCode": "#800000",
+        "skuSuffix": "MRN",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 22}, {"size": "S", "stock": 36}, {"size": "M", "stock": 50},
+          {"size": "L", "stock": 50}, {"size": "XL", "stock": 36}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}
+        ]
+      },
+      {
+        "displayName": "Lavender",
+        "hexCode": "#9E91C8",
+        "skuSuffix": "LVN",
+        "basePrice": 42900,
+        "mrp": 57900,
+        "isActive": true,
+        "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 20}, {"size": "S", "stock": 32}, {"size": "M", "stock": 45},
+          {"size": "L", "stock": 45}, {"size": "XL", "stock": 32}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}
+        ]
+      }
+    ]
+  },
+  {
+    "varietyNumber": 6,
+    "type": "Henley / Button-neck Half Sleeve T-shirt",
+    "category": "tshirts",
+    "sku": "APP-HN-HS-006",
+    "slug": "custom-henley-button-neck-tshirt-half-sleeve",
+    "prisboName": "Custom Printed Henley T-shirt — Button-Neck Half Sleeve",
+    "prisboDescription": "<p>Between a tee and a statement — that's the Prisbo Henley. Three-button placket, ribbed neckline, and 180 GSM cotton that moves with your pace. The Henley is the unexpected choice for brand merchandise, alumni gifting, and anyone who wants their custom print on something that stands out from a sea of plain round necks. Expressive, casual, crafted.</p><ul><li>180 GSM combed cotton — premium softness with structured drape</li><li>3-button placket and ribbed neckline — distinctive, polished, versatile</li><li>Full front and back print area — your message front and centre</li><li>Ideal for alumni collections, brand merch, and stand-out team uniforms</li></ul>",
+    "pricePaise": 47900,
+    "compareAtPaise": 64900,
+    "stock": 180,
+    "fabric": "180 GSM 100% combed cotton",
+    "gsm": 180,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Screen Print"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White", "Black", "Navy Blue", "Grey Melange", "Maroon", "Olive Green", "Sky Blue", "Dusty Pink", "Slate Blue", "Off-White"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1603251578711-3290ca1a0187?w=800&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80",
+      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80",
+      "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80",
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80"
+    ],
+    "tags": ["tshirt", "henley", "button-neck", "half-sleeve", "custom", "cotton", "regular-fit", "alumni", "brand-merch"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or name to print (optional)",
+    "customizationTextPlaceholder": "e.g. Alumni Batch 2024 | Your Brand Name",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "180 GSM 100% combed cotton"},
+      {"key": "Fit", "value": "Regular — structured henley cut"},
+      {"key": "Neckline", "value": "3-button placket with ribbed henley collar"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Print", "value": "DTF / Screen print"},
+      {"key": "Care", "value": "Machine wash cold, gentle cycle, inside out"}
+    ],
+    "featureLines": [
+      "180 GSM combed cotton — premium softness with purposeful drape",
+      "3-button placket — a distinctive upgrade on the classic tee",
+      "Full front and back print area — your design, unapologetically large",
+      "Stands out in brand merch, alumni drops, and team uniforms"
+    ],
+    "colourVariants": [
+      {
+        "displayName": "White",
+        "hexCode": "#FFFFFF",
+        "skuSuffix": "WHT",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1603251578711-3290ca1a0187?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 35}, {"size": "S", "stock": 55}, {"size": "M", "stock": 70},
+          {"size": "L", "stock": 70}, {"size": "XL", "stock": 55}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}
+        ]
+      },
+      {
+        "displayName": "Black",
+        "hexCode": "#1A1A1A",
+        "skuSuffix": "BLK",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 32}, {"size": "S", "stock": 50}, {"size": "M", "stock": 65},
+          {"size": "L", "stock": 65}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 32}, {"size": "3XL", "stock": 12}
+        ]
+      },
+      {
+        "displayName": "Navy Blue",
+        "hexCode": "#003153",
+        "skuSuffix": "NVY",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 28}, {"size": "S", "stock": 45}, {"size": "M", "stock": 60},
+          {"size": "L", "stock": 60}, {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Grey Melange",
+        "hexCode": "#9E9E9E",
+        "skuSuffix": "GRY",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 25}, {"size": "S", "stock": 40}, {"size": "M", "stock": 55},
+          {"size": "L", "stock": 55}, {"size": "XL", "stock": 40}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}
+        ]
+      },
+      {
+        "displayName": "Maroon",
+        "hexCode": "#800000",
+        "skuSuffix": "MRN",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 22}, {"size": "S", "stock": 36}, {"size": "M", "stock": 50},
+          {"size": "L", "stock": 50}, {"size": "XL", "stock": 36}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}
+        ]
+      },
+      {
+        "displayName": "Olive Green",
+        "hexCode": "#6B6B2A",
+        "skuSuffix": "OLV",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1603251578711-3290ca1a0187?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 20}, {"size": "S", "stock": 32}, {"size": "M", "stock": 45},
+          {"size": "L", "stock": 45}, {"size": "XL", "stock": 32}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}
+        ]
+      },
+      {
+        "displayName": "Sky Blue",
+        "hexCode": "#87CEEB",
+        "skuSuffix": "SKY",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 18}, {"size": "S", "stock": 30}, {"size": "M", "stock": 42},
+          {"size": "L", "stock": 42}, {"size": "XL", "stock": 30}, {"size": "2XL", "stock": 18}, {"size": "3XL", "stock": 7}
+        ]
+      },
+      {
+        "displayName": "Dusty Pink",
+        "hexCode": "#C17A8A",
+        "skuSuffix": "PNK",
+        "basePrice": 47900,
+        "mrp": 64900,
+        "isActive": true,
+        "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [
+          {"size": "XS", "stock": 18}, {"size": "S", "stock": 28}, {"size": "M", "stock": 40},
+          {"size": "L", "stock": 40}, {"size": "XL", "stock": 28}, {"size": "2XL", "stock": 18}, {"size": "3XL", "stock": 6}
+        ]
+      }
+    ]
+  },
+  {
+    "varietyNumber": 7,
+    "type": "Raglan / Baseball Tee — Half Sleeve",
+    "category": "tshirts",
+    "sku": "APP-RG-HS-007",
+    "slug": "custom-raglan-baseball-tee-half-sleeve",
+    "prisboName": "Custom Printed Raglan Baseball Tee — Half Sleeve",
+    "prisboDescription": "<p>Two-tone sleeves. One bold identity. The Prisbo Raglan is built for sports teams, college crews, and anyone who wants their custom print to arrive with an aesthetic — not just a message. 180 GSM cotton body with contrasting raglan sleeves that frame your design like it was always meant to be there. Statement casual, sport-ready, team-approved.</p><ul><li>180 GSM cotton body with contrasting colour raglan sleeves</li><li>Classic baseball silhouette — instantly sporty, effortlessly cool</li><li>Front and sleeve print options — maximum visual impact</li><li>Perfect for sports teams, college fests, and band/crew merch</li></ul>",
+    "pricePaise": 49900,
+    "compareAtPaise": 67900,
+    "stock": 180,
+    "fabric": "180 GSM 100% combed cotton (body); contrasting sleeve",
+    "gsm": 180,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Screen Print"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White/Black", "White/Navy", "White/Red", "White/Royal Blue", "White/Maroon", "Grey/Black", "White/Bottle Green", "White/Grey"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80",
+      "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80",
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80",
+      "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80"
+    ],
+    "tags": ["tshirt", "raglan", "baseball-tee", "half-sleeve", "sporty", "two-tone", "team", "college", "custom"],
+    "recipients": ["him", "her", "kids"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or number to print (optional)",
+    "customizationTextPlaceholder": "e.g. Tigers | #07 | The Crew",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "180 GSM combed cotton body with contrasting raglan sleeves"},
+      {"key": "Fit", "value": "Regular — baseball tee silhouette"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Print", "value": "DTF / Screen print"},
+      {"key": "Style", "value": "3/4 raglan sleeve, crew neck"},
+      {"key": "Care", "value": "Machine wash cold, inside out, do not bleach"}
+    ],
+    "featureLines": [
+      "180 GSM combed cotton body — breathable and structured all day",
+      "Contrasting raglan sleeves — instantly sporty two-tone aesthetic",
+      "Front + sleeve print area — your artwork from every angle",
+      "Built for sports teams, college fests, and crew merchandise"
+    ],
+    "colourVariants": [
+      {"displayName": "White / Black", "hexCode": "#FFFFFF", "skuSuffix": "WBLK", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 35}, {"size": "S", "stock": 55}, {"size": "M", "stock": 70}, {"size": "L", "stock": 70}, {"size": "XL", "stock": 55}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}]},
+      {"displayName": "White / Navy", "hexCode": "#E8EDF5", "skuSuffix": "WNVY", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 30}, {"size": "S", "stock": 50}, {"size": "M", "stock": 65}, {"size": "L", "stock": 65}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}]},
+      {"displayName": "White / Red", "hexCode": "#FFE8E8", "skuSuffix": "WRED", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 28}, {"size": "S", "stock": 45}, {"size": "M", "stock": 60}, {"size": "L", "stock": 60}, {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 10}]},
+      {"displayName": "White / Royal Blue", "hexCode": "#EEF0FF", "skuSuffix": "WRYL", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 25}, {"size": "S", "stock": 42}, {"size": "M", "stock": 56}, {"size": "L", "stock": 56}, {"size": "XL", "stock": 42}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}]},
+      {"displayName": "White / Maroon", "hexCode": "#F5ECEC", "skuSuffix": "WMRN", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 22}, {"size": "S", "stock": 38}, {"size": "M", "stock": 52}, {"size": "L", "stock": 52}, {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Grey / Black", "hexCode": "#A0A0A0", "skuSuffix": "GBLK", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 20}, {"size": "S", "stock": 35}, {"size": "M", "stock": 48}, {"size": "L", "stock": 48}, {"size": "XL", "stock": 35}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "White / Bottle Green", "hexCode": "#E8F5F0", "skuSuffix": "WGRN", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 18}, {"size": "S", "stock": 30}, {"size": "M", "stock": 42}, {"size": "L", "stock": 42}, {"size": "XL", "stock": 30}, {"size": "2XL", "stock": 18}, {"size": "3XL", "stock": 7}]},
+      {"displayName": "White / Grey", "hexCode": "#F2F2F2", "skuSuffix": "WGRY", "basePrice": 49900, "mrp": 67900, "isActive": true, "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 18}, {"size": "S", "stock": 28}, {"size": "M", "stock": 40}, {"size": "L", "stock": 40}, {"size": "XL", "stock": 28}, {"size": "2XL", "stock": 18}, {"size": "3XL", "stock": 6}]}
+    ]
+  },
+  {
+    "varietyNumber": 8,
+    "type": "Sleeveless / Tank Top",
+    "category": "tshirts",
+    "sku": "APP-SL-TT-008",
+    "slug": "custom-sleeveless-tank-top",
+    "prisboName": "Custom Printed Sleeveless Tank Top",
+    "prisboDescription": "<p>Freedom of movement, full-force expression. Prisbo's sleeveless tank is the gym-to-street essential for sports teams, fitness brands, summer event crews, and anyone who refuses to let the heat slow them down. 160 GSM jersey knit with a clean dropped armhole — breathable, lightweight, and built for the front-row moments. Your design, unrestricted.</p><ul><li>160 GSM 100% cotton jersey — ultra-lightweight and breathable for Indian summers</li><li>Dropped armhole cut — performance-ready with streetwear edge</li><li>Full front and back print area — bold graphics, bright colours</li><li>Ideal for gyms, sports events, summer fests, and activewear brands</li></ul>",
+    "pricePaise": 34900,
+    "compareAtPaise": 47900,
+    "stock": 200,
+    "fabric": "160 GSM 100% cotton jersey",
+    "gsm": 160,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Sublimation", "Screen Print"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["White", "Black", "Navy Blue", "Red", "Royal Blue", "Grey Melange", "Bottle Green", "Orange", "Yellow", "Sky Blue"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=800&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+      "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80",
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80",
+      "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80",
+      "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80"
+    ],
+    "tags": ["tank-top", "sleeveless", "gym", "sports", "summer", "custom", "cotton", "activewear", "fitness"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or name to print (optional)",
+    "customizationTextPlaceholder": "e.g. Beast Mode | Gym Crew 2024",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "160 GSM 100% cotton jersey"},
+      {"key": "Fit", "value": "Regular — dropped armhole, sleeveless"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Print", "value": "DTF / Sublimation / Screen print"},
+      {"key": "Care", "value": "Machine wash cold, do not bleach, lay flat to dry"}
+    ],
+    "featureLines": [
+      "160 GSM lightweight cotton jersey — ultra-breathable for Indian heat",
+      "Dropped armhole cut — full range of motion, gym-to-street ready",
+      "Front and back print canvas — bold graphics with no restrictions",
+      "Ideal for gyms, sports events, summer fests, and activewear drops"
+    ],
+    "colourVariants": [
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 40}, {"size": "S", "stock": 60}, {"size": "M", "stock": 80}, {"size": "L", "stock": 80}, {"size": "XL", "stock": 60}, {"size": "2XL", "stock": 40}, {"size": "3XL", "stock": 18}]},
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 38}, {"size": "S", "stock": 58}, {"size": "M", "stock": 75}, {"size": "L", "stock": 75}, {"size": "XL", "stock": 58}, {"size": "2XL", "stock": 38}, {"size": "3XL", "stock": 16}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 32}, {"size": "S", "stock": 50}, {"size": "M", "stock": 68}, {"size": "L", "stock": 68}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 32}, {"size": "3XL", "stock": 14}]},
+      {"displayName": "Red", "hexCode": "#CC0000", "skuSuffix": "RED", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 28}, {"size": "S", "stock": 45}, {"size": "M", "stock": 60}, {"size": "L", "stock": 60}, {"size": "XL", "stock": 45}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 12}]},
+      {"displayName": "Royal Blue", "hexCode": "#4169E1", "skuSuffix": "RYL", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 25}, {"size": "S", "stock": 42}, {"size": "M", "stock": 58}, {"size": "L", "stock": 58}, {"size": "XL", "stock": 42}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}]},
+      {"displayName": "Grey Melange", "hexCode": "#9E9E9E", "skuSuffix": "GRY", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 22}, {"size": "S", "stock": 38}, {"size": "M", "stock": 52}, {"size": "L", "stock": 52}, {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Orange", "hexCode": "#FF6600", "skuSuffix": "ORG", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 20}, {"size": "S", "stock": 34}, {"size": "M", "stock": 46}, {"size": "L", "stock": 46}, {"size": "XL", "stock": 34}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Bottle Green", "hexCode": "#006A4E", "skuSuffix": "GRN", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 18}, {"size": "S", "stock": 30}, {"size": "M", "stock": 42}, {"size": "L", "stock": 42}, {"size": "XL", "stock": 30}, {"size": "2XL", "stock": 18}, {"size": "3XL", "stock": 7}]}
+    ]
+  },
+  {
+    "varietyNumber": 9,
+    "type": "Hoodie / Sweatshirt (Pullover)",
+    "category": "tshirts",
+    "sku": "APP-HD-PO-009",
+    "slug": "custom-pullover-hoodie-sweatshirt",
+    "prisboName": "Custom Printed Pullover Hoodie / Sweatshirt",
+    "prisboDescription": "<p>The heavyweight of your wardrobe, the centrepiece of your brand story. Prisbo's pullover hoodie is crafted in 320 GSM fleece-back cotton blend — thick, warm, and made to carry your largest and boldest prints through every campus walk, winter offsite, and product launch. Wear your brand like armour. No zipper needed — just pull on and own it.</p><ul><li>320 GSM 80% cotton 20% polyester fleece — premium warmth, structured weight</li><li>Kangaroo pocket, ribbed cuffs and hem — built to last, styled to impress</li><li>Full front, back, sleeve, and hood print zones — maximum brand real estate</li><li>The definitive team hoodie for startups, colleges, and brand drops</li></ul>",
+    "pricePaise": 99900,
+    "compareAtPaise": 134900,
+    "stock": 180,
+    "fabric": "320 GSM 80% cotton 20% polyester fleece-back",
+    "gsm": 320,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Screen Print", "Embroidery"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["Black", "Navy Blue", "Grey Melange", "White", "Maroon", "Olive Green", "Royal Blue", "Charcoal", "Bottle Green", "Dusty Pink"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80",
+      "https://images.unsplash.com/photo-1509942774463-acf339cf87d5?w=800&q=80",
+      "https://images.unsplash.com/photo-1578681994506-b8f463449011?w=800&q=80",
+      "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=80",
+      "https://images.unsplash.com/photo-1572495532056-8583af1cbad0?w=800&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80"
+    ],
+    "tags": ["hoodie", "sweatshirt", "pullover", "fleece", "custom", "winter", "team", "startup", "college", "brand-drop"],
+    "recipients": ["him", "her", "corporate"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or design instruction (optional)",
+    "customizationTextPlaceholder": "e.g. Engineering Batch 2024 | The Builders Club",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "320 GSM 80% cotton 20% polyester fleece-back"},
+      {"key": "Fit", "value": "Regular — relaxed, cosy silhouette"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Print", "value": "DTF / Screen print / Embroidery"},
+      {"key": "Features", "value": "Kangaroo pocket, drawstring hood, ribbed cuffs and hem"},
+      {"key": "Care", "value": "Machine wash cold, inside out, do not tumble dry at high heat"}
+    ],
+    "featureLines": [
+      "320 GSM fleece-back cotton blend — heavyweight warmth, premium feel",
+      "Kangaroo pocket, drawstring hood, ribbed cuffs — built to last seasons",
+      "Front, back, sleeve and hood print zones — your brand, everywhere",
+      "The team hoodie for startups, colleges, and iconic brand drops"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 30}, {"size": "S", "stock": 50}, {"size": "M", "stock": 65}, {"size": "L", "stock": 65}, {"size": "XL", "stock": 50}, {"size": "2XL", "stock": 35}, {"size": "3XL", "stock": 15}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1509942774463-acf339cf87d5?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 28}, {"size": "S", "stock": 46}, {"size": "M", "stock": 60}, {"size": "L", "stock": 60}, {"size": "XL", "stock": 46}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}]},
+      {"displayName": "Grey Melange", "hexCode": "#9E9E9E", "skuSuffix": "GRY", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1578681994506-b8f463449011?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 28}, {"size": "S", "stock": 46}, {"size": "M", "stock": 60}, {"size": "L", "stock": 60}, {"size": "XL", "stock": 46}, {"size": "2XL", "stock": 30}, {"size": "3XL", "stock": 12}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 25}, {"size": "S", "stock": 42}, {"size": "M", "stock": 55}, {"size": "L", "stock": 55}, {"size": "XL", "stock": 42}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 10}]},
+      {"displayName": "Maroon", "hexCode": "#800000", "skuSuffix": "MRN", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1572495532056-8583af1cbad0?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 22}, {"size": "S", "stock": 38}, {"size": "M", "stock": 50}, {"size": "L", "stock": 50}, {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 24}, {"size": "3XL", "stock": 10}]},
+      {"displayName": "Olive Green", "hexCode": "#6B6B2A", "skuSuffix": "OLV", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 20}, {"size": "S", "stock": 34}, {"size": "M", "stock": 46}, {"size": "L", "stock": 46}, {"size": "XL", "stock": 34}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Royal Blue", "hexCode": "#4169E1", "skuSuffix": "RYL", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1509942774463-acf339cf87d5?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 18}, {"size": "S", "stock": 30}, {"size": "M", "stock": 42}, {"size": "L", "stock": 42}, {"size": "XL", "stock": 30}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Charcoal", "hexCode": "#3D3D3D", "skuSuffix": "CHR", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1578681994506-b8f463449011?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 18}, {"size": "S", "stock": 30}, {"size": "M", "stock": 42}, {"size": "L", "stock": 42}, {"size": "XL", "stock": 30}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Dusty Pink", "hexCode": "#C17A8A", "skuSuffix": "PNK", "basePrice": 99900, "mrp": 134900, "isActive": true, "displayOrder": 8,
+        "images": [{"url": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 15}, {"size": "S", "stock": 26}, {"size": "M", "stock": 36}, {"size": "L", "stock": 36}, {"size": "XL", "stock": 26}, {"size": "2XL", "stock": 16}, {"size": "3XL", "stock": 6}]}
+    ]
+  },
+  {
+    "varietyNumber": 10,
+    "type": "Zipper Hoodie",
+    "category": "tshirts",
+    "sku": "APP-ZH-001-010",
+    "slug": "custom-zipper-hoodie",
+    "prisboName": "Custom Printed Zipper Hoodie",
+    "prisboDescription": "<p>Layer it open. Zip it up. Either way, your brand is the statement. Prisbo's full-zip hoodie in 320 GSM fleece-back cotton blend is the versatile workhorse for corporate teams heading into winter events, college clubs building identity, and startups who know that merch is marketing. Front zip, chest print, back large-format — wear your story from every angle.</p><ul><li>320 GSM 80% cotton 20% polyester fleece — heavyweight warmth, premium zip finish</li><li>Full-length YKK-style zip — smooth, durable, opens to a full canvas</li><li>Chest, back, sleeve print zones — layered branding opportunities</li><li>The jacket-hoodie hybrid your team didn't know they needed</li></ul>",
+    "pricePaise": 119900,
+    "compareAtPaise": 159900,
+    "stock": 150,
+    "fabric": "320 GSM 80% cotton 20% polyester fleece-back",
+    "gsm": 320,
+    "fitType": "Regular",
+    "printMethods": ["DTF", "Screen Print", "Embroidery"],
+    "availableSizes": ["XS", "S", "M", "L", "XL", "2XL", "3XL"],
+    "availableColors": ["Black", "Navy Blue", "Grey Melange", "White", "Charcoal", "Maroon", "Olive Green", "Royal Blue", "Bottle Green", "Dusty Pink"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80",
+      "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80",
+      "https://images.unsplash.com/photo-1509942774463-acf339cf87d5?w=800&q=80",
+      "https://images.unsplash.com/photo-1578681994506-b8f463449011?w=800&q=80",
+      "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=80",
+      "https://images.unsplash.com/photo-1572495532056-8583af1cbad0?w=800&q=80"
+    ],
+    "tags": ["hoodie", "zipper", "full-zip", "fleece", "custom", "winter", "team", "startup", "corporate", "brand-merch"],
+    "recipients": ["him", "her", "corporate"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Text or design instruction (optional)",
+    "customizationTextPlaceholder": "e.g. Founders Club | Left Chest + Back Logo",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "320 GSM 80% cotton 20% polyester fleece-back"},
+      {"key": "Fit", "value": "Regular — relaxed zip-up silhouette"},
+      {"key": "Sizes", "value": "XS to 3XL"},
+      {"key": "Print", "value": "DTF / Screen print / Embroidery"},
+      {"key": "Features", "value": "Full-length zip, kangaroo pockets, drawstring hood, ribbed cuffs"},
+      {"key": "Care", "value": "Machine wash cold, zip closed before washing, do not tumble dry hot"}
+    ],
+    "featureLines": [
+      "320 GSM fleece-back cotton blend — heavyweight warmth, impeccable finish",
+      "Full-length zip unlocks a versatile layer and open-front canvas",
+      "Chest, back, and sleeve print zones — branding from every angle",
+      "The jacket-hoodie hybrid built for Indian winters and bold statements"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 25}, {"size": "S", "stock": 42}, {"size": "M", "stock": 56}, {"size": "L", "stock": 56}, {"size": "XL", "stock": 42}, {"size": "2XL", "stock": 28}, {"size": "3XL", "stock": 12}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 22}, {"size": "S", "stock": 38}, {"size": "M", "stock": 52}, {"size": "L", "stock": 52}, {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}]},
+      {"displayName": "Grey Melange", "hexCode": "#9E9E9E", "skuSuffix": "GRY", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1509942774463-acf339cf87d5?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 22}, {"size": "S", "stock": 38}, {"size": "M", "stock": 52}, {"size": "L", "stock": 52}, {"size": "XL", "stock": 38}, {"size": "2XL", "stock": 25}, {"size": "3XL", "stock": 10}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1578681994506-b8f463449011?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 20}, {"size": "S", "stock": 34}, {"size": "M", "stock": 46}, {"size": "L", "stock": 46}, {"size": "XL", "stock": 34}, {"size": "2XL", "stock": 22}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Charcoal", "hexCode": "#3D3D3D", "skuSuffix": "CHR", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 18}, {"size": "S", "stock": 30}, {"size": "M", "stock": 44}, {"size": "L", "stock": 44}, {"size": "XL", "stock": 30}, {"size": "2XL", "stock": 20}, {"size": "3XL", "stock": 8}]},
+      {"displayName": "Maroon", "hexCode": "#800000", "skuSuffix": "MRN", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1572495532056-8583af1cbad0?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 16}, {"size": "S", "stock": 28}, {"size": "M", "stock": 40}, {"size": "L", "stock": 40}, {"size": "XL", "stock": 28}, {"size": "2XL", "stock": 18}, {"size": "3XL", "stock": 6}]},
+      {"displayName": "Olive Green", "hexCode": "#6B6B2A", "skuSuffix": "OLV", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 15}, {"size": "S", "stock": 26}, {"size": "M", "stock": 36}, {"size": "L", "stock": 36}, {"size": "XL", "stock": 26}, {"size": "2XL", "stock": 16}, {"size": "3XL", "stock": 6}]},
+      {"displayName": "Royal Blue", "hexCode": "#4169E1", "skuSuffix": "RYL", "basePrice": 119900, "mrp": 159900, "isActive": true, "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "XS", "stock": 14}, {"size": "S", "stock": 24}, {"size": "M", "stock": 34}, {"size": "L", "stock": 34}, {"size": "XL", "stock": 24}, {"size": "2XL", "stock": 14}, {"size": "3XL", "stock": 5}]}
+    ]
+  },
+  {
+    "varietyNumber": 11,
+    "type": "Structured Baseball Cap / 6-Panel (Adjustable Strap)",
+    "category": "caps",
+    "sku": "APP-CP-6P-011",
+    "slug": "custom-structured-baseball-cap-6-panel",
+    "prisboName": "Custom Printed Structured Baseball Cap — 6-Panel Adjustable",
+    "prisboDescription": "<p>Six panels of structured confidence. Prisbo's classic 6-panel baseball cap is the branded headgear choice for corporate events, sports teams, brand launches, and outdoor activations — crafted in cotton twill with a firm front panel that holds embroidery or print like it was born for it. Adjustable strap fits all — one cap, every head in your crew.</p><ul><li>Cotton twill structured crown — firm front panel, perfect embroidery base</li><li>6-panel construction — classic silhouette that never goes out of style</li><li>Embroidery or DTF print — front, side, and back logo placement</li><li>Adjustable strap (Velcro or metal buckle) — one-size fits all</li></ul>",
+    "pricePaise": 44900,
+    "compareAtPaise": 59900,
+    "stock": 300,
+    "fabric": "100% cotton twill, structured front panel",
+    "gsm": null,
+    "fitType": "One Size (Adjustable)",
+    "printMethods": ["Embroidery", "DTF", "Screen Print"],
+    "availableSizes": ["One Size"],
+    "availableColors": ["Black", "Navy Blue", "White", "Red", "Royal Blue", "Olive Green", "Grey", "Maroon", "Bottle Green", "Khaki"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80",
+      "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80",
+      "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80",
+      "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80",
+      "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80",
+      "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80"
+    ],
+    "tags": ["cap", "baseball", "6-panel", "structured", "adjustable", "embroidery", "corporate", "team", "brand", "custom"],
+    "recipients": ["him", "her", "corporate", "kids"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Logo or text to embroider / print (optional)",
+    "customizationTextPlaceholder": "e.g. Company Logo | Team Name | Event 2024",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "100% cotton twill — structured crown"},
+      {"key": "Construction", "value": "6-panel with structured front panel"},
+      {"key": "Closure", "value": "Adjustable Velcro or metal buckle strap"},
+      {"key": "Size", "value": "One size fits most — adjustable"},
+      {"key": "Print", "value": "Embroidery / DTF / Screen print"},
+      {"key": "Care", "value": "Spot clean or hand wash, air dry, do not machine wash"}
+    ],
+    "featureLines": [
+      "Cotton twill structured crown — the perfect embroidery base",
+      "Classic 6-panel silhouette — timeless, versatile, always sharp",
+      "Front, side, and back logo placement — brand from every angle",
+      "One size, adjustable — fits every head in your team or event crew"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 120}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 110}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 100}]},
+      {"displayName": "Red", "hexCode": "#CC0000", "skuSuffix": "RED", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 80}]},
+      {"displayName": "Royal Blue", "hexCode": "#4169E1", "skuSuffix": "RYL", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 80}]},
+      {"displayName": "Olive Green", "hexCode": "#6B6B2A", "skuSuffix": "OLV", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "Grey", "hexCode": "#9E9E9E", "skuSuffix": "GRY", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "Maroon", "hexCode": "#800000", "skuSuffix": "MRN", "basePrice": 44900, "mrp": 59900, "isActive": true, "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 60}]}
+    ]
+  },
+  {
+    "varietyNumber": 12,
+    "type": "Dad Hat — Low Profile, Unstructured",
+    "category": "caps",
+    "sku": "APP-CP-DH-012",
+    "slug": "custom-dad-hat-low-profile-unstructured",
+    "prisboName": "Custom Printed Dad Hat — Low Profile Unstructured Cap",
+    "prisboDescription": "<p>Effortless style, zero trying. The Prisbo Dad Hat is the low-profile, unstructured cap for brands that let the cool do the talking — worn backwards, forwards, or tilted, it carries your embroidered patch or DTF print with the confidence of something you've had for years. Cotton canvas, curved brim, brass buckle. The cap that works for every crew.</p><ul><li>Unstructured soft crown — slouchy, relaxed, authentically worn-in</li><li>Curved brim with low-profile fit — versatile, gender-neutral styling</li><li>Embroidery or DTF patch — your logo looking effortlessly premium</li><li>Brass buckle strap — adjustable, durable, a detail worth noticing</li></ul>",
+    "pricePaise": 39900,
+    "compareAtPaise": 54900,
+    "stock": 250,
+    "fabric": "100% cotton canvas, unstructured soft crown",
+    "gsm": null,
+    "fitType": "One Size (Adjustable)",
+    "printMethods": ["Embroidery", "DTF"],
+    "availableSizes": ["One Size"],
+    "availableColors": ["Black", "Navy Blue", "Khaki / Sand", "White", "Olive Green", "Dusty Pink", "Grey", "Stone / Off-White", "Forest Green", "Maroon"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80",
+      "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80",
+      "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80",
+      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80",
+      "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80",
+      "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80"
+    ],
+    "tags": ["cap", "dad-hat", "unstructured", "low-profile", "curved-brim", "embroidery", "casual", "custom", "brand-merch"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Logo or text to embroider / print (optional)",
+    "customizationTextPlaceholder": "e.g. Brand Name | Minimal Logo | Crew Name",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "100% cotton canvas — unstructured soft crown"},
+      {"key": "Brim", "value": "Curved brim, low-profile fit"},
+      {"key": "Closure", "value": "Adjustable brass buckle strap"},
+      {"key": "Size", "value": "One size fits most — adjustable"},
+      {"key": "Print", "value": "Embroidery / DTF patch"},
+      {"key": "Care", "value": "Spot clean only, air dry, reshape while damp"}
+    ],
+    "featureLines": [
+      "Unstructured soft crown — slouchy, relaxed, authentically worn-in",
+      "Curved brim and low profile — effortlessly versatile, gender-neutral",
+      "Embroidery or DTF patch — your logo with a premium vintage feel",
+      "Brass buckle strap — an adjustable detail worth talking about"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 100}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 90}]},
+      {"displayName": "Khaki / Sand", "hexCode": "#C8B89A", "skuSuffix": "KHK", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 85}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 80}]},
+      {"displayName": "Olive Green", "hexCode": "#6B6B2A", "skuSuffix": "OLV", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "Dusty Pink", "hexCode": "#C17A8A", "skuSuffix": "PNK", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 65}]},
+      {"displayName": "Stone / Off-White", "hexCode": "#E5DDD0", "skuSuffix": "STN", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 60}]},
+      {"displayName": "Maroon", "hexCode": "#800000", "skuSuffix": "MRN", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 55}]}
+    ]
+  },
+  {
+    "varietyNumber": 13,
+    "type": "Snapback Cap — Flat Brim",
+    "category": "caps",
+    "sku": "APP-CP-SB-013",
+    "slug": "custom-snapback-cap-flat-brim",
+    "prisboName": "Custom Printed Snapback Cap — Flat Brim",
+    "prisboDescription": "<p>Flat brim, bold front, no compromises. The Prisbo Snapback is where street culture meets brand identity — structured 6-panel crown with a flat brim that screams statement, and a snap closure that fits any head in the room. Whether you're building a streetwear drop, outfitting a hip-hop fest crew, or creating limited-edition brand merch, the snapback delivers every time.</p><ul><li>Structured 6-panel crown — firm, flat brim ready for large logo print</li><li>Snapback plastic closure — one-size adjustable, secure and durable</li><li>Front embroidery or large DTF — your brand large and unapologetic</li><li>The go-to cap for streetwear drops, youth fests, and culture-first brands</li></ul>",
+    "pricePaise": 47900,
+    "compareAtPaise": 64900,
+    "stock": 220,
+    "fabric": "100% cotton twill body, structured front panel, flat brim",
+    "gsm": null,
+    "fitType": "One Size (Snapback Adjustable)",
+    "printMethods": ["Embroidery", "DTF", "Screen Print"],
+    "availableSizes": ["One Size"],
+    "availableColors": ["Black", "Black/White", "Navy Blue", "White", "Red/Black", "Grey", "Royal Blue", "Camo Green", "All Black", "White/Black"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80",
+      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80",
+      "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80",
+      "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80",
+      "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80",
+      "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80"
+    ],
+    "tags": ["cap", "snapback", "flat-brim", "streetwear", "structured", "embroidery", "youth", "custom", "brand-merch", "hip-hop"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Logo or text to embroider / print (optional)",
+    "customizationTextPlaceholder": "e.g. The Drop | Your Brand | Limited Edition",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "100% cotton twill — structured 6-panel crown"},
+      {"key": "Brim", "value": "Flat brim — street-style statement silhouette"},
+      {"key": "Closure", "value": "Snapback plastic strap — one-size adjustable"},
+      {"key": "Print", "value": "Embroidery / DTF / Screen print"},
+      {"key": "Care", "value": "Spot clean, air dry, do not machine wash or tumble dry"}
+    ],
+    "featureLines": [
+      "Structured 6-panel cotton twill — firm front, flat brim ready for bold logos",
+      "Snapback adjustable closure — one cap, fits every head in your crew",
+      "Front embroidery or large DTF — your brand, unapologetically large",
+      "Built for streetwear drops, youth fests, and culture-first brands"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 110}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 90}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 85}]},
+      {"displayName": "Grey", "hexCode": "#9E9E9E", "skuSuffix": "GRY", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 75}]},
+      {"displayName": "Royal Blue", "hexCode": "#4169E1", "skuSuffix": "RYL", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "Black / White", "hexCode": "#2D2D2D", "skuSuffix": "BWHT", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 65}]}
+    ]
+  },
+  {
+    "varietyNumber": 14,
+    "type": "Trucker Cap — Mesh Back, Foam Front",
+    "category": "caps",
+    "sku": "APP-CP-TK-014",
+    "slug": "custom-trucker-cap-mesh-back",
+    "prisboName": "Custom Printed Trucker Cap — Mesh Back Foam Front",
+    "prisboDescription": "<p>Ventilated, rugged, and impossible to ignore. The Prisbo Trucker Cap is the outdoor-ready headgear for adventure brands, sports events, agricultural and logistics teams, and anyone who wants their logo breathing in the heat. Foam front panel takes DTF and embroidery like a pro. Mesh back keeps heads cool through Hyderabad summers and Rajasthan road trips alike.</p><ul><li>Foam front panel — firm, wide print surface for bold logos and artwork</li><li>Mesh back — 6 ventilation panels for maximum airflow and cool comfort</li><li>Snapback closure — adjustable, secure, one-size fits all</li><li>Built for outdoor events, logistics teams, and adventure brands</li></ul>",
+    "pricePaise": 39900,
+    "compareAtPaise": 54900,
+    "stock": 250,
+    "fabric": "Foam front panel + polyester mesh back",
+    "gsm": null,
+    "fitType": "One Size (Snapback Adjustable)",
+    "printMethods": ["DTF", "Embroidery", "Screen Print", "Sublimation Patch"],
+    "availableSizes": ["One Size"],
+    "availableColors": ["Black/Black", "Navy/White", "White/Black", "Red/Black", "Grey/Black", "Royal Blue/White", "Khaki/Brown", "Camo/Black"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80",
+      "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80",
+      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80",
+      "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80",
+      "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80",
+      "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80"
+    ],
+    "tags": ["cap", "trucker", "mesh-back", "foam-front", "snapback", "outdoor", "sports", "custom", "ventilated", "brand"],
+    "recipients": ["him", "her", "corporate"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Logo or text for foam front panel (optional)",
+    "customizationTextPlaceholder": "e.g. Adventure Co. | Logistics Team | Event Logo",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Front", "value": "Foam front panel — firm, DTF/embroidery-ready"},
+      {"key": "Back", "value": "Polyester mesh — 6-panel ventilation"},
+      {"key": "Closure", "value": "Snapback plastic strap — one-size adjustable"},
+      {"key": "Print", "value": "DTF / Embroidery / Screen print / Sublimation patch"},
+      {"key": "Care", "value": "Spot clean only, air dry, do not soak mesh"}
+    ],
+    "featureLines": [
+      "Foam front panel — bold logo print surface that stands up straight",
+      "6-panel mesh back — breathable ventilation for India's outdoor heat",
+      "Snapback closure — one-size fits all, snap and go",
+      "Ideal for outdoor events, logistics crews, and adventure brands"
+    ],
+    "colourVariants": [
+      {"displayName": "Black / Black", "hexCode": "#1A1A1A", "skuSuffix": "BBLK", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 100}]},
+      {"displayName": "Navy / White", "hexCode": "#003153", "skuSuffix": "NWHT", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 90}]},
+      {"displayName": "White / Black", "hexCode": "#F5F5F5", "skuSuffix": "WBLK", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 80}]},
+      {"displayName": "Grey / Black", "hexCode": "#9E9E9E", "skuSuffix": "GBLK", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "Red / Black", "hexCode": "#CC0000", "skuSuffix": "RBLK", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 65}]},
+      {"displayName": "Khaki / Brown", "hexCode": "#C8B89A", "skuSuffix": "KBRN", "basePrice": 39900, "mrp": 54900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 60}]}
+    ]
+  },
+  {
+    "varietyNumber": 15,
+    "type": "5-Panel Camp Cap",
+    "category": "caps",
+    "sku": "APP-CP-5P-015",
+    "slug": "custom-5-panel-camp-cap",
+    "prisboName": "Custom Printed 5-Panel Camp Cap",
+    "prisboDescription": "<p>The minimalist's cap — five panels, one seam down the centre front, and the cleanest canvas for a logo patch or small DTF print on the market. The Prisbo 5-Panel Camp Cap is the choice for outdoor brands, cycling teams, festival crews, and anyone building an aesthetic from the ground up. Lightweight, unstructured, fits close — wear it everywhere.</p><ul><li>5-panel construction — centred front seam, minimal and modern</li><li>Unstructured lightweight cotton — comfortable close fit, packable</li><li>Small front patch or DTF — precise, clean logo placement</li><li>Adjustable strap closure — one-size minimalism for every head</li></ul>",
+    "pricePaise": 42900,
+    "compareAtPaise": 57900,
+    "stock": 180,
+    "fabric": "100% cotton canvas, unstructured 5-panel",
+    "gsm": null,
+    "fitType": "One Size (Adjustable)",
+    "printMethods": ["Embroidery", "DTF", "Sublimation Patch"],
+    "availableSizes": ["One Size"],
+    "availableColors": ["Black", "Navy Blue", "White", "Olive Green", "Khaki", "Grey", "Dusty Pink", "Forest Green"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80",
+      "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80",
+      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80",
+      "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80",
+      "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80",
+      "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80"
+    ],
+    "tags": ["cap", "5-panel", "camp-cap", "unstructured", "outdoor", "minimal", "custom", "cycling", "festival", "brand-merch"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Logo or text for front panel (optional)",
+    "customizationTextPlaceholder": "e.g. Brand Name | Club Logo | Minimal Icon",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "100% cotton canvas — 5-panel unstructured"},
+      {"key": "Brim", "value": "Short curved brim"},
+      {"key": "Closure", "value": "Adjustable strap — Velcro or fabric buckle"},
+      {"key": "Print", "value": "Embroidery / DTF / Sublimation patch"},
+      {"key": "Care", "value": "Spot clean, air dry — do not machine wash"}
+    ],
+    "featureLines": [
+      "5-panel construction — centred seam, clean modern silhouette",
+      "Lightweight unstructured cotton — packable, breathable, comfortable",
+      "Precise front patch or DTF — minimal logo with maximum impact",
+      "The go-to for outdoor brands, cycling teams, and festival aesthetics"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 42900, "mrp": 57900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 80}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 42900, "mrp": 57900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 42900, "mrp": 57900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 65}]},
+      {"displayName": "Olive Green", "hexCode": "#6B6B2A", "skuSuffix": "OLV", "basePrice": 42900, "mrp": 57900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 60}]},
+      {"displayName": "Khaki", "hexCode": "#C8B89A", "skuSuffix": "KHK", "basePrice": 42900, "mrp": 57900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 55}]},
+      {"displayName": "Grey", "hexCode": "#9E9E9E", "skuSuffix": "GRY", "basePrice": 42900, "mrp": 57900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 50}]}
+    ]
+  },
+  {
+    "varietyNumber": 16,
+    "type": "Bucket Hat",
+    "category": "caps",
+    "sku": "APP-CP-BH-016",
+    "slug": "custom-bucket-hat",
+    "prisboName": "Custom Printed Bucket Hat",
+    "prisboDescription": "<p>360-degree canvas. Zero brim angle left uncovered. The Prisbo Bucket Hat is the statement headgear for beach events, music festivals, youth brand launches, and anyone who's done playing it safe with a standard cap. All-over sublimation or panel DTF — wear your art on every side. Reversible options available. Built for the bold, the vibrant, and the unapologetically expressive.</p><ul><li>100% cotton canvas — soft, packable, all-weather versatile</li><li>360° print coverage — front, side, back, brim — your design everywhere</li><li>All-over sublimation or panel DTF — vibrant, photo-quality prints</li><li>Ideal for beach events, music fests, and youth brand merchandise</li></ul>",
+    "pricePaise": 47900,
+    "compareAtPaise": 64900,
+    "stock": 200,
+    "fabric": "100% cotton canvas, 6-panel bucket construction",
+    "gsm": null,
+    "fitType": "One Size (Free Size)",
+    "printMethods": ["DTF", "Sublimation", "Embroidery", "Screen Print"],
+    "availableSizes": ["One Size"],
+    "availableColors": ["Black", "White", "Navy Blue", "Khaki / Tan", "Olive Green", "Tie-Dye White/Blue", "Dusty Pink", "Sage Green", "Red", "Grey"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1556306535-38febf6cdbe0?w=800&q=80",
+      "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=800&q=80",
+      "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80",
+      "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80",
+      "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80",
+      "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80"
+    ],
+    "tags": ["cap", "bucket-hat", "festival", "beach", "sublimation", "custom", "youth", "all-over-print", "music-fest", "brand-merch"],
+    "recipients": ["him", "her"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Design instruction or artwork (optional)",
+    "customizationTextPlaceholder": "e.g. All-over pattern | Band Name | Festival Logo",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "100% cotton canvas — 6-panel bucket construction"},
+      {"key": "Brim", "value": "360° all-around brim — wide sun protection"},
+      {"key": "Size", "value": "One size fits most — free size"},
+      {"key": "Print", "value": "DTF / Sublimation / Embroidery / Screen print"},
+      {"key": "Care", "value": "Hand wash cold, air dry, reshape while damp"}
+    ],
+    "featureLines": [
+      "100% cotton canvas — soft, packable, and ready for any weather",
+      "360° brim canvas — front, back, side, brim — your art, everywhere",
+      "All-over sublimation or DTF — photo-quality, vibrant, wash-resistant",
+      "The statement hat for music fests, beach days, and bold brand drops"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1556306535-38febf6cdbe0?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 80}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 75}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "Khaki / Tan", "hexCode": "#C8B89A", "skuSuffix": "KHK", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 65}]},
+      {"displayName": "Olive Green", "hexCode": "#6B6B2A", "skuSuffix": "OLV", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 60}]},
+      {"displayName": "Dusty Pink", "hexCode": "#C17A8A", "skuSuffix": "PNK", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 55}]},
+      {"displayName": "Sage Green", "hexCode": "#8FAF8F", "skuSuffix": "SGR", "basePrice": 47900, "mrp": 64900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1556306535-38febf6cdbe0?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 50}]}
+    ]
+  },
+  {
+    "varietyNumber": 17,
+    "type": "Beanie / Skull Cap",
+    "category": "caps",
+    "sku": "APP-CP-BN-017",
+    "slug": "custom-beanie-skull-cap",
+    "prisboName": "Custom Printed Beanie / Skull Cap",
+    "prisboDescription": "<p>Cold months, warm brand. The Prisbo Beanie is the winter essential for teams who don't hibernate — crafted in 100% acrylic knit that stretches to fit every head, holds its shape through the season, and carries your embroidered logo like a badge of belonging. Corporate gifting, college fests, winter sports teams, brand merchandise — the beanie is always the right call when temperatures drop.</p><ul><li>100% acrylic rib-knit — warm, stretchy, pill-resistant, season-long durability</li><li>One-size stretch fit — fits XS to XXL heads with equal ease</li><li>Embroidery or woven patch — your logo in raised texture against the knit</li><li>The premium winter gifting essential — unisex, practical, always appreciated</li></ul>",
+    "pricePaise": 34900,
+    "compareAtPaise": 47900,
+    "stock": 250,
+    "fabric": "100% acrylic rib-knit, double-layer cuff",
+    "gsm": null,
+    "fitType": "One Size (Stretch Fit)",
+    "printMethods": ["Embroidery", "Woven Patch", "DTF Patch"],
+    "availableSizes": ["One Size"],
+    "availableColors": ["Black", "Navy Blue", "Grey Melange", "Maroon", "Red", "Bottle Green", "White", "Charcoal", "Royal Blue", "Olive Green"],
+    "moq": 1,
+    "images": [
+      "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80",
+      "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80",
+      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80",
+      "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80",
+      "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80",
+      "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80"
+    ],
+    "tags": ["beanie", "skull-cap", "winter", "knit", "custom", "embroidery", "gifting", "corporate", "team", "unisex"],
+    "recipients": ["him", "her", "corporate"],
+    "allowCustomerCustomization": true,
+    "customizationTextLabel": "Logo or text to embroider (optional)",
+    "customizationTextPlaceholder": "e.g. Company Logo | Team Name | Initials",
+    "customizationImageRequired": false,
+    "specificationRows": [
+      {"key": "Fabric", "value": "100% acrylic rib-knit — double-layer cuff"},
+      {"key": "Fit", "value": "One size stretch fit — fits all head sizes"},
+      {"key": "Print", "value": "Embroidery / Woven patch / DTF patch"},
+      {"key": "Style", "value": "Classic fold-up cuff beanie / skull cap"},
+      {"key": "Care", "value": "Hand wash cold, lay flat to dry, do not wring or tumble dry"}
+    ],
+    "featureLines": [
+      "100% acrylic rib-knit — warm, stretchy, and pill-resistant through winter",
+      "One-size stretch fit — fits every head from XS to XXL with ease",
+      "Embroidery or woven patch — your logo in raised texture, premium finish",
+      "The perfect corporate winter gift — unisex, practical, always appreciated"
+    ],
+    "colourVariants": [
+      {"displayName": "Black", "hexCode": "#1A1A1A", "skuSuffix": "BLK", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 0,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 100}]},
+      {"displayName": "Navy Blue", "hexCode": "#003153", "skuSuffix": "NVY", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 1,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 90}]},
+      {"displayName": "Grey Melange", "hexCode": "#9E9E9E", "skuSuffix": "GRY", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 2,
+        "images": [{"url": "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 85}]},
+      {"displayName": "Maroon", "hexCode": "#800000", "skuSuffix": "MRN", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 3,
+        "images": [{"url": "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 75}]},
+      {"displayName": "Red", "hexCode": "#CC0000", "skuSuffix": "RED", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 4,
+        "images": [{"url": "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 70}]},
+      {"displayName": "Bottle Green", "hexCode": "#006A4E", "skuSuffix": "GRN", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 5,
+        "images": [{"url": "https://images.unsplash.com/photo-1534215754734-18e55d13e346?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 65}]},
+      {"displayName": "White", "hexCode": "#FFFFFF", "skuSuffix": "WHT", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 6,
+        "images": [{"url": "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 60}]},
+      {"displayName": "Charcoal", "hexCode": "#3D3D3D", "skuSuffix": "CHR", "basePrice": 34900, "mrp": 47900, "isActive": true, "displayOrder": 7,
+        "images": [{"url": "https://images.unsplash.com/photo-1521369909029-2afed882baaa?w=800&q=80", "isPrimary": true, "displayOrder": 0}],
+        "sizeStocks": [{"size": "One Size", "stock": 55}]}
+    ]
+  }
+]
