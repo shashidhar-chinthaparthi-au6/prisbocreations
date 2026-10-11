@@ -6,8 +6,13 @@ import { STOREFRONT_FULL_BLEED, STOREFRONT_GUTTER } from "@/lib/storefront-layou
 export const metadata = { title: "Categories" };
 
 export default async function CategoriesPage() {
-  await connectDb();
-  const categories = await listCategories();
+  let categories: Awaited<ReturnType<typeof listCategories>> = [];
+  try {
+    await connectDb();
+    categories = await listCategories();
+  } catch (err) {
+    console.error("Categories page will render empty:", err);
+  }
 
   return (
     <div className={STOREFRONT_FULL_BLEED}>

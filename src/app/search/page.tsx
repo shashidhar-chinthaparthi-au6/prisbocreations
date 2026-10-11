@@ -28,8 +28,9 @@ export default async function SearchPage({
 }) {
   const sp = await searchParams;
   const query = sp.q?.trim() ?? "";
-  await connectDb();
-  const nav = await listNavCategoryTree();
+  let nav: Awaited<ReturnType<typeof listNavCategoryTree>> = [];
+  let items: Awaited<ReturnType<typeof listStorefrontProducts>>["items"] = [];
+  let total = 0;
 
   const sort =
     sp.sort === "newest" ||
@@ -40,9 +41,17 @@ export default async function SearchPage({
       ? sp.sort
       : "relevance";
 
-  const { items, total } = query
-    ? await listStorefrontProducts({ q: query, sort, page: 1, pageSize: 48 })
-    : { items: [], total: 0 };
+  try {
+    await connectDb();
+    nav = await listNavCategoryTree();
+    if (query) {
+      const result = await listStorefrontProducts({ q: query, sort, page: 1, pageSize: 48 });
+      items = result.items;
+      total = result.total;
+    }
+  } catch (err) {
+    console.error("Search page will render without catalog data:", err);
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6">

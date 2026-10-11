@@ -9,11 +9,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-  await connectDb();
-  const [products, categories] = await Promise.all([
-    Product.find(storefrontPublishedMatch()).select("slug updatedAt").lean(),
-    Category.find().select("slug updatedAt").lean(),
-  ]);
+  let products: { slug?: string | null; updatedAt?: Date }[] = [];
+  let categories: { slug?: string | null; updatedAt?: Date }[] = [];
+  try {
+    await connectDb();
+    const [productRows, categoryRows] = await Promise.all([
+      Product.find(storefrontPublishedMatch()).select("slug updatedAt").lean(),
+      Category.find().select("slug updatedAt").lean(),
+    ]);
+    products = productRows;
+    categories = categoryRows;
+  } catch (err) {
+    console.error("Sitemap will list static pages only:", err);
+  }
 
   const staticPaths = [
     "",

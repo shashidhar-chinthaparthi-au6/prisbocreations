@@ -83,38 +83,56 @@ async function RecipientListingSection({
   const material = typeof sp.material === "string" ? sp.material : undefined;
   const minAverageRating = sp.rating === "4" ? 4 : undefined;
 
-  await connectDb();
   const meta = RECIPIENT_META[slug];
 
-  const [counts, result, facets] = await Promise.all([
-    listStorefrontCategoryRows(),
-    listStorefrontProducts({
-      categorySlugs: category,
-      subcategoryPairs: subPairs,
-      recipient: slug,
-      q,
-      sort: sort ?? "relevance",
-      page,
-      pageSize: 24,
-      inStockOnly,
-      priceMinPaise:
-        priceMin != null && Number.isFinite(priceMin) ? Math.max(0, Math.round(priceMin * 100)) : undefined,
-      priceMaxPaise:
-        priceMax != null && Number.isFinite(priceMax) ? Math.max(0, Math.round(priceMax * 100)) : undefined,
-      occasion,
-      material,
-      minAverageRating,
-    }),
-    listStorefrontFilterFacets({
-      categorySlugs: category?.length === 1 ? category : undefined,
-      subcategoryPairs: subPairs,
-      recipient: slug,
-    }),
-  ]);
-
+  let counts: Awaited<ReturnType<typeof listStorefrontCategoryRows>> = [];
+  let result: Awaited<ReturnType<typeof listStorefrontProducts>> = {
+    items: [],
+    total: 0,
+    page,
+    pageSize: 24,
+  };
+  let facets: Awaited<ReturnType<typeof listStorefrontFilterFacets>> = {
+    occasions: [],
+    materials: [],
+  };
   let subcategories: Awaited<ReturnType<typeof listStorefrontSubcategoryRowsForCategory>> = [];
-  if (category?.length === 1) {
-    subcategories = await listStorefrontSubcategoryRowsForCategory(category[0]);
+
+  try {
+    await connectDb();
+    const loaded = await Promise.all([
+      listStorefrontCategoryRows(),
+      listStorefrontProducts({
+        categorySlugs: category,
+        subcategoryPairs: subPairs,
+        recipient: slug,
+        q,
+        sort: sort ?? "relevance",
+        page,
+        pageSize: 24,
+        inStockOnly,
+        priceMinPaise:
+          priceMin != null && Number.isFinite(priceMin) ? Math.max(0, Math.round(priceMin * 100)) : undefined,
+        priceMaxPaise:
+          priceMax != null && Number.isFinite(priceMax) ? Math.max(0, Math.round(priceMax * 100)) : undefined,
+        occasion,
+        material,
+        minAverageRating,
+      }),
+      listStorefrontFilterFacets({
+        categorySlugs: category?.length === 1 ? category : undefined,
+        subcategoryPairs: subPairs,
+        recipient: slug,
+      }),
+    ]);
+    counts = loaded[0];
+    result = loaded[1];
+    facets = loaded[2];
+    if (category?.length === 1) {
+      subcategories = await listStorefrontSubcategoryRowsForCategory(category[0]);
+    }
+  } catch (err) {
+    console.error("Recipient page will render empty:", err);
   }
 
   return (
