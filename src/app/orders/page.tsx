@@ -5,6 +5,8 @@ import { connectDb } from "@/lib/db";
 import { listOrdersForUser } from "@/lib/services/orderService";
 import { formatInrFromPaise } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = { title: "Orders" };
 
 export default async function OrdersPage() {

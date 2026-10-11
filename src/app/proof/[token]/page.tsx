@@ -3,6 +3,8 @@ import { Order } from "@/lib/models/Order";
 import { ProofApprovalClient } from "@/components/proof/ProofApprovalClient";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = { title: "Review Your Design Proof | Prisbo Creations" };
 
 interface Props {

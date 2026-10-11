@@ -8,6 +8,8 @@ import { SuccessOrderClient } from "./SuccessOrderClient";
 import { GuestRegisterNudge } from "@/components/checkout/success/GuestRegisterNudge";
 import { addDays, format } from "date-fns";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = { title: "Order confirmed" };
 
 function parseOrderRef(sp: {
