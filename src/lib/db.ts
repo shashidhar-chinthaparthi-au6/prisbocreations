@@ -23,6 +23,11 @@ export async function connectDb(): Promise<typeof mongoose> {
       bufferCommands: false,
     });
   }
-  g.mongooseConn!.conn = await g.mongooseConn!.promise;
+  try {
+    g.mongooseConn!.conn = await g.mongooseConn!.promise;
+  } catch (err) {
+    g.mongooseConn!.promise = null;
+    throw err;
+  }
   return g.mongooseConn!.conn;
 }

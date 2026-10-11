@@ -35,9 +35,16 @@ function parseSort(s: string | undefined): StorefrontSort | undefined {
 }
 
 export async function generateStaticParams() {
-  await connectDb();
-  const rows = await Category.find().select("slug").lean();
-  return rows.map((r) => ({ slug: r.slug }));
+  try {
+    await connectDb();
+    const rows = await Category.find().select("slug").lean();
+    return rows
+      .map((r) => ({ slug: typeof r.slug === "string" ? r.slug : "" }))
+      .filter((r) => r.slug.length > 0);
+  } catch (err) {
+    console.error("Category pages will be rendered on demand:", err);
+    return [];
+  }
 }
 
 export async function generateMetadata({
