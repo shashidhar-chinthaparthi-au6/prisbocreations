@@ -20,7 +20,7 @@ export default function BulkPage() {
         <p className="text-ink-muted mb-8 leading-relaxed">
           We specialise in personalised branded gifts for teams, client events,
           weddings, and corporate milestones. Minimum 25 units. Custom pricing
-          based on product, quantity, and turnaround. Fill in the form and we'll
+          based on product, quantity, and turnaround. Fill in the form and we&apos;ll
           be in touch within 24 hours.
         </p>
         <BulkInquiryForm />

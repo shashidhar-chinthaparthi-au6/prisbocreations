@@ -56,9 +56,9 @@ export function BulkInquiryForm() {
     return (
       <div className="bg-white rounded-2xl border border-sand-deep p-8 text-center">
         <div className="text-4xl mb-4">🎉</div>
-        <h2 className="font-display text-xl text-ink mb-2">We've got your enquiry!</h2>
+        <h2 className="font-display text-xl text-ink mb-2">We&apos;ve got your enquiry!</h2>
         <p className="text-ink-muted text-sm mb-6">
-          We'll review your requirements and get back to you within 24 hours. For
+          We&apos;ll review your requirements and get back to you within 24 hours. For
           urgent requirements, reach us directly on WhatsApp.
         </p>
         {wa && (
