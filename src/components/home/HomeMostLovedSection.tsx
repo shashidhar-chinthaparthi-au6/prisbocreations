@@ -101,9 +101,9 @@ export function HomeMostLovedSection({ initial }: { initial: StorefrontProductCa
   return (
     <>
       <div className="home-carousel-row mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
-        {displayRows.map((row) => (
+        {displayRows.map((row, i) => (
           <div key={row.rowKey} className="home-carousel-slide min-w-0">
-            <ProductCard product={row} />
+            <ProductCard product={row} index={i} />
           </div>
         ))}
       </div>

@@ -156,11 +156,13 @@ textarea {
   --am: #b5661a;
   --aml: #faeee0;
   --amd: #8a4d12;
-  --ink: #18120e;
-  --muted: #6b6258;
-  --sf: #fdfaf6;
-  /* Main viewport — warm ivory base */
-  --brand-canvas: #fefdfb;
+  --ink: #1c1612;
+  --muted: #8a8178;
+  --sf: #f6f1e8;
+  /* Main viewport — warm cream, matching the editorial storefront */
+  --brand-canvas: #f6f1e8;
+  --brand-gold: #c4a06a;
+  --brand-band: #efe4d4;
   --bd: #ece3d8;
   --bdd: #d4c7b8;
   --ok: #246a45;
@@ -172,10 +174,10 @@ textarea {
   --brand-amber: #b5661a;
   --brand-amber-light: #faeee0;
   --brand-amber-dark: #8a4d12;
-  --brand-ink: #18120e;
-  --brand-muted: #6b6258;
-  /* Warm ivory — slightly warmer than pure white */
-  --brand-surface: #fdfaf6;
+  --brand-ink: #1c1612;
+  --brand-muted: #8a8178;
+  /* Warm cream — page and header share one surface */
+  --brand-surface: #f6f1e8;
   --brand-card: #ffffff;
   --brand-border: #ece3d8;
   --brand-border-dark: #d4c7b8;
@@ -256,7 +258,37 @@ textarea {
   }
 }
 
+.listing-page-shell.editorial {
+  flex-direction: column;
+  min-height: 0;
+  gap: 0.75rem;
+}
+
+.listing-page-shell.editorial .filter-sidebar {
+  position: static;
+  width: 100%;
+  max-width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  max-height: none;
+}
+
 @media (min-width: 1024px) {
+  .listing-page-shell.editorial .filter-sidebar {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    left: auto;
+    top: auto;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    max-height: none;
+  }
+
   .filter-sidebar {
     width: 270px;
     max-width: 270px;
@@ -293,7 +325,7 @@ textarea {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 28px 20px;
 }
 
 @media (max-width: 1279px) {
@@ -347,6 +379,12 @@ textarea {
     flex-direction: row;
     align-items: flex-start;
     gap: 1.5rem;
+    min-height: 0;
+  }
+
+  .listing-page-shell.editorial {
+    flex-direction: column;
+    gap: 0.75rem;
     min-height: 0;
   }
 }
@@ -485,11 +523,12 @@ body {
 
 /* ── Section typography ── */
 .section-title {
-  font-size: clamp(22px, 3vw, 30px);
-  font-weight: 700;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--brand-ink);
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .section-subtitle {

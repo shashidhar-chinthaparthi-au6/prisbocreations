@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 const OPTIONS: { value: string; label: string }[] = [
-  { value: "relevance", label: "Relevance" },
+  { value: "relevance", label: "Featured" },
   { value: "newest", label: "Newest first" },
   { value: "price_asc", label: "Price: low to high" },
   { value: "price_desc", label: "Price: high to low" },
@@ -40,10 +40,10 @@ export function ProductsSortBar() {
 
   return (
     <>
-      <label className="hidden min-w-0 max-w-full flex-1 items-center gap-2.5 text-sm text-[var(--brand-muted)] lg:flex">
-        <span className="shrink-0 whitespace-nowrap text-[13px] font-medium">Sort</span>
+      <label className="hidden min-w-0 max-w-full flex-1 items-center justify-end gap-2 text-[13px] text-[var(--brand-muted)] lg:flex">
+        <span className="shrink-0 whitespace-nowrap">Sort by</span>
         <select
-          className="min-h-11 w-full min-w-0 max-w-full rounded-xl border border-[var(--brand-border)] bg-white px-3 py-2.5 text-sm text-[var(--brand-ink)] shadow-sm focus:border-[var(--brand-amber)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-amber)]/30 xl:min-h-12 xl:pl-4 xl:pr-4 xl:text-[15px]"
+          className="min-h-9 w-auto max-w-full cursor-pointer border-0 bg-transparent py-1 pr-6 text-[13px] font-medium text-[var(--brand-ink)] focus:outline-none"
           value={current}
           aria-label="Sort products"
           onChange={(e) => {

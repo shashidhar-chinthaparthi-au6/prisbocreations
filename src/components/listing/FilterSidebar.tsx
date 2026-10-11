@@ -83,18 +83,14 @@ export function FilterSidebar({ mode, categories, subcategories, facets }: Props
     const sync = () => {
       const wide = mq.matches;
       setIsLg(wide);
-      if (wide) {
-        setMobileOpen(true);
-      } else {
-        setMobileOpen(false);
-      }
+      if (!wide) setMobileOpen(false);
     };
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const showFilterBody = isLg || mobileOpen;
+  const showFilterBody = mobileOpen;
 
   const selectedCats = searchParams.getAll("category");
   const singleCategory = selectedCats.length === 1 ? selectedCats[0] : null;
@@ -137,35 +133,20 @@ export function FilterSidebar({ mode, categories, subcategories, facets }: Props
 
   return (
     <aside className={asideClass} aria-label="Filters">
-      {/* Mobile / tablet: collapsed filter trigger (full-width card, left accent) */}
-      {!isLg ? (
-        <button
-          type="button"
-          aria-expanded={showFilterBody}
-          onClick={() => setMobileOpen((o) => !o)}
-          className="flex w-full items-center gap-3 rounded-xl border border-[var(--brand-border)] border-l-[4px] border-l-[#C47A2B] bg-gradient-to-r from-[#FDF5EB] to-white px-4 py-3.5 text-left shadow-sm transition hover:border-[#C47A2B] lg:hidden"
-        >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#C47A2B] shadow-sm ring-1 ring-[#E8E0D6]">
-            <FilterSlidersIcon className="shrink-0" />
+      <button
+        type="button"
+        aria-expanded={showFilterBody}
+        onClick={() => setMobileOpen((o) => !o)}
+        className="inline-flex items-center gap-2 text-[13px] text-[var(--brand-ink)]/70 transition hover:text-[var(--brand-ink)]"
+      >
+        <FilterSlidersIcon className="h-4 w-4" />
+        <span>Filters</span>
+        {activeCount > 0 ? (
+          <span className="rounded-full bg-[var(--brand-ink)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[#f6f1e8]">
+            {activeCount}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display text-base font-semibold leading-tight text-[var(--ink)]">Filters</span>
-          </span>
-          {activeCount > 0 ? (
-            <span className="shrink-0 rounded-full bg-[#C47A2B] px-2 py-0.5 text-center text-xs font-bold tabular-nums text-white">
-              {activeCount}
-            </span>
-          ) : null}
-          <span
-            className={`shrink-0 text-[#6B6560] transition-transform ${showFilterBody ? "rotate-180" : ""}`}
-            aria-hidden
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-        </button>
-      ) : null}
+        ) : null}
+      </button>
 
       {showFilterBody ? (
         <div className={isLg ? "contents" : "mt-3 border-t border-[var(--bd)] pt-3"}>

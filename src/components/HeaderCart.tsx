@@ -28,16 +28,14 @@ export function HeaderCart() {
     <button
       type="button"
       onClick={() => setDrawerOpen(true)}
-      className="relative inline-flex h-11 shrink-0 items-center justify-center gap-1 rounded-full px-2 hover:bg-[var(--brand-amber-light)] sm:px-2.5"
-      aria-label={count > 0 ? `Open cart, ${count} items` : "Open cart"}
+      className="relative inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full px-2 text-[var(--brand-ink)] hover:bg-[var(--brand-ink)]/5 sm:px-2.5"
+      aria-label={count > 0 ? `Open bag, ${count} items` : "Open bag"}
     >
-      <CartIcon className="h-[22px] w-[22px] shrink-0 text-[var(--brand-ink)]" />
-      <span className="hidden text-[13px] font-medium text-[var(--brand-ink)] sm:inline">Cart</span>
-      {count > 0 ? (
-        <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#C47A2B] text-[9px] font-semibold leading-none text-white">
-          {count > 99 ? "99" : count}
-        </span>
-      ) : null}
+      <span className="hidden text-[14px] font-medium sm:inline">Bag</span>
+      <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full border border-[var(--brand-ink)]/25 px-1 text-[11px] font-medium leading-none tabular-nums">
+        {count > 99 ? "99" : count}
+      </span>
+      <CartIcon className="h-[18px] w-[18px] shrink-0 sm:hidden" />
     </button>
   );
 }

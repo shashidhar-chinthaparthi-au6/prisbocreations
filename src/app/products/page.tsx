@@ -62,8 +62,22 @@ async function ProductsListingLoader({
   const material = typeof sp.material === "string" ? sp.material : undefined;
   const minAverageRating = sp.rating === "4" ? 4 : undefined;
 
+  let categories: Awaited<ReturnType<typeof listStorefrontCategoryRows>> = [];
+  let result: Awaited<ReturnType<typeof listStorefrontProducts>> = {
+    items: [],
+    total: 0,
+    page,
+    pageSize: 24,
+  };
+  let facets: Awaited<ReturnType<typeof listStorefrontFilterFacets>> = {
+    occasions: [],
+    materials: [],
+  };
+  let subcategories: Awaited<ReturnType<typeof listStorefrontSubcategoryRowsForCategory>> = [];
+
+  try {
   await connectDb();
-  const [categories, result, facets] = await Promise.all([
+  const loaded = await Promise.all([
     listStorefrontCategoryRows(),
     listStorefrontProducts({
       categorySlugs: category,
@@ -86,10 +100,15 @@ async function ProductsListingLoader({
       subcategoryPairs: subPairs,
     }),
   ]);
+  categories = loaded[0];
+  result = loaded[1];
+  facets = loaded[2];
 
-  let subcategories: Awaited<ReturnType<typeof listStorefrontSubcategoryRowsForCategory>> = [];
   if (category?.length === 1) {
     subcategories = await listStorefrontSubcategoryRowsForCategory(category[0]);
+  }
+  } catch {
+    /* Catalog stays empty when the database is unreachable. */
   }
 
   return (

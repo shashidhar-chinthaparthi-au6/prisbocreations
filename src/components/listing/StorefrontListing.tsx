@@ -1,8 +1,10 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { ProductsSortBar } from "@/components/storefront/ProductsSortBar";
 import { ActiveFilterPills } from "@/components/listing/ActiveFilterPills";
 import { FilterSidebar, type CategoryRow, type Facets } from "@/components/listing/FilterSidebar";
 import { ListingLayout } from "@/components/listing/ListingLayout";
@@ -47,6 +49,77 @@ function buildFetchQuery(
   }
   if (forcedRecipient) p.set("recipient", forcedRecipient);
   return p.toString();
+}
+
+function CategoryPills({
+  categories,
+  mode,
+  forcedCategorySlug,
+}: {
+  categories: CategoryRow[];
+  mode: "all" | "category";
+  forcedCategorySlug?: string;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const sp = useSearchParams();
+  const selected = sp.getAll("category");
+  const allActive = mode === "all" ? selected.length === 0 : false;
+
+  function selectCategory(slug: string | null) {
+    if (mode === "category") {
+      router.push(slug ? `/category/${slug}` : "/products", { scroll: false });
+      return;
+    }
+    const p = new URLSearchParams(sp.toString());
+    p.delete("category");
+    p.delete("subcategory");
+    p.delete("sub");
+    p.delete("page");
+    if (slug) p.append("category", slug);
+    const q = p.toString();
+    router.push(q ? `${pathname}?${q}` : pathname, { scroll: false });
+  }
+
+  const pill =
+    "inline-flex shrink-0 items-center rounded-full px-3.5 py-1.5 text-[13px] transition-colors";
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <button
+        type="button"
+        onClick={() => selectCategory(null)}
+        className={`${pill} ${
+          allActive
+            ? "bg-[var(--brand-ink)] text-[#f6f1e8]"
+            : "text-[var(--brand-ink)]/70 hover:text-[var(--brand-ink)]"
+        }`}
+      >
+        All pieces
+      </button>
+      {categories.map((c) => {
+        const active =
+          mode === "category" ? forcedCategorySlug === c.slug : selected.length === 1 && selected[0] === c.slug;
+        return (
+          <button
+            key={c.slug}
+            type="button"
+            onClick={() => selectCategory(active ? null : c.slug)}
+            className={`${pill} ${
+              active
+                ? "bg-[var(--brand-ink)] text-[#f6f1e8]"
+                : "text-[var(--brand-ink)]/70 hover:text-[var(--brand-ink)]"
+            }`}
+          >
+            {c.name}
+          </button>
+        );
+      })}
+      <Link href="/products" className="sr-only">
+        All products
+      </Link>
+    </div>
+  );
 }
 
 export function StorefrontListing({
@@ -98,7 +171,13 @@ export function StorefrontListing({
 
   return (
     <ListingLayout sidebar={sidebar}>
-      <div className="flex flex-col gap-3 px-2 py-1 sm:px-3 sm:py-0 md:px-4 lg:px-5">
+      <div className="flex flex-col gap-4 px-1 py-1 sm:px-2 md:px-3 lg:px-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <CategoryPills categories={categories} mode={mode} forcedCategorySlug={forcedCategorySlug} />
+          <div className="w-full shrink-0 lg:w-auto lg:max-w-[16rem]">
+            <ProductsSortBar />
+          </div>
+        </div>
         <ListingTopbar title={title} subtitle={subtitle} showing={merged.length} total={initial.total} />
 
         <ActiveFilterPills
@@ -126,8 +205,8 @@ export function StorefrontListing({
         ) : (
           <>
             <div className="product-grid">
-              {merged.map((p) => (
-                <ProductCard key={p.id} product={p} />
+              {merged.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} />
               ))}
             </div>
             {hasMore ? (

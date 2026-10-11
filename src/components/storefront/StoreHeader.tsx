@@ -16,26 +16,18 @@ type NavCategory = { slug: string; name: string; subcategories: { slug: string; 
 /* ─── Logo ─────────────────────────────────────────────────────────────── */
 function Wordmark() {
   return (
-    <Link
-      href="/"
-      className="flex items-center gap-0 font-sans text-[18px] font-bold tracking-tight"
-    >
-      <span style={{ color: "var(--brand-ink)" }}>Prisbo</span>
-      <span
-        style={{ color: "var(--brand-amber)", margin: "0 3px", fontSize: "14px", lineHeight: 1 }}
-      >
-        ·
-      </span>
-      <span style={{ color: "var(--brand-ink)" }}>Creations</span>
+    <Link href="/" className="font-sans text-[22px] font-extrabold leading-none tracking-[-0.045em]">
+      <span className="text-[#2c2824]">prisbo</span>
+      <span className="text-[#ae6f3a]">creations.</span>
     </Link>
   );
 }
 
 /* ─── Nav pill styles ───────────────────────────────────────────────────── */
 const pillBase =
-  "inline-flex items-center rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-150 whitespace-nowrap";
-const pillIdle = `${pillBase} text-[var(--brand-muted)] hover:bg-[var(--brand-amber-light)] hover:text-[var(--brand-amber-dark)]`;
-const pillActive = `${pillBase} bg-[var(--brand-amber-light)] text-[var(--brand-amber-dark)]`;
+  "inline-flex items-center px-3 py-1.5 text-[14px] font-medium tracking-[-0.01em] transition-colors duration-150 whitespace-nowrap";
+const pillIdle = `${pillBase} text-[var(--brand-ink)]/75 hover:text-[var(--brand-ink)]`;
+const pillActive = `${pillBase} text-[var(--brand-ink)]`;
 
 /* ─── Header divider ────────────────────────────────────────────────────── */
 function HeaderDivider() {
@@ -133,6 +125,7 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoverCat, setHoverCat] = useState<string | null>(null);
+  const [shopOpen, setShopOpen] = useState(false);
   const [openAccordionSlug, setOpenAccordionSlug] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const megaLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,9 +176,7 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
   }, [mobileOpen]);
 
   const activeCategory = nav.find((c) => c.slug === hoverCat);
-  const allActive = pathname === "/products";
-  const categoryActive = (slug: string) =>
-    pathname === `/category/${slug}` || pathname.startsWith(`/category/${slug}/`);
+  const allActive = pathname === "/products" || pathname.startsWith("/category/");
 
   function openPrisboAssistant() {
     if (!assistantEnabled) return;
@@ -222,8 +213,8 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
     <>
       {/* ── Main header bar ─────────────────────────────────────────────── */}
       <header
-        className={`sticky top-0 z-[100] w-full bg-white border-b border-[var(--brand-border)] transition-shadow duration-200 ${
-          scrolled ? "shadow-[0_2px_8px_rgba(24,12,4,0.08)]" : ""
+        className={`sticky top-0 z-[100] w-full border-b border-[#e5e2db] bg-[#f9f8f4] transition-shadow duration-200 ${
+          scrolled ? "shadow-[0_2px_8px_rgba(28,22,18,0.06)]" : ""
         }`}
       >
         <div className="relative mx-auto flex h-[60px] w-full max-w-none items-center gap-2 px-3 sm:px-4 md:px-6 lg:h-[68px] lg:gap-4 lg:pl-10 lg:pr-6 xl:pl-12 xl:pr-8">
@@ -255,27 +246,56 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
             aria-label="Shop by category"
             onMouseLeave={onNavLeave}
           >
-            <Link href="/products" className={allActive ? pillActive : pillIdle}>
-              All
+            <div
+              className="relative shrink-0"
+              onMouseEnter={() => setShopOpen(true)}
+              onMouseLeave={() => setShopOpen(false)}
+            >
+              <Link href="/products" className={allActive ? pillActive : pillIdle}>
+                Shop
+              </Link>
+              {shopOpen && nav.length > 0 ? (
+                <div className="absolute left-0 top-full z-[120] mt-3 min-w-[240px] rounded-2xl border border-[var(--brand-ink)]/10 bg-[var(--brand-canvas)] p-2 shadow-[0_12px_40px_rgba(28,22,18,0.08)]">
+                  {nav.map((c) => (
+                    <Link
+                      key={c.slug}
+                      href={`/category/${c.slug}`}
+                      className="block rounded-xl px-3 py-2 text-[14px] text-[var(--brand-ink)] hover:bg-[var(--brand-ink)]/5"
+                    >
+                      {c.name}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <Link
+              href="/pages/about"
+              className={pathname.startsWith("/pages/about") ? pillActive : pillIdle}
+            >
+              Our story
             </Link>
-            {nav.map((c) => (
-              <div key={c.slug} className="shrink-0" onMouseEnter={() => onNavEnter(c.slug)}>
-                <Link
-                  href={`/category/${c.slug}`}
-                  className={categoryActive(c.slug) ? pillActive : pillIdle}
-                >
-                  {c.name}
-                </Link>
-              </div>
-            ))}
+            <Link href="/bulk" className={pathname.startsWith("/bulk") ? pillActive : pillIdle}>
+              Custom orders
+            </Link>
           </nav>
 
           {/* Right icon strip */}
           <div className="relative isolate z-10 ml-auto flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             {/* Search */}
-            <IconBtn onClick={() => setSearchOpen(true)} ariaLabel="Search">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="hidden h-10 items-center gap-2 rounded-full px-2 text-[14px] text-[var(--brand-ink)]/80 transition-colors hover:text-[var(--brand-ink)] lg:inline-flex"
+              aria-label="Search pieces"
+            >
               <SearchIcon />
-            </IconBtn>
+              <span>Search pieces</span>
+            </button>
+            <span className="lg:hidden">
+              <IconBtn onClick={() => setSearchOpen(true)} ariaLabel="Search">
+                <SearchIcon />
+              </IconBtn>
+            </span>
 
             {/* AI Assistant */}
             {assistantEnabled && (

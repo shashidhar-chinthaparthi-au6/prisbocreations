@@ -13,6 +13,8 @@ import type { StorefrontProductCard } from "@/lib/services/storefrontCatalog";
 
 type Props = {
   product: StorefrontProductCard;
+  /** 0-based position, shown as 01, 02… on the image */
+  index?: number;
   /** Quick add uses default option when product has pack rows */
   defaultOptionKey?: string;
   /** Wishlist page: undo toast when removing; optional restock notify for OOS. */
@@ -20,7 +22,7 @@ type Props = {
   onStockNotify?: () => void;
 };
 
-export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onStockNotify }: Props) {
+export function ProductCard({ product, index, defaultOptionKey, wishlistRemoveUndo, onStockNotify }: Props) {
   const { add, lines, setQty } = useCart();
   const [hover, setHover] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -49,10 +51,6 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
 
   const out = product.stock <= 0;
   const low = !out && product.stock <= getLowStockThreshold();
-  const discountPct =
-    product.compareAtPaise && product.compareAtPaise > product.listPricePaise
-      ? Math.round((1 - product.listPricePaise / product.compareAtPaise) * 100)
-      : null;
 
   const secondaryImg = product.hoverImageUrl;
 
@@ -89,15 +87,24 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
     setQty(lineId, inCartQty + 1);
   };
 
+  const indexLabel =
+    index != null ? String(index + 1).padStart(2, "0") : null;
+  const meta = [product.subcategoryName, product.listingColorLabel].filter(Boolean).join(" · ");
+
   return (
     <article
-      className={`group relative flex flex-col overflow-hidden rounded-[16px] bg-white border border-[var(--brand-border)] shadow-[0_1px_3px_rgba(24,12,4,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(24,12,4,0.12)] hover:border-[var(--brand-border-dark)] ${out ? "opacity-80" : ""}`}
+      className={`group relative flex flex-col ${out ? "opacity-80" : ""}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       {/* Image wrapper */}
       <Link href={productHref} className="block shrink-0 overflow-hidden">
-        <div className="relative aspect-[4/5] overflow-hidden bg-[#f7f2ec]">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-[4px] bg-[#eceae6]">
+          {indexLabel ? (
+            <span className="absolute left-3 top-3 z-10 text-[11px] tracking-[0.14em] text-[var(--brand-ink)]/45">
+              {indexLabel}
+            </span>
+          ) : null}
           {product.imageUrl && !primaryImgError ? (
             <>
               <StoreMedia
@@ -135,17 +142,25 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
             </div>
           )}
 
-          {/* Badges — top-left */}
+          {/* Badges — bottom-left, editorial pills */}
           {out ? (
-            <span className="absolute top-2 left-2 z-10 rounded-full bg-[#18120e]/80 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+            <span className="absolute bottom-3 left-3 z-10 rounded-full bg-[#1c1612]/85 px-2.5 py-1 text-[11px] text-white">
               Sold out
             </span>
+          ) : product.featured ? (
+            <span className="absolute bottom-3 left-3 z-10 rounded-full bg-[#f6f1e8] px-2.5 py-1 text-[11px] text-[var(--brand-ink)]">
+              Bestseller
+            </span>
+          ) : product.multi ? (
+            <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-[#2a241f]/90 px-2.5 py-1 text-[11px] text-white">
+              Customise <span aria-hidden>↗</span>
+            </span>
           ) : low ? (
-            <span className="absolute top-2 left-2 z-10 rounded-full bg-[#92400e]/85 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+            <span className="absolute bottom-3 left-3 z-10 rounded-full bg-[#2a241f]/90 px-2.5 py-1 text-[11px] text-white">
               Almost gone
             </span>
           ) : product.isNew ? (
-            <span className="absolute top-2 left-2 z-10 rounded-full bg-[#18120e] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+            <span className="absolute bottom-3 left-3 z-10 rounded-full bg-[#f6f1e8] px-2.5 py-1 text-[11px] text-[var(--brand-ink)]">
               New
             </span>
           ) : null}
@@ -203,22 +218,17 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
       </Link>
 
       {/* Card body */}
-      <div className="flex flex-col gap-1.5 p-3 pt-2.5">
-        {/* Subcategory label */}
-        {product.subcategoryName ? (
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--brand-muted)] line-clamp-1">
-            {product.subcategoryName}
-          </p>
+      <div className="flex flex-col gap-1 px-0.5 pb-2 pt-3">
+        {meta ? (
+          <p className="line-clamp-1 text-[12px] text-[var(--brand-muted)]">{meta}</p>
         ) : null}
 
-        {/* Product name */}
         <Link href={productHref}>
-          <h3 className="text-[13px] font-medium leading-snug text-[var(--brand-ink)] line-clamp-2 min-h-[36px]">
+          <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-[var(--brand-ink)]">
             {product.name}
           </h3>
         </Link>
 
-        {/* Stars */}
         {product.avgRating != null && product.reviewCount != null && product.reviewCount >= 1 ? (
           <StarRatingRow
             rating={product.avgRating}
@@ -227,24 +237,17 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           />
         ) : null}
 
-        {/* Price row */}
-        <div className="flex items-baseline gap-1.5 mt-0.5">
-          <span className="text-[15px] font-bold text-[var(--brand-ink)]">
+        <div className="mt-1.5 flex items-baseline gap-2">
+          <span className="text-[15px] font-semibold text-[var(--brand-ink)]">
             {formatInrFromPaise(product.listPricePaise)}
           </span>
           {product.compareAtPaise && product.compareAtPaise > product.listPricePaise ? (
-            <>
-              <span className="text-[12px] text-[var(--brand-muted)] line-through">
-                {formatInrFromPaise(product.compareAtPaise)}
-              </span>
-              {discountPct != null ? (
-                <span className="rounded-full bg-[#fef3c7] px-1.5 py-0.5 text-[10px] font-bold text-[#92400e]">
-                  {discountPct}% off
-                </span>
-              ) : null}
-            </>
+            <span className="text-[13px] text-[var(--brand-muted)] line-through">
+              {formatInrFromPaise(product.compareAtPaise)}
+            </span>
           ) : null}
         </div>
+        <p className="text-[11px] text-[var(--brand-muted)]">Inclusive of taxes</p>
 
         {/* Add-to-cart / stepper */}
         {out ? (
@@ -252,7 +255,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
             <button
               type="button"
               onClick={onStockNotify}
-              className="w-full rounded-full border border-[var(--brand-amber)] bg-transparent py-2 text-[12px] font-semibold text-[var(--brand-amber-dark)] transition-all duration-150 hover:bg-[var(--brand-amber-light)] mt-1"
+              className="mt-2 w-full border border-[var(--brand-ink)]/20 py-2 text-[12px] font-medium text-[var(--brand-ink)] transition hover:bg-[var(--brand-ink)] hover:text-[#f6f1e8]"
             >
               Notify me
             </button>
@@ -260,7 +263,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
             <button
               type="button"
               disabled
-              className="w-full rounded-full border border-[var(--brand-border)] bg-transparent py-2 text-[12px] font-semibold text-[var(--brand-muted)] cursor-not-allowed opacity-60 mt-1"
+              className="mt-2 w-full cursor-not-allowed border border-[var(--brand-ink)]/10 py-2 text-[12px] font-medium text-[var(--brand-muted)] opacity-60"
             >
               Notify me
             </button>
@@ -269,13 +272,13 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           <button
             type="button"
             onClick={onAdd}
-            className="w-full rounded-full bg-[var(--brand-amber-dark)] py-2 text-[12px] font-semibold text-white transition-all duration-150 hover:bg-[#73400f] mt-1"
+            className="mt-2 w-full bg-[var(--brand-ink)] py-2 text-[12px] font-medium text-[#f6f1e8] transition hover:bg-black"
           >
             Choose options
           </button>
         ) : inCartQty >= 1 ? (
           <div
-            className="mt-1 flex items-center justify-between rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface)] p-1"
+            className="mt-2 flex items-center justify-between border border-[var(--brand-ink)]/15 bg-transparent p-1"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -294,7 +297,7 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
               aria-label="Increase quantity"
               onClick={onInc}
               disabled={inCartQty >= maxQty}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-amber)] text-white hover:bg-[var(--brand-amber-dark)] text-base font-bold disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-8 w-8 items-center justify-center bg-[var(--brand-ink)] text-base font-bold text-[#f6f1e8] hover:bg-black disabled:cursor-not-allowed disabled:opacity-45"
             >
               +
             </button>
@@ -303,10 +306,8 @@ export function ProductCard({ product, defaultOptionKey, wishlistRemoveUndo, onS
           <button
             type="button"
             onClick={onAdd}
-            className={`w-full rounded-full py-2 text-[12px] font-semibold text-white transition-all duration-150 mt-1 ${
-              justAdded
-                ? "bg-[var(--brand-success)]"
-                : "bg-[var(--brand-amber-dark)] hover:bg-[#73400f]"
+            className={`mt-2 w-full py-2 text-[12px] font-medium text-[#f6f1e8] transition ${
+              justAdded ? "bg-[var(--brand-success)]" : "bg-[var(--brand-ink)] hover:bg-black"
             }`}
           >
             {justAdded ? "✓ Added" : "Add to cart"}

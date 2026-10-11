@@ -1,7 +1,5 @@
 "use client";
 
-import { ProductsSortBar } from "@/components/storefront/ProductsSortBar";
-
 type Props = {
   title: string;
   subtitle?: string;
@@ -11,18 +9,16 @@ type Props = {
 
 export function ListingTopbar({ title, subtitle, showing, total }: Props) {
   return (
-    <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between md:gap-4">
+    <div className="flex flex-col gap-2 border-t border-[var(--brand-ink)]/10 pt-4 md:flex-row md:items-center md:justify-between md:gap-4">
       <div className="min-w-0 flex-1">
-        <h1 className="font-display text-sm font-normal text-[var(--ink)] md:text-2xl lg:text-3xl">{title}</h1>
+        <h1 className="sr-only">{title}</h1>
         {subtitle ? (
-          <p className="mt-0.5 text-xs text-[var(--muted)] md:mt-1 md:text-sm">{subtitle}</p>
+          <p className="text-[13px] text-[var(--muted)]">{subtitle}</p>
         ) : null}
-        <p className="mt-0.5 text-[10px] text-[var(--muted)] md:mt-1 md:text-sm">
-          Showing {showing} of {total} products
+        <p className="text-[13px] text-[var(--muted)]">
+          {total} {total === 1 ? "piece" : "pieces"} to explore
+          {showing < total ? ` · showing ${showing}` : ""}
         </p>
-      </div>
-      <div className="w-full min-w-0 shrink-0 sm:max-w-[200px] md:max-w-[240px] lg:max-w-[min(100%,20rem)]">
-        <ProductsSortBar />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { BeforeAfterSlider } from "@/components/storefront/BeforeAfterSlider";
 import { ProductPurchaseClient } from "@/components/product/ProductPurchaseClient";
 import { ProductDetailSections } from "@/components/product/ProductDetailSections";
 import { computeProductDisplayBlocks, getVisiblePackOptions } from "@/lib/product-display-from-selection";
@@ -193,6 +194,16 @@ export function ProductPageClient({
             </div>
           )}
           <ProductGallery images={galleryImages} productName={galleryProductName} />
+          <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--brand-ink)]/10">
+            <BeforeAfterSlider
+              beforeSrc="/compare/plain.jpg"
+              afterSrc="/compare/personal.jpg"
+              className=""
+            />
+            <p className="bg-[#fbf7f1] px-4 py-2.5 text-[12px] text-[var(--brand-muted)]">
+              The cup, the cushion, and the frame each change on their own.
+            </p>
+          </div>
         </div>
         <ProductDetailSections
           className="hidden min-w-0 border-t border-sand-deep/80 pt-8 lg:block"

@@ -10,65 +10,37 @@ import { HomeNewsletter } from "@/components/storefront/HomeNewsletter";
 import { HomeRecentlyViewed } from "@/components/storefront/HomeRecentlyViewed";
 import { HomeMostLovedSection } from "@/components/home/HomeMostLovedSection";
 import { FeaturedReviews } from "@/components/home/FeaturedReviews";
-import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
-import { getStorefrontHomeHeroSlides } from "@/lib/services/homeHeroService";
-import {
-  TrustIconGift,
-  TrustIconHeart,
-  TrustIconPackage,
-  TrustIconShieldCheck,
-  TrustIconTruck,
-} from "@/components/storefront/HomeTrustIcons";
+import { BeforeAfterSlider } from "@/components/storefront/BeforeAfterSlider";
 import { STOREFRONT_FULL_BLEED } from "@/lib/storefront-layout";
+import type { StorefrontProductCard } from "@/lib/services/storefrontCatalog";
 
 export const revalidate = 120;
 
 export default async function HomePage() {
-  await connectDb();
-  const heroSlides = await getStorefrontHomeHeroSlides();
-  const [categories, featuredResult] = await Promise.all([
-    listCategories(),
-    listStorefrontProducts({
-      featured: true,
-      page: 1,
-      pageSize: 8,
-      sort: "newest",
-      inStockOnly: true,
-    }),
-  ]);
-  const featured = featuredResult.items.length
-    ? featuredResult.items
-    : (await listStorefrontProducts({ page: 1, pageSize: 8, sort: "newest", inStockOnly: true })).items;
+  let categories: Awaited<ReturnType<typeof listCategories>> = [];
+  let featured: StorefrontProductCard[] = [];
+  try {
+    await connectDb();
+    const [categoryRows, featuredResult] = await Promise.all([
+      listCategories(),
+      listStorefrontProducts({
+        featured: true,
+        page: 1,
+        pageSize: 8,
+        sort: "newest",
+        inStockOnly: true,
+      }),
+    ]);
+    categories = categoryRows;
+    featured = featuredResult.items.length
+      ? featuredResult.items
+      : (await listStorefrontProducts({ page: 1, pageSize: 8, sort: "newest", inStockOnly: true })).items;
+  } catch {
+    categories = [];
+    featured = [];
+  }
 
   const catCards = categories.slice(0, 5);
-
-  const trustItems = [
-    {
-      t: "Free shipping over ₹1,499",
-      s: "Pan-India on qualifying cart totals.",
-      Icon: TrustIconTruck,
-    },
-    {
-      t: "Secure payments",
-      s: "UPI, cards, and COD where available.",
-      Icon: TrustIconShieldCheck,
-    },
-    {
-      t: "Personalised in India",
-      s: "Made and packed with care in our studio.",
-      Icon: TrustIconHeart,
-    },
-    {
-      t: "Gift-ready packaging",
-      s: "Neat boxing — unwrap at home or send straight to them.",
-      Icon: TrustIconGift,
-    },
-    {
-      t: "Dispatch & tracking",
-      s: "We email you when your order ships. Track parcels anytime.",
-      Icon: TrustIconPackage,
-    },
-  ] as const;
 
   const occasions = [
     { label: "🎂 Birthday", href: "/products?q=birthday" },
@@ -104,27 +76,30 @@ export default async function HomePage() {
         <HomeDeletedToast />
       </Suspense>
 
-      {/* ── Hero ── */}
-      <section className="relative w-full overflow-hidden" style={{ marginBottom: "2rem" }}>
-        <HomeHeroCarousel slides={heroSlides} />
-      </section>
-
-      {/* ── Trust strip ── */}
-      <section className="store-section">
-        <div className="rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-5 shadow-[var(--shadow-sm)]">
-          <div className="flex items-center gap-6 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:justify-between lg:overflow-visible lg:pb-0">
-            {trustItems.map((x) => (
-              <div
-                key={x.t}
-                className="flex min-w-[150px] shrink-0 items-start gap-3 lg:min-w-0 lg:flex-1"
+      {/* ── Before / after ── */}
+      <section className="store-section mt-10" aria-labelledby="home-before-after-heading">
+        <div className="overflow-hidden rounded-[28px] border border-[var(--brand-ink)]/8 bg-[#fbf7f1]">
+          <div className="grid items-stretch lg:grid-cols-[minmax(0,1.5fr)_minmax(240px,0.7fr)]">
+            <BeforeAfterSlider
+              beforeSrc="/compare/plain.jpg"
+              afterSrc="/compare/personal.jpg"
+              className=""
+            />
+            <div className="flex flex-col justify-center px-6 py-8 sm:px-10 lg:px-12">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--brand-gold)]">
+                Watch it change
+              </p>
+              <h2
+                id="home-before-after-heading"
+                className="mt-4 font-display text-[40px] font-medium leading-[0.95] tracking-[-0.03em] text-[var(--brand-ink)] sm:text-[52px]"
               >
-                <x.Icon className="mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold leading-snug text-[var(--brand-ink)]">{x.t}</p>
-                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-[var(--brand-muted)]">{x.s}</p>
-                </div>
-              </div>
-            ))}
+                It starts plain.
+                <span className="mt-1 block italic font-normal text-[var(--brand-gold)]">Then it&apos;s theirs.</span>
+              </h2>
+              <p className="mt-5 max-w-[28ch] text-[15px] leading-relaxed text-[var(--brand-muted)]">
+                The cup fades, the cushion wipes across, and the frame rises.
+              </p>
+            </div>
           </div>
         </div>
       </section>

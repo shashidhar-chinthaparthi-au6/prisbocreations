@@ -9,7 +9,8 @@ import { AnalyticsScripts } from "@/components/analytics/AnalyticsScripts";
 
 const display = Playfair_Display({
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
   preload: true,
@@ -17,7 +18,7 @@ const display = Playfair_Display({
 
 const sans = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-sans",
   display: "swap",
   preload: true,
@@ -52,7 +53,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover" as const,
-  themeColor: "#c47a2b",
+  themeColor: "#f6f1e8",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

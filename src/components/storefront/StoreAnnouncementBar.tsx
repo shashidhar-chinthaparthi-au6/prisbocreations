@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 
 const MESSAGES = [
-  "Free shipping on orders above ₹1,499 — Pan India",
-  "Personalised gifts made in our studio, not a warehouse",
-  "UPI, Cards & COD available at checkout",
+  "Thoughtful things, made personal  ·  Shipping across India",
+  "Custom apparel and gifts, finished in our studio",
+  "Free shipping on orders above ₹1,499",
 ];
 
 const STORAGE_KEY = "prisbo_announce_dismissed";
@@ -70,9 +70,7 @@ export function StoreAnnouncementBar() {
         className={`relative flex h-[30px] w-full items-center justify-center px-12 max-[374px]:hidden sm:h-[34px] ${
           dismissed ? "pointer-events-none invisible" : ""
         }`}
-        style={{
-          background: "linear-gradient(90deg, #140b06 0%, #1e0e08 35%, #2a1209 60%, #140b06 100%)",
-        }}
+        style={{ background: "#1c1612" }}
         role="region"
         aria-label="Announcements"
       >
@@ -84,26 +82,12 @@ export function StoreAnnouncementBar() {
         />
 
         <p
-          className="pointer-events-none max-w-[calc(100%-4rem)] text-center text-[11px] font-normal tracking-[0.1em] text-white/90 transition-opacity duration-300 ease-in-out sm:text-[12px]"
+          className="pointer-events-none max-w-[calc(100%-4rem)] text-center text-[11px] font-normal tracking-[0.04em] text-[#f6f1e8]/90 transition-opacity duration-300 ease-in-out sm:text-[12px]"
           style={{ opacity: visible ? 1 : 0 }}
           aria-live="polite"
           aria-atomic="true"
         >
-          <span
-            className="mr-2 text-[9px]"
-            style={{ color: "var(--brand-amber)", opacity: 0.85 }}
-            aria-hidden
-          >
-            ●
-          </span>
           {MESSAGES[idx]}
-          <span
-            className="ml-2 text-[9px]"
-            style={{ color: "var(--brand-amber)", opacity: 0.85 }}
-            aria-hidden
-          >
-            ●
-          </span>
         </p>
 
         <button
