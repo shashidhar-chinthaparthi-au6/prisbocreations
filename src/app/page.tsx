@@ -119,19 +119,25 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Most Loved ── */}
       {featured.length > 0 ? (
-        <section className="store-section mt-14">
-          <div className="flex items-end justify-between">
-            <div>
-              <h2 className="section-title">Most loved</h2>
-              <p className="section-subtitle">Bestsellers from our studio</p>
+        <section className="store-section mt-16" aria-labelledby="home-favourite-heading">
+          <div className="flex items-start justify-between gap-6">
+            <div className="min-w-0">
+        <h2
+          id="home-favourite-heading"
+          className="font-display text-[40px] font-medium leading-[0.95] tracking-[-0.03em] text-[#1c1612] md:text-[56px]"
+        >
+                Find your <span className="font-normal italic text-[#c17a3a]">favourite.</span>
+              </h2>
+              <p className="mt-3 text-[15px] text-[#1c1612]/55">
+                Easy-to-love essentials. Made a little more yours.
+              </p>
             </div>
             <Link
-              href="/products"
-              className="text-sm font-semibold text-[var(--brand-amber-dark)] hover:underline underline-offset-2"
+              href="/bulk"
+              className="hidden shrink-0 pt-3 text-[13px] text-[#1c1612]/70 transition hover:text-[#1c1612] md:inline-flex md:items-center md:gap-1"
             >
-              View all →
+              Need something custom? <span aria-hidden>↗</span>
             </Link>
           </div>
           <HomeMostLovedSection initial={featured} />

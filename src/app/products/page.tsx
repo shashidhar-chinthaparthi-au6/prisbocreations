@@ -112,7 +112,7 @@ async function ProductsListingLoader({
   }
 
   return (
-    <div className="px-4 pb-16 pt-6 sm:px-6">
+    <div className="px-4 pb-20 pt-10 sm:px-6 lg:px-10">
       <StorefrontListing
         initial={result}
         categories={categories}

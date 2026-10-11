@@ -153,6 +153,7 @@ async function RecipientListingSection({
           facets={facets}
           mode="all"
           title={meta.title}
+          intro={false}
           forcedRecipient={slug}
         />
       </div>

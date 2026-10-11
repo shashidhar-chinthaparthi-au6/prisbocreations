@@ -230,7 +230,22 @@ export type StorefrontProductCard = {
   /** Present when reviews exist for this product. */
   avgRating?: number;
   reviewCount?: number;
+  /** One short line from the product description, for the catalog card. */
+  blurb?: string;
 };
+
+function listingBlurb(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const text = raw
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z#0-9]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return undefined;
+  const first = text.split(/(?<=[.!?])\s/)[0] ?? text;
+  if (first.length <= 88) return first;
+  return `${first.slice(0, 85).trimEnd()}…`;
+}
 
 function daysSince(date: Date | undefined): number {
   if (!date) return 9999;
@@ -339,6 +354,7 @@ export function productToStorefrontCard(
       : undefined;
   const created = p.createdAt instanceof Date ? p.createdAt : undefined;
   const isNew = daysSince(created) <= 14;
+  const blurb = listingBlurb(p.description);
 
   return {
     id: String(p._id),
@@ -357,6 +373,7 @@ export function productToStorefrontCard(
     featured: Boolean(p.featured),
     isNew,
     tags: Array.isArray(p.tags) ? p.tags : [],
+    ...(blurb ? { blurb } : {}),
     ...(extras?.avgRating != null && extras.reviewCount != null && extras.reviewCount > 0
       ? { avgRating: extras.avgRating, reviewCount: extras.reviewCount }
       : {}),

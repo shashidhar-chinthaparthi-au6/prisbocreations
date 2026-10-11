@@ -158,9 +158,9 @@ textarea {
   --amd: #8a4d12;
   --ink: #1c1612;
   --muted: #8a8178;
-  --sf: #f6f1e8;
-  /* Main viewport — warm cream, matching the editorial storefront */
-  --brand-canvas: #f6f1e8;
+  --sf: #f9f8f4;
+  /* Main viewport — the editorial cream from the catalog reference */
+  --brand-canvas: #f9f8f4;
   --brand-gold: #c4a06a;
   --brand-band: #efe4d4;
   --bd: #ece3d8;
@@ -176,8 +176,8 @@ textarea {
   --brand-amber-dark: #8a4d12;
   --brand-ink: #1c1612;
   --brand-muted: #8a8178;
-  /* Warm cream — page and header share one surface */
-  --brand-surface: #f6f1e8;
+  /* Page and header share the editorial cream */
+  --brand-surface: #f9f8f4;
   --brand-card: #ffffff;
   --brand-border: #ece3d8;
   --brand-border-dark: #d4c7b8;
@@ -325,20 +325,13 @@ textarea {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 28px 20px;
-}
-
-@media (max-width: 1279px) {
-  .product-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-  }
+  gap: 40px 28px;
 }
 
 @media (max-width: 1023px) {
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 28px 16px;
   }
 }
 

@@ -8,7 +8,6 @@ import { ProductsSortBar } from "@/components/storefront/ProductsSortBar";
 import { ActiveFilterPills } from "@/components/listing/ActiveFilterPills";
 import { FilterSidebar, type CategoryRow, type Facets } from "@/components/listing/FilterSidebar";
 import { ListingLayout } from "@/components/listing/ListingLayout";
-import { ListingTopbar } from "@/components/listing/ListingTopbar";
 import { StoreEmptyState } from "@/components/ui/StoreEmptyState";
 import type { StorefrontProductCard } from "@/lib/services/storefrontCatalog";
 
@@ -28,6 +27,8 @@ type Props = {
   mode: "all" | "category";
   title: string;
   subtitle?: string;
+  /** When false, the page already has its own hero and this listing starts at the pills. */
+  intro?: boolean;
   forcedCategorySlug?: string;
   forcedSubcategorySlug?: string;
   /** When set, all product fetches include `recipient` (shop-by-recipient collection). */
@@ -82,7 +83,7 @@ function CategoryPills({
   }
 
   const pill =
-    "inline-flex shrink-0 items-center rounded-full px-3.5 py-1.5 text-[13px] transition-colors";
+    "inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[14px] transition-colors";
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -91,8 +92,8 @@ function CategoryPills({
         onClick={() => selectCategory(null)}
         className={`${pill} ${
           allActive
-            ? "bg-[var(--brand-ink)] text-[#f6f1e8]"
-            : "text-[var(--brand-ink)]/70 hover:text-[var(--brand-ink)]"
+            ? "bg-[#1c1612] text-[#f7f4ee]"
+            : "px-2 text-[#1c1612]/70 hover:text-[#1c1612]"
         }`}
       >
         All pieces
@@ -107,8 +108,8 @@ function CategoryPills({
             onClick={() => selectCategory(active ? null : c.slug)}
             className={`${pill} ${
               active
-                ? "bg-[var(--brand-ink)] text-[#f6f1e8]"
-                : "text-[var(--brand-ink)]/70 hover:text-[var(--brand-ink)]"
+                ? "bg-[#1c1612] text-[#f7f4ee]"
+                : "px-2 text-[#1c1612]/70 hover:text-[#1c1612]"
             }`}
           >
             {c.name}
@@ -131,6 +132,7 @@ export function StorefrontListing({
   mode,
   title,
   subtitle,
+  intro = true,
   forcedCategorySlug,
   forcedSubcategorySlug,
   forcedRecipient,
@@ -169,16 +171,57 @@ export function StorefrontListing({
     <FilterSidebar mode={mode} categories={categories} subcategories={subcategories} facets={facets} />
   );
 
+  const pieceLabel = `${initial.total} ${initial.total === 1 ? "piece" : "pieces"}`;
+
   return (
-    <ListingLayout sidebar={sidebar}>
-      <div className="flex flex-col gap-4 px-1 py-1 sm:px-2 md:px-3 lg:px-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <CategoryPills categories={categories} mode={mode} forcedCategorySlug={forcedCategorySlug} />
-          <div className="w-full shrink-0 lg:w-auto lg:max-w-[16rem]">
+    <div>
+      <header className="px-1 sm:px-2">
+        {intro ? (
+          <div className="flex items-start justify-between gap-6">
+            <div className="min-w-0">
+              <h1 className="font-display text-[40px] font-medium leading-[0.95] tracking-[-0.03em] text-[#1c1612] md:text-[56px]">
+                {title === "All products" ? (
+                  <>
+                    Find your <span className="font-normal italic text-[#c17a3a]">favourite.</span>
+                  </>
+                ) : (
+                  title
+                )}
+              </h1>
+              <p className="mt-3 max-w-[42ch] text-[15px] text-[#1c1612]/55">
+                {subtitle ?? "Easy-to-love essentials. Made a little more yours."}
+              </p>
+            </div>
+            <Link
+              href="/bulk"
+              className="hidden shrink-0 pt-3 text-[13px] text-[#1c1612]/70 transition hover:text-[#1c1612] md:inline-flex md:items-center md:gap-1"
+            >
+              Need something custom? <span aria-hidden>↗</span>
+            </Link>
+          </div>
+        ) : null}
+
+        <div className={`${intro ? "mt-8" : ""} flex items-center gap-4 border-b border-[#e6e1d8] pb-3`}>
+          <div className="min-w-0 flex-1">
+            <CategoryPills categories={categories} mode={mode} forcedCategorySlug={forcedCategorySlug} />
+          </div>
+          <p className="relative z-10 shrink-0 bg-[#f9f8f4] pl-3 text-[13px] tabular-nums text-[#1c1612]/45">
+            {pieceLabel}
+          </p>
+        </div>
+      </header>
+
+    <ListingLayout
+      sidebar={
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">{sidebar}</div>
+          <div className="shrink-0 sm:pt-0.5">
             <ProductsSortBar />
           </div>
         </div>
-        <ListingTopbar title={title} subtitle={subtitle} showing={merged.length} total={initial.total} />
+      }
+    >
+      <div className="flex flex-col gap-6 px-1 py-2 sm:px-2">
 
         <ActiveFilterPills
           categories={categoryLabelRows}
@@ -225,5 +268,6 @@ export function StorefrontListing({
         )}
       </div>
     </ListingLayout>
+    </div>
   );
 }

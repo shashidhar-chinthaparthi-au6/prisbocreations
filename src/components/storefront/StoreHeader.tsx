@@ -213,7 +213,7 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
     <>
       {/* ── Main header bar ─────────────────────────────────────────────── */}
       <header
-        className={`sticky top-0 z-[100] w-full border-b border-[#e5e2db] bg-[#f9f8f4] transition-shadow duration-200 ${
+        className={`sticky top-0 z-[100] w-full border-b border-[#e5e2db] bg-[var(--brand-canvas)] transition-shadow duration-200 ${
           scrolled ? "shadow-[0_2px_8px_rgba(28,22,18,0.06)]" : ""
         }`}
       >
