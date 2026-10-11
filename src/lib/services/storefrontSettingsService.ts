@@ -6,10 +6,15 @@ import { StorefrontSettings } from "@/lib/models/StorefrontSettings";
 const KEY = "default";
 
 async function readAssistantEnabledUncached(): Promise<boolean> {
-  await connectDb();
-  const doc = await StorefrontSettings.findOne({ singletonKey: KEY }).select("assistantEnabled").lean();
-  if (!doc) return true;
-  return doc.assistantEnabled !== false;
+  try {
+    await connectDb();
+    const doc = await StorefrontSettings.findOne({ singletonKey: KEY }).select("assistantEnabled").lean();
+    if (!doc) return true;
+    return doc.assistantEnabled !== false;
+  } catch (err) {
+    console.error("Assistant setting unavailable, leaving it on:", err);
+    return true;
+  }
 }
 
 /** Cached for layout / API; invalidate with `revalidateTag("storefront-settings")` after admin updates. */
