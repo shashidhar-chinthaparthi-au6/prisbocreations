@@ -97,6 +97,7 @@ export function ProductPurchaseClient({
   /** Shown at bottom of specifications (packed weight & box size). */
   packageDimensionsRows,
   detailSections = "inline",
+  onPrintChange,
 }: {
   product: PurchaseProduct;
   /** Sanitized HTML from the server (TipTap output). */
@@ -119,6 +120,8 @@ export function ProductPurchaseClient({
   onSelectedPackKeyChange?: (key: string) => void;
   packageDimensionsRows?: { key: string; value: string }[];
   detailSections?: "inline" | "none";
+  /** Live print preview: the line and photo the buyer is about to print. */
+  onPrintChange?: (value: { text: string; imageUrl: string }) => void;
 }) {
   const router = useRouter();
   const { add } = useCart();
@@ -175,6 +178,30 @@ export function ProductPurchaseClient({
   const [schemaUploadBusy, setSchemaUploadBusy] = useState(false);
   const purchaseCtaRef = useRef<HTMLDivElement>(null);
   const [showStickyPurchase, setShowStickyPurchase] = useState(false);
+
+  useEffect(() => {
+    if (!onPrintChange) return;
+    let text = customerNotes.trim();
+    if (!text) {
+      for (const value of Object.values(customizationData)) {
+        if (typeof value === "string" && value.trim()) {
+          text = value.trim();
+          break;
+        }
+      }
+    }
+    let imageUrl = filePreview || customerImageUrl || "";
+    if (!imageUrl) {
+      for (const value of Object.values(customizationFiles)) {
+        const file = Array.isArray(value) ? value[0] : value;
+        if (file?.url) {
+          imageUrl = file.url;
+          break;
+        }
+      }
+    }
+    onPrintChange({ text, imageUrl });
+  }, [customerNotes, customerImageUrl, filePreview, customizationData, customizationFiles, onPrintChange]);
 
   useEffect(() => {
     const el = purchaseCtaRef.current;

@@ -150,6 +150,19 @@ const ProductSchema = new Schema(
     customizationTextRequired: { type: Boolean, default: false },
     /** Storefront personalisation field definitions (see `customization-fields-catalog.ts`). */
     customizationFields: { type: [Schema.Types.Mixed], default: [] },
+    /** Admin studio (the catalogue editor) keeps the exact editor document here. */
+    studioKey: { type: String, trim: true, sparse: true, unique: true },
+    studio: { type: Schema.Types.Mixed },
+    occasions: { type: [String], default: [] },
+    personalisationFeePaise: { type: Number, default: 0, min: 0 },
+    /** Studio before/after pair. The after image sits on the shop cream. */
+    sceneBaseUrl: { type: String, trim: true, default: "" },
+    sceneBeforeUrl: { type: String, trim: true, default: "" },
+    sceneAfterUrl: { type: String, trim: true, default: "" },
+    scenePlaceholder: { type: String, trim: true, default: "Your design" },
+    sceneDesignMode: { type: String, trim: true, default: "both" },
+    sceneZone: { type: Schema.Types.Mixed, default: null },
+    sceneOnHome: { type: Boolean, default: false, index: true },
   },
   { timestamps: true },
 );

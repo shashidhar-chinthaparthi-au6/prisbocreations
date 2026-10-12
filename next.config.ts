@@ -22,7 +22,7 @@ const shiprocketPublicDefaults = {
 
 const nextConfig: NextConfig = {
   env: { ...shiprocketPublicDefaults },
-  serverExternalPackages: ["sharp"],
+  serverExternalPackages: ["sharp", "onnxruntime-node"],
   async redirects() {
     return [
       { source: "/product/:slug", destination: "/products/:slug", permanent: true },

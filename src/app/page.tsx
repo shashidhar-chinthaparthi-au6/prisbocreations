@@ -10,7 +10,6 @@ import { HomeNewsletter } from "@/components/storefront/HomeNewsletter";
 import { HomeRecentlyViewed } from "@/components/storefront/HomeRecentlyViewed";
 import { HomeMostLovedSection } from "@/components/home/HomeMostLovedSection";
 import { FeaturedReviews } from "@/components/home/FeaturedReviews";
-import { BeforeAfterSlider } from "@/components/storefront/BeforeAfterSlider";
 import { STOREFRONT_FULL_BLEED } from "@/lib/storefront-layout";
 import type { StorefrontProductCard } from "@/lib/services/storefrontCatalog";
 
@@ -75,34 +74,6 @@ export default async function HomePage() {
       <Suspense fallback={null}>
         <HomeDeletedToast />
       </Suspense>
-
-      {/* ── Before / after ── */}
-      <section className="store-section mt-10" aria-labelledby="home-before-after-heading">
-        <div className="overflow-hidden rounded-[28px] border border-[var(--brand-ink)]/8 bg-[#fbf7f1]">
-          <div className="grid items-stretch lg:grid-cols-[minmax(0,1.5fr)_minmax(240px,0.7fr)]">
-            <BeforeAfterSlider
-              beforeSrc="/compare/plain.jpg"
-              afterSrc="/compare/personal.jpg"
-              className=""
-            />
-            <div className="flex flex-col justify-center px-6 py-8 sm:px-10 lg:px-12">
-              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--brand-gold)]">
-                Watch it change
-              </p>
-              <h2
-                id="home-before-after-heading"
-                className="mt-4 font-display text-[40px] font-medium leading-[0.95] tracking-[-0.03em] text-[var(--brand-ink)] sm:text-[52px]"
-              >
-                It starts plain.
-                <span className="mt-1 block italic font-normal text-[var(--brand-gold)]">Then it&apos;s theirs.</span>
-              </h2>
-              <p className="mt-5 max-w-[28ch] text-[15px] leading-relaxed text-[var(--brand-muted)]">
-                The cup fades, the cushion wipes across, and the frame rises.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ── Occasion pills ── */}
       <section className="store-section mt-8">

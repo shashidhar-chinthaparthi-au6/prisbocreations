@@ -76,6 +76,7 @@ export async function loginUser(input: {
 
   const ok = await bcrypt.compare(input.password, user.passwordHash);
   if (!ok) throw new Error("Invalid email or password");
+  if (user.disabled) throw new Error("This account is disabled");
 
   const secret = process.env.JWT_SECRET!;
   const payload: JwtPayload = {

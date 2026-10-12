@@ -39,6 +39,10 @@ const UserSchema = new Schema(
     emailChangeTo: { type: String, trim: true, lowercase: true },
     emailChangeExpiry: { type: Date },
     deletedAt: { type: Date },
+    /** Admin studio identity. Customers never get this. */
+    studioKey: { type: String, trim: true, sparse: true, unique: true },
+    teamRole: { type: String, enum: ["admin", "staff"] },
+    disabled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

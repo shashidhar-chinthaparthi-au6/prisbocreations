@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ProductGallery } from "@/components/product/ProductGallery";
-import { BeforeAfterSlider } from "@/components/storefront/BeforeAfterSlider";
 import { ProductPurchaseClient } from "@/components/product/ProductPurchaseClient";
 import { ProductDetailSections } from "@/components/product/ProductDetailSections";
 import { computeProductDisplayBlocks, getVisiblePackOptions } from "@/lib/product-display-from-selection";
@@ -17,6 +16,8 @@ import { recordRecentlyViewedProductId } from "@/lib/recently-viewed-ids";
 import { WishlistHeart } from "@/components/ui/WishlistHeart";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { packageDimensionSpecRows } from "@/lib/product-package-display";
+import { PrintPreview } from "@/components/studio/PrintPreview";
+import { normalizeKind, normalizeZones, type DesignKind } from "@/lib/studio/composePrint";
 
 type Props = {
   defaultImages: string[];
@@ -37,6 +38,10 @@ type Props = {
   product: PurchaseProduct;
   /** Admin product preview: no wishlist, reviews, or recently-viewed side effects. */
   adminPreview?: boolean;
+  sceneBaseUrl?: string;
+  scenePlaceholder?: string;
+  sceneDesignMode?: DesignKind;
+  sceneZone?: { x: number; y: number; w: number; h: number } | null;
   /** Deep-link selected colour (`/products/:slug?color=`). */
   initialColorKey?: string;
 };
@@ -59,8 +64,20 @@ export function ProductPageClient({
   tags,
   product,
   adminPreview = false,
+  sceneBaseUrl = "",
+  scenePlaceholder = "Your design",
+  sceneDesignMode = "both",
+  sceneZone = null,
   initialColorKey,
 }: Props) {
+  const [print, setPrint] = useState({ text: "", imageUrl: "" });
+  const onPrintChange = useMemo(() => {
+    return (value: { text: string; imageUrl: string }) => {
+      setPrint((prev) => (prev.text === value.text && prev.imageUrl === value.imageUrl ? prev : value));
+    };
+  }, []);
+  const printZone = useMemo(() => normalizeZones(sceneZone)[0]!, [sceneZone]);
+  const designKind = normalizeKind(sceneDesignMode);
   const [colorKey, setColorKey] = useState(() => {
     if (initialColorKey?.trim() && colorVariants.some((c) => c.key === initialColorKey.trim())) {
       return initialColorKey.trim();
@@ -194,16 +211,25 @@ export function ProductPageClient({
             </div>
           )}
           <ProductGallery images={galleryImages} productName={galleryProductName} />
-          <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--brand-ink)]/10">
-            <BeforeAfterSlider
-              beforeSrc="/compare/plain.jpg"
-              afterSrc="/compare/personal.jpg"
-              className=""
-            />
-            <p className="bg-[#fbf7f1] px-4 py-2.5 text-[12px] text-[var(--brand-muted)]">
-              The cup, the cushion, and the frame each change on their own.
-            </p>
-          </div>
+          {sceneBaseUrl ? (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--brand-ink)]/10">
+              <PrintPreview
+                baseUrl={sceneBaseUrl}
+                zone={printZone}
+                kind={designKind}
+                placeholder={scenePlaceholder || "Your design"}
+                text={print.text}
+                imageUrl={print.imageUrl}
+              />
+              <p className="bg-[#fbf7f1] px-4 py-2.5 text-[12px] text-[var(--brand-muted)]">
+                {designKind === "image"
+                  ? "Upload a picture. The center wipes from “Your design” into that picture."
+                  : designKind === "text"
+                    ? "Type a line. The center wipes from “Your design” into your words."
+                    : "Add a picture and a line. The center wipes from “Your design” into both."}
+              </p>
+            </div>
+          ) : null}
         </div>
         <ProductDetailSections
           className="hidden min-w-0 border-t border-sand-deep/80 pt-8 lg:block"
@@ -241,6 +267,7 @@ export function ProductPageClient({
             onSelectedPackKeyChange={setPackKey}
             packageDimensionsRows={packageDimensionsRows}
             detailSections="none"
+            onPrintChange={sceneBaseUrl ? onPrintChange : undefined}
           />
         </div>
         {backLink}

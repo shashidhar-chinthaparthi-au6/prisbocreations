@@ -51,6 +51,9 @@ export async function POST(req: Request) {
   });
 
   notifyBulkInquiry(inquiry).catch(() => {});
+  void import("@/lib/services/adminStudioService")
+    .then(({ recordAdminNote }) => recordAdminNote(`Bulk inquiry from ${d.company}`))
+    .catch(() => {});
 
   return jsonCreated({ id: inquiry._id.toString() });
 }
@@ -80,7 +83,7 @@ export async function PATCH(req: Request) {
   }
 
   const { status } = body as { status?: string };
-  if (!status || !["new", "contacted", "won", "lost"].includes(status)) {
+  if (!status || !["new", "contacted", "quoted", "won", "lost"].includes(status)) {
     return jsonError("Invalid status", 400);
   }
 

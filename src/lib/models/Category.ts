@@ -9,6 +9,7 @@ const CategorySchema = new Schema(
     /** Gallery URLs; first is the primary hero. Legacy single field below. */
     images: { type: [String], default: [] },
     imageUrl: { type: String },
+    studioKey: { type: String, trim: true, sparse: true, unique: true },
   },
   { timestamps: true }
 );
@@ -17,5 +18,8 @@ export type CategoryDoc = InferSchemaType<typeof CategorySchema> & {
   _id: mongoose.Types.ObjectId;
 };
 
-export const Category: Model<CategoryDoc> =
-  mongoose.models.Category || mongoose.model<CategoryDoc>("Category", CategorySchema);
+const CATEGORY_MODEL = "Category";
+if (mongoose.models[CATEGORY_MODEL]) delete mongoose.models[CATEGORY_MODEL];
+Reflect.deleteProperty(mongoose.connection.models as Record<string, unknown>, CATEGORY_MODEL);
+
+export const Category: Model<CategoryDoc> = mongoose.model<CategoryDoc>(CATEGORY_MODEL, CategorySchema);

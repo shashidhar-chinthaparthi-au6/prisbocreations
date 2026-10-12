@@ -8,6 +8,8 @@ type Props = {
   beforeAlt?: string;
   afterAlt?: string;
   className?: string;
+  /** "scene" is the three-piece homepage loop. "pair" wipes one photo into its studio version. */
+  variant?: "scene" | "pair";
 };
 
 type Piece = {
@@ -65,7 +67,33 @@ export function BeforeAfterSlider({
   beforeAlt = "Plain product before personalisation",
   afterAlt = "The same piece after it is designed",
   className = "",
+  variant = "scene",
 }: Props) {
+  if (variant === "pair") {
+    return (
+      <div
+        className={`relative isolate aspect-video w-full overflow-hidden bg-[#f3eee6] ${className}`}
+        role="img"
+        aria-label="The original photo wiping into the same piece on the shop background."
+      >
+        <Image src={beforeSrc} alt={beforeAlt} fill className="object-cover" sizes="(min-width: 1024px) 70vw, 100vw" />
+        <div className="pair-wipe absolute inset-0">
+          <Image src={afterSrc} alt={afterAlt} fill className="object-cover" sizes="(min-width: 1024px) 70vw, 100vw" />
+        </div>
+        <style>{`
+          @keyframes pair-wipe {
+            0%, 10% { clip-path: inset(0 100% 0 0); }
+            46%, 72% { clip-path: inset(0 0 0 0); }
+            100% { clip-path: inset(0 0 0 100%); }
+          }
+          .pair-wipe { animation: pair-wipe 7.6s ease-in-out infinite; }
+          @media (prefers-reduced-motion: reduce) {
+            .pair-wipe { animation: none; clip-path: inset(0 50% 0 0); }
+          }
+        `}</style>
+      </div>
+    );
+  }
   return (
     <div
       className={`relative isolate aspect-video w-full overflow-hidden bg-[#f3eee6] ${className}`}

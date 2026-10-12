@@ -87,6 +87,10 @@ export async function POST(req: Request) {
       return jsonError("Too many order attempts. Please try again later.", 429);
     }
     await connectDb();
+    const { isStoreOpen, recordAdminNote } = await import("@/lib/services/adminStudioService");
+    if (!(await isStoreOpen())) {
+      return jsonError("The store is not taking orders right now.", 403);
+    }
     const body = createSchema.parse(await req.json());
     const idempotencyKey = req.headers.get("x-idempotency-key")?.trim() ?? undefined;
     const session = await getOptionalAuth();
@@ -108,6 +112,7 @@ export async function POST(req: Request) {
         ...payload,
         userId: session.sub,
       });
+      void recordAdminNote(`New order from ${body.shipping.fullName}`).catch(() => {});
       const plain =
         order &&
         typeof order === "object" &&
@@ -129,6 +134,7 @@ export async function POST(req: Request) {
       guestEmail: body.guestEmail,
       guestPhone: body.guestPhone,
     });
+    void recordAdminNote(`New order from ${body.shipping.fullName}`).catch(() => {});
     const plain =
       order &&
       typeof order === "object" &&

@@ -126,6 +126,11 @@ export async function POST(req: Request) {
   }
 
   const product = await Product.findById(pid).select("name slug").lean();
+  if (product) {
+    void import("@/lib/services/adminStudioService")
+      .then(({ recordAdminNote }) => recordAdminNote(`New review for ${product.name}`))
+      .catch(() => {});
+  }
   const adminEmail = process.env.STORE_OWNER_EMAIL?.trim() || process.env.SES_FROM_EMAIL?.trim();
   if (adminEmail && product) {
     const base = appBaseUrl().replace(/\/$/, "");

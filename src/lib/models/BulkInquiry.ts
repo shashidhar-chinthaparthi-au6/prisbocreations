@@ -9,8 +9,10 @@ export interface IBulkInquiry extends Document {
   quantity?: number;
   deadlineDate?: Date;
   notes?: string;
-  status: "new" | "contacted" | "won" | "lost";
+  status: "new" | "contacted" | "quoted" | "won" | "lost";
   createdAt: Date;
+  studioKey?: string;
+  studio?: unknown;
 }
 
 const BulkInquirySchema = new Schema<IBulkInquiry>({
@@ -24,12 +26,14 @@ const BulkInquirySchema = new Schema<IBulkInquiry>({
   notes: { type: String, trim: true, maxlength: 1000 },
   status: {
     type: String,
-    enum: ["new", "contacted", "won", "lost"],
+    enum: ["new", "contacted", "quoted", "won", "lost"],
     default: "new",
   },
   createdAt: { type: Date, default: Date.now },
+  studioKey: { type: String, trim: true, sparse: true, unique: true },
+  studio: { type: Schema.Types.Mixed },
 });
 
-export const BulkInquiry =
-  (models.BulkInquiry as mongoose.Model<IBulkInquiry>) ||
-  model<IBulkInquiry>("BulkInquiry", BulkInquirySchema);
+if (models.BulkInquiry) delete models.BulkInquiry;
+
+export const BulkInquiry = model<IBulkInquiry>("BulkInquiry", BulkInquirySchema);

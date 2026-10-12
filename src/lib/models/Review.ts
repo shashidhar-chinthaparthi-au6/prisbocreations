@@ -23,6 +23,8 @@ const ReviewSchema = new Schema(
     notHelpfulCount: { type: Number, default: 0, min: 0 },
     adminReply: { type: String, trim: true, default: "" },
     adminRepliedAt: { type: Date, default: null },
+    studioKey: { type: String, trim: true, sparse: true, unique: true },
+    studio: { type: Schema.Types.Mixed },
   },
   { timestamps: true },
 );

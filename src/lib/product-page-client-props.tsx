@@ -212,6 +212,29 @@ export function buildProductPageClientPropsFromDoc(
     title: productName,
     breadcrumb,
     backLink,
+    sceneBaseUrl: typeof p["sceneBaseUrl"] === "string" ? p["sceneBaseUrl"] : "",
+    scenePlaceholder:
+      typeof p["scenePlaceholder"] === "string" && p["scenePlaceholder"].trim() ? p["scenePlaceholder"] : "Your design",
+    sceneDesignMode:
+      p["sceneDesignMode"] === "image" || p["sceneDesignMode"] === "text" || p["sceneDesignMode"] === "both"
+        ? p["sceneDesignMode"]
+        : "both",
+    sceneZone:
+      p["sceneZone"] && typeof p["sceneZone"] === "object" && !Array.isArray(p["sceneZone"])
+        ? {
+            x: Number((p["sceneZone"] as { x?: unknown }).x),
+            y: Number((p["sceneZone"] as { y?: unknown }).y),
+            w: Number((p["sceneZone"] as { w?: unknown }).w),
+            h: Number((p["sceneZone"] as { h?: unknown }).h),
+          }
+        : Array.isArray(p["sceneZone"]) && p["sceneZone"][0]
+          ? {
+              x: Number((p["sceneZone"][0] as { x?: unknown }).x),
+              y: Number((p["sceneZone"][0] as { y?: unknown }).y),
+              w: Number((p["sceneZone"][0] as { w?: unknown }).w),
+              h: Number((p["sceneZone"][0] as { h?: unknown }).h),
+            }
+          : null,
     descriptionHtml,
     specificationRows,
     featureLines,

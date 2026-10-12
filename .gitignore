@@ -14,6 +14,9 @@ node_modules
 .next
 out
 
+# Local background-removal model (downloaded on first Studio use)
+.cache
+
 # uploaded assets (local dev)
 public/uploads/*
 !public/uploads/.gitkeep

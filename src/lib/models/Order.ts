@@ -140,6 +140,8 @@ const OrderSchema = new Schema(
     /** Courier chosen at checkout (Shiprocket `courier_id` from serviceability). */
     shiprocketCourierId: { type: Number },
     shiprocket: { type: ShiprocketSnapshotSchema },
+    studioKey: { type: String, trim: true, sparse: true, unique: true },
+    studio: { type: Schema.Types.Mixed },
   },
   { timestamps: true }
 );

@@ -11,6 +11,7 @@ const SubcategorySchema = new Schema(
     imageUrl: { type: String },
     /** `{ headers: string[], rows: string[][] }` for storefront size chart modal */
     sizeChartData: { type: Schema.Types.Mixed, default: null },
+    studioKey: { type: String, trim: true, sparse: true, unique: true },
   },
   { timestamps: true }
 );
@@ -22,5 +23,11 @@ export type SubcategoryDoc = InferSchemaType<typeof SubcategorySchema> & {
   categoryId: Types.ObjectId;
 };
 
-export const Subcategory: Model<SubcategoryDoc> =
-  mongoose.models.Subcategory || mongoose.model<SubcategoryDoc>("Subcategory", SubcategorySchema);
+const SUBCATEGORY_MODEL = "Subcategory";
+if (mongoose.models[SUBCATEGORY_MODEL]) delete mongoose.models[SUBCATEGORY_MODEL];
+Reflect.deleteProperty(mongoose.connection.models as Record<string, unknown>, SUBCATEGORY_MODEL);
+
+export const Subcategory: Model<SubcategoryDoc> = mongoose.model<SubcategoryDoc>(
+  SUBCATEGORY_MODEL,
+  SubcategorySchema,
+);

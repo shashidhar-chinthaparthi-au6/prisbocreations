@@ -124,6 +124,7 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
   const [nav, setNav] = useState<NavCategory[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
   const [hoverCat, setHoverCat] = useState<string | null>(null);
   const [shopOpen, setShopOpen] = useState(false);
   const [openAccordionSlug, setOpenAccordionSlug] = useState<string | null>(null);
@@ -161,6 +162,19 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    let dead = false;
+    fetch("/api/v1/storefront/notice")
+      .then((r) => r.json())
+      .then((j: { ok?: boolean; data?: { banner?: string } }) => {
+        if (!dead && j?.ok && j.data?.banner) setAnnouncement(j.data.banner);
+      })
+      .catch(() => {});
+    return () => {
+      dead = true;
+    };
+  }, []);
 
   /* Lock body scroll when mobile drawer open */
   useEffect(() => {
@@ -211,6 +225,9 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
 
   return (
     <>
+      {announcement ? (
+        <div className="bg-[#2A2520] px-4 py-2 text-center text-[13px] text-[#FBF7F1]">{announcement}</div>
+      ) : null}
       {/* ── Main header bar ─────────────────────────────────────────────── */}
       <header
         className={`sticky top-0 z-[100] w-full border-b border-[#e5e2db] bg-[var(--brand-canvas)] transition-shadow duration-200 ${
