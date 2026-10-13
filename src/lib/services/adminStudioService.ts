@@ -320,7 +320,7 @@ export async function loadStudio(): Promise<StudioDb> {
     prods: prods.map(productOut),
     notes: notes.map((n) => ({ id: sid(n), msg: n.msg, at: n.at, read: Boolean(n.read) })),
     store: {
-      name: "Pris Creations",
+      name: "Prisbo Creations",
       banner: storeDoc?.banner ?? "",
       open: storeDoc?.ordersOpen !== false,
       hero,
@@ -538,7 +538,7 @@ function assertDb(raw: unknown): StudioDb {
     prods: Array.isArray(body.prods) ? (body.prods as StudioProduct[]) : [],
     notes: Array.isArray(body.notes) ? (body.notes as StudioNote[]) : [],
     store: {
-      name: "Pris Creations",
+      name: "Prisbo Creations",
       banner: typeof asRecord(body.store).banner === "string" ? String(asRecord(body.store).banner) : "",
       open: asRecord(body.store).open !== false,
       hero: { ...DH, ...asRecord(asRecord(body.store).hero) } as typeof DH,

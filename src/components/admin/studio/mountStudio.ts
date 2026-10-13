@@ -1,4 +1,4 @@
-// Port of the Pris Creations admin prototype. DOM is built the same way; saves go to the studio API.
+// Port of the Prisbo Creations admin prototype. DOM is built the same way; saves go to the studio API.
 import { composePrint, normalizeKind, type DesignKind } from "@/lib/studio/composePrint";
 import { loopsOf, normalizeShape, presetShape, shapeBounds, SHAPE_LABELS, type PrintShape } from "@/lib/studio/printShape";
 import { attachShapeEditor } from "./shapeEditor";
@@ -18,7 +18,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
   db.notes = db.notes || [];
   db.known = db.known || { cats: [], subs: [], orders: [], inquiries: [], reviews: [], users: [], notes: [] };
   db.store = db.store || {
-    name: "Pris Creations",
+    name: "Prisbo Creations",
     banner: "",
     open: true,
     hero: {
@@ -39,7 +39,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
   let stopShapeEdit = () => {};
 
   root.innerHTML =
-    '<aside class="sb"><div class="br">Pris Creations<small>Admin</small></div><nav id="nav"></nav></aside><main id="main"></main><div id="toast"></div>';
+    '<aside class="sb"><div class="br">Prisbo Creations<small>Admin</small></div><nav id="nav"></nav></aside><main id="main"></main><div id="toast"></div>';
 
   let tt = 0;
   const toast = (m: string) => {
