@@ -464,8 +464,10 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
         if (cat.value == "__new__") {
           if (newCatBox) newCatBox.hidden = false;
           if (newSubBox) newSubBox.hidden = true;
-          sub.innerHTML = '<option value="">Add the category first</option>';
-          sub.disabled = true;
+          if (sub) {
+            sub.innerHTML = '<option value="">Add the category first</option>';
+            sub.disabled = true;
+          }
           return;
         }
         if (newCatBox) newCatBox.hidden = true;
