@@ -427,10 +427,14 @@ function blendArt(
   ctx.putImageData(cloth, ix, iy);
 }
 
-function drawText(ctx: CanvasRenderingContext2D, text: string, w: number, h: number, ink: string) {
+function drawText(ctx: CanvasRenderingContext2D, text: string, w: number, h: number, ink: string, fontKey = "serif") {
   const along = w > h * 2.2;
   let fontSize = Math.max(8, along ? Math.min(h * 0.72, w * 0.22) : Math.min(w * 0.16, h * 0.42));
-  const font = (size: number) => `italic 500 ${size}px "Playfair Display", Georgia, serif`;
+  const font = (size: number) => {
+    if (fontKey === "sans") return `500 ${size}px "DM Sans", system-ui, sans-serif`;
+    if (fontKey === "script") return `italic 600 ${size}px "Playfair Display", Georgia, serif`;
+    return `italic 500 ${size}px "Playfair Display", Georgia, serif`;
+  };
   ctx.font = font(fontSize);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -525,6 +529,8 @@ export async function composePrint(opts: {
   shape?: unknown;
   /** Transparent everywhere except the new ink, so it can sit on the original photo. */
   inkOnly?: boolean;
+  /** Buyer font: sans, serif, or script. */
+  font?: string;
   /** One print per closed loop. Each area can be a picture, text, or both. */
   areas?: { points: Anchor[]; text?: string; imageUrl?: string; kind?: DesignKind }[];
 }): Promise<HTMLCanvasElement> {
@@ -576,8 +582,8 @@ export async function composePrint(opts: {
     }
     const line = wantText ? area.text.trim() : "";
     if (!opts.inkOnly && photo) restoreCloth(ctx, x, y, w, h, fabric, local, zone);
-    if (!photo && !line) drawBlended(ctx, x, y, w, h, null, opts.placeholder.trim() || "Your design", fabric, null, local, zone, true);
-    else drawBlended(ctx, x, y, w, h, photo, line, fabric, photo ? cornerBackdrop(photo) : null, local, zone, !photo && Boolean(line));
+    if (!photo && !line) drawBlended(ctx, x, y, w, h, null, opts.placeholder.trim() || "Your design", fabric, null, local, zone, true, opts.font || "serif");
+    else drawBlended(ctx, x, y, w, h, photo, line, fabric, photo ? cornerBackdrop(photo) : null, local, zone, !photo && Boolean(line), opts.font || "serif");
   }
   if (opts.inkOnly && original) keepInk(ctx, original, areas.map((area) => area.points));
   return canvas;
@@ -621,6 +627,7 @@ function drawBlended(
   shape: PrintShape,
   box: PrintZone,
   textPrint = false,
+  fontKey = "serif",
 ) {
   const art = document.createElement("canvas");
   art.width = Math.max(1, Math.round(w));
@@ -648,10 +655,10 @@ function drawBlended(
     if (textBand) {
       actx.save();
       actx.translate(0, frame.h - textBand);
-      drawText(actx, text, frame.w, textBand, ink);
+      drawText(actx, text, frame.w, textBand, ink, fontKey);
       actx.restore();
     } else {
-      drawText(actx, text, frame.w, frame.h, ink);
+      drawText(actx, text, frame.w, frame.h, ink, fontKey);
     }
   }
   actx.restore();

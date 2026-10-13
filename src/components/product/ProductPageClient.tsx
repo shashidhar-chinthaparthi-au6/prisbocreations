@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchaseClient } from "@/components/product/ProductPurchaseClient";
-import { ProductDetailSections } from "@/components/product/ProductDetailSections";
 import { computeProductDisplayBlocks, getVisiblePackOptions } from "@/lib/product-display-from-selection";
 import {
   type ProductColorVariant,
@@ -71,10 +70,23 @@ export function ProductPageClient({
   sceneZone = null,
   initialColorKey,
 }: Props) {
-  const [print, setPrint] = useState({ text: "", imageUrl: "" });
+  const [print, setPrint] = useState({ text: "", imageUrl: "", font: "sans", fontLabel: "Modern sans" });
+  const [photoOpen, setPhotoOpen] = useState<string | null>(null);
   const onPrintChange = useMemo(() => {
-    return (value: { text: string; imageUrl: string }) => {
-      setPrint((prev) => (prev.text === value.text && prev.imageUrl === value.imageUrl ? prev : value));
+    return (value: { text: string; imageUrl: string; font?: string; fontLabel?: string }) => {
+      setPrint((prev) =>
+        prev.text === value.text &&
+        prev.imageUrl === value.imageUrl &&
+        prev.font === (value.font || prev.font) &&
+        prev.fontLabel === (value.fontLabel || prev.fontLabel)
+          ? prev
+          : {
+              text: value.text,
+              imageUrl: value.imageUrl,
+              font: value.font || prev.font,
+              fontLabel: value.fontLabel || prev.fontLabel,
+            },
+      );
     };
   }, []);
   const printShape = useMemo(() => normalizeShape(sceneZone), [sceneZone]);
@@ -210,94 +222,152 @@ export function ProductPageClient({
     ],
   );
 
+  const colorLabel = colorVariants.find((c) => c.key === colorKey)?.label || "";
+  const printCaption =
+    printMode === "image"
+      ? "Upload a picture. It prints inside the area on this photo."
+      : printMode === "text"
+        ? "Type a line. It prints inside the area on this photo."
+        : "Add a picture and a line. Both print inside the area on this photo.";
+
   return (
     <>
-    <div className="grid items-start gap-10 pb-24 md:pb-0 lg:grid-cols-2 lg:gap-x-10 lg:gap-y-0">
-      <div className="flex min-w-0 flex-col gap-8">
-        <div className="relative lg:sticky lg:top-24">
+    <div className="mx-auto grid max-w-[1120px] items-start gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-x-7">
+      <div className="grid min-w-0 content-start gap-3.5 overflow-hidden">
+        <div className="relative overflow-hidden rounded-[28px] bg-[var(--brand-surface)]">
           {adminPreview ? null : (
-            <div className="absolute right-2 top-2 z-10 md:right-3 md:top-3">
+            <div className="absolute right-3 top-3 z-10">
               <WishlistHeart productId={product.id} productName={product.name} size="md" />
             </div>
           )}
-          <ProductGallery images={galleryImages} productName={galleryProductName} />
+          <span className="pointer-events-none absolute left-4 top-4 z-10 text-[13px] font-semibold text-[var(--brand-muted)]">
+            Live preview
+          </span>
           {sceneBaseUrl ? (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--brand-ink)]/10">
-              <PrintPreview
-                baseUrl={sceneBaseUrl}
-                shape={printShape}
-                kind={printMode}
-                placeholder={scenePlaceholder || "Your design"}
-                text={print.text}
-                imageUrl={print.imageUrl}
-              />
-              <p className="bg-[#fbf7f1] px-4 py-2.5 text-[12px] text-[var(--brand-muted)]">
-                {printMode === "image"
-                  ? "Upload a picture. It prints inside the area on this photo."
-                  : printMode === "text"
-                    ? "Type a line. It prints inside the area on this photo."
-                    : "Add a picture and a line. Both print inside the area on this photo."}
-              </p>
+            <PrintPreview
+              baseUrl={sceneBaseUrl}
+              shape={printShape}
+              kind={printMode}
+              placeholder={scenePlaceholder || "Your design"}
+              text={print.text}
+              imageUrl={print.imageUrl}
+              font={print.font}
+            />
+          ) : (
+            <ProductGallery images={galleryImages} productName={galleryProductName} />
+          )}
+          {colorLabel || print.fontLabel ? (
+            <div className="absolute bottom-4 left-4 z-10 rounded-full bg-white px-3.5 py-1.5 text-[13px] text-[var(--brand-muted)] shadow-sm">
+              {colorLabel ? <b className="font-semibold text-[var(--brand-ink)]">{colorLabel}</b> : null}
+              {colorLabel ? " · " : null}
+              {print.fontLabel}
             </div>
           ) : null}
         </div>
-        <ProductDetailSections
-          className="hidden min-w-0 border-t border-sand-deep/80 pt-8 lg:block"
-          displayDescriptionHtml={displayBlocks.displayDescriptionHtml}
-          displayFeatureLines={displayBlocks.displayFeatureLines}
-          legacyFeaturesHtml={legacyFeaturesHtml}
-          displaySpecificationRows={displayBlocks.displaySpecificationRows}
-          legacySpecificationsHtml={legacySpecificationsHtml}
-          displayHighlightLines={displayBlocks.displayHighlightLines}
-          legacyHighlightsHtml={legacyHighlightsHtml}
-          packageDimensionsRows={packageDimensionsRows}
-          tags={tags}
-        />
-      </div>
-      <div className="min-w-0 space-y-6">
-        {breadcrumb}
-        <div>
-          <p className="text-sm text-ink-muted">SKU {sku}</p>
-          <h1 className="font-display text-3xl text-ink">{title}</h1>
-          <ProductPurchaseClient
-            product={product}
-            descriptionHtml={descriptionHtml}
-            specificationRows={specificationRows}
-            featureLines={featureLines}
-            highlightLines={highlightLines}
-            legacySpecificationsHtml={legacySpecificationsHtml}
-            legacyFeaturesHtml={legacyFeaturesHtml}
-            legacyHighlightsHtml={legacyHighlightsHtml}
-            tags={tags}
-            colorVariants={colorSummaries.length ? colorVariants : undefined}
-            selectedColorKey={colorSummaries.length ? colorKey : undefined}
-            onColorKeyChange={colorSummaries.length ? setColorKey : undefined}
-            cartThumbnailUrl={cartThumbnailUrl}
-            selectedPackKey={packKey || visiblePacks[0]?.key || ""}
-            onSelectedPackKeyChange={setPackKey}
-            packageDimensionsRows={packageDimensionsRows}
-            detailSections="none"
-            onPrintChange={sceneBaseUrl ? onPrintChange : undefined}
-            printMode={sceneBaseUrl ? printMode : null}
-          />
+        {sceneBaseUrl ? <p className="px-1 text-[13px] text-[var(--brand-muted)]">{printCaption}</p> : null}
+        {sceneBaseUrl && galleryImages.length ? (
+          <div>
+            <h2 className="mb-2 text-[13px] font-semibold text-[var(--brand-muted)]">Product photos</h2>
+            <div className="grid grid-cols-4 gap-2.5">
+              {galleryImages.slice(0, 8).map((src) => (
+                <button
+                  key={src}
+                  type="button"
+                  className="aspect-square overflow-hidden rounded-[14px] border border-[var(--brand-border)] bg-[var(--brand-surface)]"
+                  onClick={() => setPhotoOpen(src)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <div className="mt-1 grid gap-7 sm:grid-cols-2">
+          <div>
+            <h2 className="text-[15px] font-semibold text-[var(--brand-ink)]">About this piece</h2>
+            {displayBlocks.displayDescriptionHtml ? (
+              <div
+                className="prose mt-2 max-w-none text-[15px] leading-relaxed text-[var(--brand-muted)]"
+                dangerouslySetInnerHTML={{ __html: displayBlocks.displayDescriptionHtml }}
+              />
+            ) : null}
+            {displayBlocks.displayFeatureLines.length ? (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-[14px] text-[var(--brand-muted)]">
+                {displayBlocks.displayFeatureLines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+          {displayBlocks.displaySpecificationRows.length || packageDimensionsRows.length ? (
+          <div>
+            <h2 className="text-[15px] font-semibold text-[var(--brand-ink)]">Specifications</h2>
+            <table className="mt-2 w-full overflow-hidden rounded-2xl bg-white text-[15px] shadow-[0_0_0_1px_var(--brand-border)]">
+              <tbody>
+                {[...displayBlocks.displaySpecificationRows, ...packageDimensionsRows].map((row) => (
+                  <tr key={row.key} className="border-t border-[var(--brand-border)] first:border-t-0">
+                    <th className="w-[38%] px-4 py-2.5 text-left font-semibold text-[var(--brand-ink)]">{row.key}</th>
+                    <td className="px-4 py-2.5 text-[var(--brand-muted)]">{row.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          ) : null}
         </div>
-        {backLink}
+        {displayBlocks.displayHighlightLines.length ? (
+          <ul className="flex flex-wrap gap-2">
+            {displayBlocks.displayHighlightLines.map((line) => (
+              <li key={line} className="rounded-full bg-white px-3 py-1 text-[13px] text-[var(--brand-muted)] shadow-[0_0_0_1px_var(--brand-border)]">
+                {line}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      <div className="min-w-0">
+        {breadcrumb}
+        <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.02em] text-[var(--brand-ink)]">{title}</h1>
+        {sceneBaseUrl && printMode === "text" ? (
+          <p className="mt-1 text-[15px] text-[var(--brand-muted)]">Your name, printed on the piece. The preview updates as you type.</p>
+        ) : null}
+        <p className="mt-1 text-sm text-[var(--brand-muted)]">SKU {sku}</p>
+        <ProductPurchaseClient
+          product={product}
+          descriptionHtml={descriptionHtml}
+          specificationRows={specificationRows}
+          featureLines={featureLines}
+          highlightLines={highlightLines}
+          legacySpecificationsHtml={legacySpecificationsHtml}
+          legacyFeaturesHtml={legacyFeaturesHtml}
+          legacyHighlightsHtml={legacyHighlightsHtml}
+          tags={tags}
+          colorVariants={colorSummaries.length ? colorVariants : undefined}
+          selectedColorKey={colorSummaries.length ? colorKey : undefined}
+          onColorKeyChange={colorSummaries.length ? setColorKey : undefined}
+          cartThumbnailUrl={cartThumbnailUrl}
+          selectedPackKey={packKey || visiblePacks[0]?.key || ""}
+          onSelectedPackKeyChange={setPackKey}
+          packageDimensionsRows={packageDimensionsRows}
+          detailSections="none"
+          onPrintChange={sceneBaseUrl ? onPrintChange : undefined}
+          printMode={sceneBaseUrl ? printMode : null}
+        />
+        <div className="mt-4">{backLink}</div>
       </div>
     </div>
-    <ProductDetailSections
-      className="border-t border-sand-deep/80 pt-8 lg:hidden"
-      displayDescriptionHtml={displayBlocks.displayDescriptionHtml}
-      displayFeatureLines={displayBlocks.displayFeatureLines}
-      legacyFeaturesHtml={legacyFeaturesHtml}
-      displaySpecificationRows={displayBlocks.displaySpecificationRows}
-      legacySpecificationsHtml={legacySpecificationsHtml}
-      displayHighlightLines={displayBlocks.displayHighlightLines}
-      legacyHighlightsHtml={legacyHighlightsHtml}
-      packageDimensionsRows={packageDimensionsRows}
-      tags={tags}
-    />
+    {photoOpen ? (
+      <dialog open className="fixed inset-0 z-[80] m-auto max-h-[92vh] max-w-[min(92vw,720px)] rounded-[20px] bg-white p-0" onClick={() => setPhotoOpen(null)}>
+        <button type="button" className="absolute right-3 top-3 rounded-full bg-white px-3.5 py-2 text-sm font-semibold" onClick={() => setPhotoOpen(null)}>
+          Close
+        </button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photoOpen} alt={galleryProductName} className="block w-full" />
+      </dialog>
+    ) : null}
     {adminPreview ? null : (
-      <div className="mx-auto max-w-[1100px]">
+      <div className="mx-auto mt-8 max-w-[1120px]">
         <ReviewSection productId={product.id} productSlug={product.slug} productName={product.name} />
       </div>
     )}

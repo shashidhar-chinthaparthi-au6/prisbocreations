@@ -11,6 +11,7 @@ export function PrintPreview({
   placeholder,
   text,
   imageUrl,
+  font = "serif",
 }: {
   baseUrl: string;
   shape: PrintShape;
@@ -18,6 +19,7 @@ export function PrintPreview({
   placeholder: string;
   text: string;
   imageUrl: string;
+  font?: string;
 }) {
   const [before, setBefore] = useState("");
   const [after, setAfter] = useState("");
@@ -36,7 +38,7 @@ export function PrintPreview({
               imageUrl: fill === "text" ? "" : imageUrl,
             };
           });
-          const plain = await composePrint({ baseUrl, shape, placeholder, text: "", kind, mode: "before", areas });
+          const plain = await composePrint({ baseUrl, shape, placeholder, text: "", kind, font, mode: "before", areas });
           const printed = await composePrint({
             baseUrl,
             shape,
@@ -44,6 +46,7 @@ export function PrintPreview({
             text: kind === "image" ? "" : text,
             imageUrl: kind === "text" ? "" : imageUrl,
             kind,
+            font,
             mode: "after",
             areas,
           });
@@ -62,12 +65,12 @@ export function PrintPreview({
       dead = true;
       window.clearTimeout(timer);
     };
-  }, [baseUrl, shape, kind, placeholder, text, imageUrl]);
+  }, [baseUrl, shape, kind, placeholder, text, imageUrl, font]);
 
   if (!before) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-[#f3eee6]" role="img" aria-label="Your design wiping into the text or photo that will be printed.">
+    <div className="relative overflow-hidden rounded-[28px] bg-[var(--brand-surface)]" role="img" aria-label="Your design wiping into the text or photo that will be printed.">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={before} alt="Your design" className="block h-auto w-full" />
       {after ? (

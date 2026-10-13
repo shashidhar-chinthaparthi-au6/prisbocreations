@@ -69,6 +69,19 @@ function parseQty(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function swatchHex(label: string): string {
+  const n = label.toLowerCase();
+  if (n.includes("black")) return "#15171c";
+  if (n.includes("navy") || n.includes("blue")) return "#1f4fb4";
+  if (n.includes("white")) return "#f4f4f2";
+  if (n.includes("red")) return "#c42b2b";
+  if (n.includes("green")) return "#2f6b4f";
+  if (n.includes("pink")) return "#d47a9a";
+  if (n.includes("gold")) return "#c4a35a";
+  if (n.includes("silver") || n.includes("grey") || n.includes("gray")) return "#c5c8ce";
+  return "#8a4d12";
+}
+
 function deliveryFallbackHint(pin: string): string | null {
   const p = pin.replace(/\D/g, "");
   if (p.length !== 6) return null;
@@ -124,7 +137,7 @@ export function ProductPurchaseClient({
   packageDimensionsRows?: { key: string; value: string }[];
   detailSections?: "inline" | "none";
   /** Live print preview: the line and photo the buyer is about to print. */
-  onPrintChange?: (value: { text: string; imageUrl: string }) => void;
+  onPrintChange?: (value: { text: string; imageUrl: string; font?: string; fontLabel?: string }) => void;
   /** Picture, text, or both — taken from the print areas on this product. */
   printMode?: DesignKind | null;
 }) {
@@ -207,8 +220,14 @@ export function ProductPurchaseClient({
         }
       }
     }
-    onPrintChange({ text: askText ? text : "", imageUrl });
-  }, [askImage, askText, customerNotes, customerImageUrl, filePreview, customizationData, customizationFiles, onPrintChange]);
+    const font = FONT_OPTIONS.find((f) => f.value === fontKey);
+    onPrintChange({
+      text: askText ? text : "",
+      imageUrl,
+      font: fontKey,
+      fontLabel: font?.label || "Modern sans",
+    });
+  }, [askImage, askText, customerNotes, customerImageUrl, filePreview, customizationData, customizationFiles, fontKey, onPrintChange]);
 
   useEffect(() => {
     const el = purchaseCtaRef.current;
@@ -565,29 +584,36 @@ export function ProductPurchaseClient({
       ) : null}
 
       {colors.length > 0 && selectedColorKey !== undefined && onColorKeyChange ? (
-        <fieldset className="mt-6 space-y-2">
-          <legend className="text-sm font-medium text-ink">Choose colour</legend>
-          <div className="flex flex-wrap gap-2">
-            {colors.map((c) => (
-              <label
-                key={c.key}
-                className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition ${
-                  selectedColorKey === c.key
-                    ? "border-accent bg-sand/40 font-medium text-ink"
-                    : "border-sand-deep text-ink-muted hover:border-sand-deep/80"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="product-color"
-                  value={c.key}
-                  checked={selectedColorKey === c.key}
-                  onChange={() => onColorKeyChange(c.key)}
-                  className="sr-only"
-                />
-                {c.label}
-              </label>
-            ))}
+        <fieldset className="mt-6 border-t border-[var(--brand-border)] pt-4">
+          <div className="mb-2.5 flex items-baseline justify-between">
+            <legend className="text-sm font-semibold text-[var(--brand-ink)]">Colour</legend>
+            <span className="text-[13px] text-[var(--brand-muted)]">
+              {colors.find((c) => c.key === selectedColorKey)?.label}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {colors.map((c) => {
+              const on = selectedColorKey === c.key;
+              return (
+                <label key={c.key} className="cursor-pointer text-center">
+                  <input
+                    type="radio"
+                    name="product-color"
+                    value={c.key}
+                    checked={on}
+                    onChange={() => onColorKeyChange(c.key)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`mx-auto block h-11 w-11 rounded-full border-[3px] ${on ? "border-[var(--brand-amber)]" : "border-transparent"}`}
+                    style={{ background: swatchHex(c.label), boxShadow: "inset 0 0 0 1px rgba(28,22,18,0.12)" }}
+                  />
+                  <span className={`mt-1 block text-[12px] ${on ? "font-semibold text-[var(--brand-ink)]" : "text-[var(--brand-muted)]"}`}>
+                    {c.label}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </fieldset>
       ) : null}
@@ -652,15 +678,10 @@ export function ProductPurchaseClient({
       ) : null}
 
       {legacyCustomize ? (
-        <div className="mt-8 space-y-5">
-          <div className="flex items-end justify-between gap-3">
-            <h2 className="font-display text-lg text-ink">Make it yours</h2>
-            <span className="text-xs font-medium uppercase tracking-wide text-accent">
-              {(askImage ? 1 : 0) + (askText ? 2 : 0) > 1
-                ? `Step 1–${(askImage ? 1 : 0) + (askText ? 2 : 0)}`
-                : "Step 1"}
-            </span>
-          </div>
+        <div className="mt-5 space-y-4">
+          {askImage && askText ? (
+            <p className="text-sm font-semibold text-[var(--brand-ink)]">Make it yours</p>
+          ) : null}
           <ol className="space-y-4">
             {askImage ? (
             <li className={stepShell}>
@@ -723,39 +744,35 @@ export function ProductPurchaseClient({
             ) : null}
             {askText ? (
             <>
-            <li className={stepShell}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step {askImage ? "2" : "1"}</p>
-              <h3 className="mt-1 text-sm font-semibold text-ink">Name &amp; text to print</h3>
-              <label className="mt-3 block text-xs font-medium text-ink-muted">
-                {textLabel}
-                {printMode === "text" || txtReq ? "" : " (optional)"}
-                <textarea
-                  value={customerNotes}
-                  maxLength={maxNotes}
-                  placeholder={textPlaceholder}
-                  rows={3}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm text-ink"
-                />
-              </label>
-              <p className="mt-1 text-xs text-ink-muted">
-                {customerNotes.length}/{maxNotes} characters
-              </p>
+            <li className="border-t border-[var(--brand-border)] pt-4">
+              <div className="mb-2 flex items-baseline justify-between">
+                <h3 className="text-sm font-semibold text-[var(--brand-ink)]">{textLabel}</h3>
+                <span className="text-[13px] text-[var(--brand-muted)]">
+                  {customerNotes.length}/{maxNotes}
+                </span>
+              </div>
+              <input
+                value={customerNotes}
+                maxLength={maxNotes}
+                placeholder={textPlaceholder}
+                onChange={(e) => setCustomerNotes(e.target.value)}
+                className="w-full rounded-[14px] border border-[var(--brand-border)] bg-white px-3.5 py-3 text-[16px] text-[var(--brand-ink)] outline-none focus:border-[var(--brand-amber)]"
+              />
+              <p className="mt-1.5 text-[12px] text-[var(--brand-muted)]">Short names print larger and cleaner.</p>
             </li>
-            <li className={stepShell}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step {askImage ? "3" : "2"}</p>
-              <h3 className="mt-1 text-sm font-semibold text-ink">Choose font style</h3>
-              <p className="mt-1 text-xs text-ink-muted">
-                We&apos;ll match this as closely as the product allows.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
+            <li className="border-t border-[var(--brand-border)] pt-4">
+              <div className="mb-2.5 flex items-baseline justify-between gap-3">
+                <h3 className="text-sm font-semibold text-[var(--brand-ink)]">Font style</h3>
+                <span className="text-[13px] text-[var(--brand-muted)]">Matched as closely as the pen allows</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2.5">
                 {FONT_OPTIONS.map((f) => (
                   <label
                     key={f.value}
-                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium sm:text-sm ${
+                    className={`cursor-pointer rounded-2xl border px-2 py-3.5 text-center ${
                       fontKey === f.value
-                        ? "border-accent bg-sand/50 text-ink"
-                        : "border-sand-deep text-ink-muted hover:border-sand-deep/80"
+                        ? "border-[var(--brand-amber)] bg-[var(--brand-amber-light)]"
+                        : "border-[var(--brand-border)] bg-white"
                     }`}
                   >
                     <input
@@ -766,7 +783,12 @@ export function ProductPurchaseClient({
                       onChange={() => setFontKey(f.value)}
                       className="sr-only"
                     />
-                    {f.label}
+                    <span
+                      className={`block text-[26px] leading-none text-[var(--brand-ink)] ${f.value === "sans" ? "font-sans" : "font-display"} ${f.value === "script" ? "italic" : ""}`}
+                    >
+                      Aa
+                    </span>
+                    <span className="mt-1.5 block text-[13px] text-[var(--brand-muted)]">{f.label}</span>
                   </label>
                 ))}
               </div>
@@ -777,37 +799,47 @@ export function ProductPurchaseClient({
         </div>
       ) : null}
 
-      <div className="mt-8 rounded-2xl border border-sand-deep bg-white/80 p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-ink">Check delivery timing</h2>
-        <p className="mt-1 text-xs text-ink-muted">
-          Enter your delivery pincode for a quick estimate (final date depends on courier updates).
-        </p>
-        <label className="mt-3 block text-xs font-medium text-ink-muted">
-          Pincode
+      <div className="mt-4 border-t border-[var(--brand-border)] pt-4">
+        <div className="mb-2 flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold text-[var(--brand-ink)]">Delivery estimate</h2>
+        </div>
+        <div className="flex gap-2">
           <input
             type="text"
             inputMode="numeric"
-            maxLength={8}
+            maxLength={6}
             value={deliveryPin}
-            onChange={(e) => setDeliveryPin(e.target.value)}
-            placeholder="e.g. 560001"
-            className="mt-1 w-full max-w-[12rem] rounded-lg border border-sand-deep bg-white px-3 py-2 font-mono text-sm text-ink"
+            onChange={(e) => setDeliveryPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="6-digit pincode"
+            aria-label="Delivery pincode"
+            className="min-w-0 flex-1 rounded-[14px] border border-[var(--brand-border)] bg-white px-3.5 py-3 text-[16px] text-[var(--brand-ink)] outline-none focus:border-[var(--brand-amber)]"
           />
-        </label>
+          <button
+            type="button"
+            className="rounded-[14px] border border-[var(--brand-border)] bg-white px-4 text-sm font-semibold text-[var(--brand-ink)]"
+            onClick={() => {
+              if (deliveryPin.replace(/\D/g, "").length !== 6) setDeliveryHint("Use the 6-digit pincode you'll ship to.");
+            }}
+          >
+            Check
+          </button>
+        </div>
         {deliveryHint ? (
-          <p className="mt-3 rounded-lg bg-sand/60 px-3 py-2 text-xs leading-relaxed text-ink-muted">
-            {deliveryHint}
-          </p>
-        ) : (
-          <p className="mt-2 text-xs text-ink-muted">Use the 6-digit pincode you&apos;ll ship to.</p>
-        )}
-        <p className="mt-2 text-[11px] leading-snug text-ink-muted">
-          Estimated shipping weight: {formatPackedWeightKg(shippingWeightKg)}
+          <p className="mt-2 text-[13px] leading-relaxed text-[var(--brand-muted)]">{deliveryHint}</p>
+        ) : null}
+        <p className="mt-2 text-[12px] text-[var(--brand-muted)]">
+          Shipping weight about {formatPackedWeightKg(shippingWeightKg)}. Final date depends on courier updates.
         </p>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-sand-deep bg-sand/25 p-4">
-        <label className="flex cursor-pointer items-start gap-3">
+      <div className="mt-4 border-t border-[var(--brand-border)] pt-4">
+        <label className="flex cursor-pointer items-center justify-between gap-4">
+          <span>
+            <span className="block text-sm font-semibold text-[var(--brand-ink)]">This order is a gift</span>
+            <span className="mt-0.5 block text-[13px] text-[var(--brand-muted)]">
+              Add a note to the packing slip. Gift wrap is {formatInrFromPaise(GIFT_WRAP_PAISE)} per item.
+            </span>
+          </span>
           <input
             type="checkbox"
             checked={isGift}
@@ -818,14 +850,10 @@ export function ProductPurchaseClient({
                 setGiftWrap(false);
               }
             }}
-            className="mt-1 accent-accent"
+            className="peer sr-only"
           />
-          <span>
-            <span className="text-sm font-medium text-ink">This order is a gift</span>
-            <span className="mt-0.5 block text-xs text-ink-muted">
-              Add a message for the packing slip. Optional gift wrap adds{" "}
-              {formatInrFromPaise(GIFT_WRAP_PAISE)} per item.
-            </span>
+          <span className={`relative h-7 w-12 shrink-0 rounded-full ${isGift ? "bg-[var(--brand-amber)]" : "bg-[#ddd6cc]"}`}>
+            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow ${isGift ? "left-6" : "left-1"}`} />
           </span>
         </label>
         {isGift ? (
@@ -964,96 +992,53 @@ export function ProductPurchaseClient({
         </>
       ) : null}
 
-      <div ref={purchaseCtaRef}>
-        <div className="mt-8 hidden space-y-3 md:block">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-            <label className="text-sm text-ink-muted" htmlFor="product-qty">
-              Qty
-            </label>
-            <input
-              id="product-qty"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={qtyStr}
-              onChange={(e) => setQtyStr(e.target.value)}
-              aria-invalid={qtyInvalid && qtyStr.trim() !== ""}
-              className="min-h-9 w-24 rounded-lg border border-sand-deep bg-white px-3 py-2 text-sm sm:w-28"
-            />
-          </div>
-          {qtyHint ? (
-            <p className="text-sm text-rose" role="alert">
-              {qtyHint}
-            </p>
-          ) : null}
-          {customErr ? (
-            <p className="text-sm text-rose" role="alert">
-              {customErr}
-            </p>
-          ) : null}
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <button
-              type="button"
-              disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
-              onClick={() => tryAddToCart({ openDrawer: false })}
-              className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Add to cart
-            </button>
-            <button
-              type="button"
-              disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
-              onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
-              className="rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Buy now
-            </button>
-          </div>
-          {cartMsg ? <p className="text-sm text-accent">{cartMsg}</p> : null}
-
-          {(hasSchema || legacyCustomize) ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
-              <p className="font-semibold">How your proof works</p>
-              <p className="mt-1">
-                After you place your order, our design team will prepare a personalised digital proof
-                within 24 hours. You&apos;ll receive it via email and WhatsApp for approval before
-                we start printing — no surprises.
-              </p>
+      <div ref={purchaseCtaRef} className="mt-4">
+        <div className="rounded-[20px] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-4">
+          <p className="text-sm text-[var(--brand-ink)]">
+            <b className="font-semibold">
+              {colors.find((c) => c.key === selectedColorKey)?.label || product.name}
+              {askText && customerNotes.trim() ? ` · “${customerNotes.trim()}”` : ""}
+            </b>
+            {askText ? (
+              <span className="text-[var(--brand-muted)]">
+                {" "}
+                {FONT_OPTIONS.find((f) => f.value === fontKey)?.label}
+              </span>
+            ) : null}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center overflow-hidden rounded-[14px] border border-[var(--brand-border)] bg-white">
+              <button
+                type="button"
+                className="h-11 w-10 text-lg text-[var(--brand-ink)]"
+                aria-label="Decrease quantity"
+                onClick={() => setQtyStr(String(Math.max(1, (parseQty(qtyStr) || 1) - 1)))}
+              >
+                −
+              </button>
+              <input
+                id="product-qty"
+                type="text"
+                inputMode="numeric"
+                value={qtyStr}
+                onChange={(e) => setQtyStr(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                aria-invalid={qtyInvalid && qtyStr.trim() !== ""}
+                className="h-11 w-10 border-x border-[var(--brand-border)] bg-white text-center text-sm text-[var(--brand-ink)]"
+              />
+              <button
+                type="button"
+                className="h-11 w-10 text-lg text-[var(--brand-ink)]"
+                aria-label="Increase quantity"
+                onClick={() => setQtyStr(String(Math.min(Math.max(maxStock, 1), (parseQty(qtyStr) || 1) + 1)))}
+              >
+                +
+              </button>
             </div>
-          ) : null}
-        </div>
-
-        <div className="mt-4 space-y-3 md:hidden">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-ink-muted" htmlFor="product-qty-mobile">
-              Qty
-            </label>
-            <input
-              id="product-qty-mobile"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={qtyStr}
-              onChange={(e) => setQtyStr(e.target.value)}
-              className="min-h-11 w-full max-w-[8rem] rounded-lg border border-sand-deep bg-white px-3 py-2 text-base text-ink"
-            />
-          </div>
-          {qtyHint ? (
-            <p className="text-sm text-rose" role="alert">
-              {qtyHint}
-            </p>
-          ) : null}
-          {customErr ? (
-            <p className="text-sm text-rose" role="alert">
-              {customErr}
-            </p>
-          ) : null}
-          <div className="flex flex-col gap-3">
             <button
               type="button"
               disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
               onClick={() => tryAddToCart({ openDrawer: false })}
-              className="min-h-11 w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 flex-1 rounded-[14px] bg-[var(--brand-amber-dark)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Add to cart
             </button>
@@ -1061,13 +1046,32 @@ export function ProductPurchaseClient({
               type="button"
               disabled={maxStock < 1 || qtyInvalid || uploadBusy || schemaUploadBusy}
               onClick={() => tryAddToCart({ openDrawer: false, buyNow: true })}
-              className="min-h-11 w-full rounded-full border-2 border-accent bg-white px-6 py-3 text-sm font-semibold text-accent hover:bg-sand/40 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 rounded-[14px] border border-[var(--brand-border)] bg-white px-4 text-sm font-semibold text-[var(--brand-ink)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Buy now
             </button>
           </div>
-          {cartMsg ? <p className="text-sm text-accent">{cartMsg}</p> : null}
+          {qtyHint ? (
+            <p className="mt-2 text-sm text-rose" role="alert">
+              {qtyHint}
+            </p>
+          ) : null}
+          {customErr ? (
+            <p className="mt-2 text-sm text-rose" role="alert">
+              {customErr}
+            </p>
+          ) : null}
+          {cartMsg ? <p className="mt-2 text-sm text-[var(--brand-amber-dark)]">{cartMsg}</p> : null}
         </div>
+        {(hasSchema || legacyCustomize) ? (
+          <div className="mt-3 rounded-[18px] bg-[var(--brand-amber-light)] px-4 py-3.5 text-[13px] leading-relaxed text-[var(--brand-ink)]">
+            <p className="font-semibold">How your proof works</p>
+            <p className="mt-1 text-[var(--brand-muted)]">
+              After you place your order, our design team prepares a personalised digital proof within 24 hours.
+              You&apos;ll get it by email and WhatsApp to approve before we start printing. No surprises.
+            </p>
+          </div>
+        ) : null}
       </div>
 
     </>

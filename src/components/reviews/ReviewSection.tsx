@@ -226,7 +226,12 @@ export function ReviewSection({
             {!data ? (
               <p className="text-sm text-[var(--brand-muted)]">Loading reviews…</p>
             ) : loaded.length === 0 ? (
-              <p className="text-sm text-[var(--brand-muted)]">No reviews match these filters yet.</p>
+              <div className="rounded-[18px] border border-dashed border-[var(--brand-border)] px-6 py-10 text-center">
+                <p className="text-[15px] font-semibold text-[var(--brand-ink)]">No reviews yet</p>
+                <p className="mt-1 text-sm text-[var(--brand-muted)]">
+                  Be the first to share how your personalised piece turned out.
+                </p>
+              </div>
             ) : (
               <ul className="space-y-5">
                 {loaded.map((rev) => (
