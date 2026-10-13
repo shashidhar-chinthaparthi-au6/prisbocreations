@@ -18,6 +18,7 @@ import type {
 } from "@/lib/customization-types";
 import type { ProductColorVariant } from "@/lib/product-color-variants";
 import { formatPackedWeightKg } from "@/lib/product-package-display";
+import type { DesignKind } from "@/lib/studio/composePrint";
 
 export type PurchaseProductOption = {
   key: string;
@@ -75,7 +76,7 @@ function deliveryFallbackHint(pin: string): string | null {
 }
 
 const SECTION_PROSE =
-  "prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent";
+  "prose mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent";
 
 export function ProductPurchaseClient({
   product,
@@ -98,6 +99,8 @@ export function ProductPurchaseClient({
   packageDimensionsRows,
   detailSections = "inline",
   onPrintChange,
+  /** What the admin print area accepts. Omitted products keep the full personalisation form. */
+  printMode,
 }: {
   product: PurchaseProduct;
   /** Sanitized HTML from the server (TipTap output). */
@@ -122,6 +125,8 @@ export function ProductPurchaseClient({
   detailSections?: "inline" | "none";
   /** Live print preview: the line and photo the buyer is about to print. */
   onPrintChange?: (value: { text: string; imageUrl: string }) => void;
+  /** Picture, text, or both — taken from the print areas on this product. */
+  printMode?: DesignKind | null;
 }) {
   const router = useRouter();
   const { add } = useCart();
@@ -159,6 +164,8 @@ export function ProductPurchaseClient({
   );
   const textLabel = product.customizationTextLabel?.trim() || "Notes / text to print";
   const textPlaceholder = product.customizationTextPlaceholder?.trim() ?? "";
+  const askImage = printMode ? printMode !== "text" : true;
+  const askText = printMode ? printMode !== "image" : true;
 
   const [customerNotes, setCustomerNotes] = useState("");
   const [fontKey, setFontKey] = useState<(typeof FONT_OPTIONS)[number]["value"]>("sans");
@@ -190,8 +197,8 @@ export function ProductPurchaseClient({
         }
       }
     }
-    let imageUrl = filePreview || customerImageUrl || "";
-    if (!imageUrl) {
+    let imageUrl = askImage ? filePreview || customerImageUrl || "" : "";
+    if (!imageUrl && askImage) {
       for (const value of Object.values(customizationFiles)) {
         const file = Array.isArray(value) ? value[0] : value;
         if (file?.url) {
@@ -200,8 +207,8 @@ export function ProductPurchaseClient({
         }
       }
     }
-    onPrintChange({ text, imageUrl });
-  }, [customerNotes, customerImageUrl, filePreview, customizationData, customizationFiles, onPrintChange]);
+    onPrintChange({ text: askText ? text : "", imageUrl });
+  }, [askImage, askText, customerNotes, customerImageUrl, filePreview, customizationData, customizationFiles, onPrintChange]);
 
   useEffect(() => {
     const el = purchaseCtaRef.current;
@@ -312,30 +319,33 @@ export function ProductPurchaseClient({
   }
 
   const notesForSubmit = useMemo(() => {
-    const base = customerNotes.trim();
-    if (!legacyCustomize) return base;
+    const base = askText ? customerNotes.trim() : "";
+    if (!legacyCustomize || !askText) return base;
     const label = FONT_OPTIONS.find((f) => f.value === fontKey)?.label ?? fontKey;
     const line = `Type style: ${label}`;
     if (!base) return line;
     return `${base}\n— ${line} —`;
-  }, [legacyCustomize, customerNotes, fontKey]);
+  }, [askText, legacyCustomize, customerNotes, fontKey]);
 
   function customizationMessage(): string | null {
     if (!legacyCustomize) return null;
-    const img = customerImageUrl.trim();
+    const img = askImage ? customerImageUrl.trim() : "";
     const notes = notesForSubmit;
-    const userPart = customerNotes.trim();
+    const userPart = askText ? customerNotes.trim() : "";
     if (userPart.length > maxNotes) {
       return `Notes are too long (max ${maxNotes} characters).`;
     }
     if (notes.length > maxNotes + 120) {
       return `Combined text is too long — shorten your message slightly.`;
     }
-    if (imgReq && !img) return "Please upload a reference image.";
-    if (txtReq && !userPart) return "Please enter the requested text.";
-    if (!imgReq && !txtReq && !img && !userPart) {
+    if (askImage && (printMode === "image" || printMode === "both" || imgReq) && !img && (printMode === "image" || imgReq)) {
+      return "Please upload the picture to print.";
+    }
+    if (askText && (printMode === "text" || txtReq) && !userPart) return "Please enter the text to print.";
+    if (!printMode && !imgReq && !txtReq && !img && !userPart) {
       return "Add an image and/or notes for this personalised product.";
     }
+    if (printMode === "both" && !img && !userPart) return "Add a picture, text, or both.";
     return null;
   }
 
@@ -439,8 +449,8 @@ export function ProductPurchaseClient({
       quantity: qtyNum!,
       ...(legacyCustomize
         ? {
-            customerImageUrl: customerImageUrl.trim() || undefined,
-            customerNotes: notesForSubmit.trim() || undefined,
+            customerImageUrl: askImage ? customerImageUrl.trim() || undefined : undefined,
+            customerNotes: askText ? notesForSubmit.trim() || undefined : undefined,
           }
         : {}),
       ...(hasSchema
@@ -466,6 +476,8 @@ export function ProductPurchaseClient({
     schemaFields,
     customizationData,
     customizationFiles,
+    askImage,
+    askText,
     customerImageUrl,
     notesForSubmit,
     isGift,
@@ -643,11 +655,16 @@ export function ProductPurchaseClient({
         <div className="mt-8 space-y-5">
           <div className="flex items-end justify-between gap-3">
             <h2 className="font-display text-lg text-ink">Make it yours</h2>
-            <span className="text-xs font-medium uppercase tracking-wide text-accent">Step 1–3</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-accent">
+              {(askImage ? 1 : 0) + (askText ? 2 : 0) > 1
+                ? `Step 1–${(askImage ? 1 : 0) + (askText ? 2 : 0)}`
+                : "Step 1"}
+            </span>
           </div>
           <ol className="space-y-4">
+            {askImage ? (
             <li className={stepShell}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step 1</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step {askText ? "1" : "1"}</p>
               <h3 className="mt-1 text-sm font-semibold text-ink">Upload your photo</h3>
               {product.customizationInstructions?.trim() ? (
                 <p className="mt-1 text-xs text-ink-muted whitespace-pre-wrap">
@@ -660,7 +677,7 @@ export function ProductPurchaseClient({
               )}
               <div className="mt-3 space-y-2">
                 <label className="block text-xs font-medium text-ink-muted">
-                  Reference image{imgReq ? " (required)" : " (optional)"}
+                  Reference image{printMode === "image" || imgReq ? " (required)" : " (optional)"}
                 </label>
                 <p className="text-[11px] text-ink-muted">
                   JPEG, PNG, WebP, or GIF — up to {Math.round(MAX_CUSTOMER_IMAGE_BYTES / (1024 * 1024))}{" "}
@@ -703,12 +720,15 @@ export function ProductPurchaseClient({
                 )}
               </div>
             </li>
+            ) : null}
+            {askText ? (
+            <>
             <li className={stepShell}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step 2</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step {askImage ? "2" : "1"}</p>
               <h3 className="mt-1 text-sm font-semibold text-ink">Name &amp; text to print</h3>
               <label className="mt-3 block text-xs font-medium text-ink-muted">
                 {textLabel}
-                {txtReq ? "" : " (optional)"}
+                {printMode === "text" || txtReq ? "" : " (optional)"}
                 <textarea
                   value={customerNotes}
                   maxLength={maxNotes}
@@ -723,7 +743,7 @@ export function ProductPurchaseClient({
               </p>
             </li>
             <li className={stepShell}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step 3</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Step {askImage ? "3" : "2"}</p>
               <h3 className="mt-1 text-sm font-semibold text-ink">Choose font style</h3>
               <p className="mt-1 text-xs text-ink-muted">
                 We&apos;ll match this as closely as the product allows.
@@ -751,6 +771,8 @@ export function ProductPurchaseClient({
                 ))}
               </div>
             </li>
+            </>
+            ) : null}
           </ol>
         </div>
       ) : null}
@@ -843,7 +865,7 @@ export function ProductPurchaseClient({
           <div
             key={visibleOptions.length > 0 ? `${selectedKey}-desc` : "product-desc"}
             suppressHydrationWarning
-            className="product-description prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
+            className="product-description prose mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
             dangerouslySetInnerHTML={{ __html: displayDescriptionHtml }}
           />
           {displayFeatureLines.length > 0 ? (

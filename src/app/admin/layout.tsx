@@ -16,13 +16,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/account/profile?denied=admin");
   }
 
-  return (
-    <>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap"
-      />
-      <StudioAdmin />
-    </>
-  );
+  return <StudioAdmin />;
 }

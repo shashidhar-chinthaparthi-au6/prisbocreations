@@ -55,17 +55,14 @@ export default async function HomePage() {
     {
       t: "Premium acrylic",
       s: "Crisp edges and depth that reads as luxury, not plastic.",
-      icon: "◆",
     },
     {
       t: "Waterproof prints",
       s: "Made to survive spills, splashes, and daily handling.",
-      icon: "💧",
     },
     {
       t: "Eco-conscious packaging",
       s: "Thoughtful wraps and boxes — gift-ready by default.",
-      icon: "🌿",
     },
   ];
 
@@ -128,7 +125,7 @@ export default async function HomePage() {
               <span className="inline-block rounded-full border border-[var(--brand-amber)]/30 bg-[var(--brand-amber)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-[var(--brand-amber)]">
                 Corporate &amp; bulk orders
               </span>
-              <h2 className="mt-3 text-[28px] font-bold leading-tight text-white lg:text-[36px]">
+              <h2 className="mt-4 font-display text-[32px] font-medium leading-[1.05] tracking-[-0.03em] text-white lg:text-[44px]">
                 Gifting for your whole team?
               </h2>
               <p className="mt-3 max-w-[44ch] text-[15px] leading-relaxed text-white/60">
@@ -191,10 +188,7 @@ export default async function HomePage() {
               key={x.t}
               className="rounded-[20px] border border-[var(--brand-border)] bg-white p-7 shadow-[var(--shadow-sm)]"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--brand-amber-light)] text-2xl">
-                {x.icon}
-              </div>
-              <p className="mt-4 text-[16px] font-semibold text-[var(--brand-ink)]">{x.t}</p>
+              <p className="font-display text-[22px] font-medium tracking-[-0.02em] text-[var(--brand-ink)]">{x.t}</p>
               <p className="mt-2 text-[14px] leading-relaxed text-[var(--brand-muted)]">{x.s}</p>
             </div>
           ))}

@@ -108,7 +108,7 @@ export function ProductCard({ product, index, wishlistRemoveUndo, onStockNotify 
         ) : null}
 
         <Link href={productHref} className="mt-1">
-          <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-[#1c1612]">
+          <h3 className="line-clamp-2 font-display text-[18px] font-medium leading-snug tracking-[-0.02em] text-[#1c1612]">
             {product.name}
           </h3>
         </Link>

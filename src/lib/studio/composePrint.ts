@@ -1,5 +1,7 @@
+import { loopsOf, normalizeShape, shapeBounds, traceAnchors, type Anchor, type PrintShape } from "@/lib/studio/printShape";
 export type PrintZone = { x: number; y: number; w: number; h: number };
 export type DesignKind = "image" | "text" | "both";
+export type { PrintShape };
 
 /** A chest-sized window, centered, ready to cover a logo on a hoodie or any other piece. */
 export const DEFAULT_ZONE: PrintZone = { x: 0.3, y: 0.36, w: 0.4, h: 0.26 };
@@ -266,8 +268,42 @@ function boxBlur(src: Float32Array, w: number, h: number, radius: number) {
   return dst;
 }
 
+function shapeMask(width: number, height: number, shape: PrintShape, box: PrintZone) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, width);
+  canvas.height = Math.max(1, height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx || !box.w || !box.h) return null;
+  ctx.beginPath();
+  traceAnchors(
+    ctx,
+    shape.points,
+    (x) => ((x - box.x) / box.w) * canvas.width,
+    (y) => ((y - box.y) / box.h) * canvas.height,
+  );
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  const soft = document.createElement("canvas");
+  soft.width = canvas.width;
+  soft.height = canvas.height;
+  const softCtx = soft.getContext("2d");
+  if (!softCtx) return canvas;
+  softCtx.filter = "blur(1.4px)";
+  softCtx.drawImage(canvas, 0, 0);
+  return soft;
+}
+
 /** Lift the old artwork and leave the cloth, including its folds. */
-function restoreCloth(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fabric: RGB) {
+function restoreCloth(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fabric: RGB,
+  shape: PrintShape,
+  box: PrintZone,
+) {
   const ix = Math.max(0, Math.floor(x));
   const iy = Math.max(0, Math.floor(y));
   const iw = Math.max(1, Math.min(ctx.canvas.width - ix, Math.ceil(w)));
@@ -282,12 +318,13 @@ function restoreCloth(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
   let mean = 0;
   for (let i = 0; i < blurred.length; i++) mean += blurred[i]!;
   mean = mean / blurred.length || fabric.l || 1;
-  const feather = Math.max(14, Math.round(Math.min(iw, ih) * 0.14));
+  const mask = shapeMask(iw, ih, shape, box);
+  const cover = mask?.getContext("2d")?.getImageData(0, 0, iw, ih).data;
   for (let py = 0; py < ih; py++) {
     for (let px0 = 0; px0 < iw; px0++) {
       const i = py * iw + px0;
-      const edge = Math.min(px0, py, iw - 1 - px0, ih - 1 - py) / feather;
-      const t = smooth(edge);
+      const t = cover ? (cover[i * 4 + 3] ?? 0) / 255 : 1;
+      if (t < 0.01) continue;
       const shade = Math.min(1.04, Math.max(0.96, blurred[i]! / mean));
       const o = i * 4;
       px[o] = (px[o]! * (1 - t) + fabric.r * shade * t) | 0;
@@ -329,6 +366,8 @@ function blendArt(
   y: number,
   backdrop: RGB | null,
   fabricLum: number,
+  shape: PrintShape,
+  box: PrintZone,
 ) {
   const ix = Math.max(0, Math.floor(x));
   const iy = Math.max(0, Math.floor(y));
@@ -338,6 +377,8 @@ function blendArt(
   const artCtx = art.getContext("2d", { willReadFrequently: true });
   if (!artCtx) return;
   const ink = artCtx.getImageData(0, 0, iw, ih);
+  const mask = shapeMask(iw, ih, shape, box);
+  const cover = mask?.getContext("2d")?.getImageData(0, 0, iw, ih).data;
   const feather = Math.max(10, Math.round(Math.min(iw, ih) * 0.1));
   const out = cloth.data;
   const src = ink.data;
@@ -346,13 +387,16 @@ function blendArt(
       const i = (py * iw + px0) * 4;
       const o = (py * cloth.width + px0) * 4;
       let a = (src[i + 3] ?? 0) / 255;
+      if (cover) a *= (cover[i + 3] ?? 0) / 255;
       if (a < 0.004) continue;
       if (backdrop) {
         const dist = Math.hypot((src[i] ?? 0) - backdrop.r, (src[i + 1] ?? 0) - backdrop.g, (src[i + 2] ?? 0) - backdrop.b);
         if (dist < 42) a *= dist / 42;
       }
-      const edge = Math.min(px0, py, iw - 1 - px0, ih - 1 - py) / feather;
-      a *= smooth(edge);
+      if (!cover) {
+        const edge = Math.min(px0, py, iw - 1 - px0, ih - 1 - py) / feather;
+        a *= smooth(edge);
+      }
       const cr = out[o] ?? 0;
       const cg = out[o + 1] ?? 0;
       const cb = out[o + 2] ?? 0;
@@ -395,6 +439,11 @@ export async function composePrint(opts: {
   imageUrl?: string;
   kind?: DesignKind;
   mode: "before" | "after";
+  shape?: unknown;
+  /** Transparent everywhere except the new ink, so it can sit on the original photo. */
+  inkOnly?: boolean;
+  /** One print per closed loop. Each area can be a picture, text, or both. */
+  areas?: { points: Anchor[]; text?: string; imageUrl?: string; kind?: DesignKind }[];
 }): Promise<HTMLCanvasElement> {
   const base = await loadImage(opts.baseUrl);
   const canvas = document.createElement("canvas");
@@ -404,34 +453,76 @@ export async function composePrint(opts: {
   if (!ctx) throw new Error("Could not draw the preview");
   ctx.drawImage(base, 0, 0);
 
-  const zone = normalizeZones(opts.zones?.length ? opts.zones : opts.zone)[0]!;
-  const x = zone.x * canvas.width;
-  const y = zone.y * canvas.height;
-  const w = zone.w * canvas.width;
-  const h = zone.h * canvas.height;
-  const fabric = sampleFabric(ctx, x, y, w, h);
-  restoreCloth(ctx, x, y, w, h, fabric);
-
+  const shape = normalizeShape(opts.shape ?? (opts.zones?.length ? opts.zones : opts.zone));
   const kind = normalizeKind(opts.kind);
   const text = opts.text.trim();
   const showPlaceholder = opts.mode === "before";
-  const wantImage = !showPlaceholder && (kind === "image" || kind === "both");
-  const wantText = showPlaceholder || kind === "text" || kind === "both";
-  let photo: HTMLImageElement | null = null;
-  if (wantImage && opts.imageUrl) {
-    try {
-      photo = await loadImage(opts.imageUrl);
-    } catch {
-      photo = null;
+  const shared = loopsOf(shape).map((loop) => ({
+    points: loop.points,
+    text: showPlaceholder ? opts.placeholder.trim() || "Your design" : kind === "image" ? "" : text,
+    imageUrl: showPlaceholder || kind === "text" ? "" : opts.imageUrl || "",
+    kind,
+  }));
+  const areas = opts.areas?.length
+    ? opts.areas.map((area) => ({
+        points: area.points,
+        text: showPlaceholder ? opts.placeholder.trim() || "Your design" : area.text || "",
+        imageUrl: showPlaceholder ? "" : area.imageUrl || "",
+        kind: normalizeKind(area.kind ?? kind),
+      }))
+    : shared;
+  const original = opts.inkOnly ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
+  for (const area of areas) {
+    const local: PrintShape = { kind: "free", points: area.points };
+    const zone = shapeBounds(local);
+    const x = zone.x * canvas.width;
+    const y = zone.y * canvas.height;
+    const w = zone.w * canvas.width;
+    const h = zone.h * canvas.height;
+    const fabric = sampleFabric(ctx, x, y, w, h);
+    if (!opts.inkOnly) restoreCloth(ctx, x, y, w, h, fabric, local, zone);
+    const areaKind = normalizeKind(area.kind);
+    const wantImage = !showPlaceholder && (areaKind === "image" || areaKind === "both") && Boolean(area.imageUrl);
+    const wantText = showPlaceholder || areaKind === "text" || areaKind === "both";
+    let photo: HTMLImageElement | null = null;
+    if (wantImage && area.imageUrl) {
+      try {
+        photo = await loadImage(area.imageUrl);
+      } catch {
+        photo = null;
+      }
     }
+    const line = wantText ? area.text.trim() : "";
+    if (!photo && !line) drawBlended(ctx, x, y, w, h, null, opts.placeholder.trim() || "Your design", fabric, null, local, zone);
+    else drawBlended(ctx, x, y, w, h, photo, line, fabric, photo ? cornerBackdrop(photo) : null, local, zone);
   }
-  const line = showPlaceholder ? opts.placeholder.trim() || "Your design" : wantText ? text : "";
-  if (!photo && !line) {
-    drawBlended(ctx, x, y, w, h, null, opts.placeholder.trim() || "Your design", fabric, null);
-    return canvas;
-  }
-  drawBlended(ctx, x, y, w, h, photo, line, fabric, photo ? cornerBackdrop(photo) : null);
+  if (opts.inkOnly && original) keepInk(ctx, original, areas.map((area) => area.points));
   return canvas;
+}
+
+/** Drop every pixel that is still the original photo, leaving only the new print. */
+function keepInk(ctx: CanvasRenderingContext2D, original: ImageData, rings: Anchor[][]) {
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
+  const mask = document.createElement("canvas");
+  mask.width = width;
+  mask.height = height;
+  const mctx = mask.getContext("2d");
+  if (!mctx) return;
+  mctx.beginPath();
+  for (const points of rings) traceAnchors(mctx, points, (px) => px * width, (py) => py * height);
+  mctx.fillStyle = "#fff";
+  mctx.fill();
+  const cover = mctx.getImageData(0, 0, width, height).data;
+  const after = ctx.getImageData(0, 0, width, height);
+  const src = original.data;
+  const dst = after.data;
+  for (let i = 0; i < dst.length; i += 4) {
+    const inside = (cover[i + 3] ?? 0) / 255;
+    const changed = dst[i] !== src[i] || dst[i + 1] !== src[i + 1] || dst[i + 2] !== src[i + 2];
+    dst[i + 3] = changed ? Math.round(255 * inside) : 0;
+  }
+  ctx.putImageData(after, 0, 0);
 }
 
 function drawBlended(
@@ -444,6 +535,8 @@ function drawBlended(
   text: string,
   fabric: RGB,
   backdrop: RGB | null,
+  shape: PrintShape,
+  box: PrintZone,
 ) {
   const art = document.createElement("canvas");
   art.width = Math.max(1, Math.round(w));
@@ -472,7 +565,7 @@ function drawBlended(
       drawText(actx, text, art.width, art.height, ink);
     }
   }
-  blendArt(ctx, art, x, y, photo ? backdrop : null, fabric.l);
+  blendArt(ctx, art, x, y, photo ? backdrop : null, fabric.l, shape, box);
 }
 
 export function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {

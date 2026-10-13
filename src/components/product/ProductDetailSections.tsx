@@ -4,7 +4,7 @@ import { useId } from "react";
 import { isHtmlContentEmpty } from "@/lib/html-content-empty";
 
 const SECTION_PROSE =
-  "prose prose-slate mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent";
+  "prose mt-8 max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent";
 
 export function ProductDetailSections({
   displayDescriptionHtml,
@@ -39,7 +39,7 @@ export function ProductDetailSections({
     <div className={className}>
       <div
         suppressHydrationWarning
-        className="product-description prose prose-slate max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
+        className="product-description prose max-w-none leading-relaxed text-ink-muted prose-headings:font-display prose-headings:text-ink prose-p:text-ink-muted prose-strong:text-ink prose-li:marker:text-ink-muted prose-blockquote:border-sand-deep prose-blockquote:text-ink-muted prose-a:text-accent"
         dangerouslySetInnerHTML={{ __html: displayDescriptionHtml }}
       />
       {displayFeatureLines.length > 0 ? (

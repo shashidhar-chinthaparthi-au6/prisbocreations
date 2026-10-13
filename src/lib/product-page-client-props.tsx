@@ -10,6 +10,7 @@ import {
 import { parseProductCustomizationFields } from "@/lib/customization-order-validate";
 import type { ProductPageClient } from "@/components/product/ProductPageClient";
 import type { ComponentProps } from "react";
+import { normalizeShape } from "@/lib/studio/printShape";
 
 type LeanCategory = { slug?: string; name?: string } | null;
 type LeanSubcategory = { slug?: string; name?: string } | null;
@@ -219,22 +220,7 @@ export function buildProductPageClientPropsFromDoc(
       p["sceneDesignMode"] === "image" || p["sceneDesignMode"] === "text" || p["sceneDesignMode"] === "both"
         ? p["sceneDesignMode"]
         : "both",
-    sceneZone:
-      p["sceneZone"] && typeof p["sceneZone"] === "object" && !Array.isArray(p["sceneZone"])
-        ? {
-            x: Number((p["sceneZone"] as { x?: unknown }).x),
-            y: Number((p["sceneZone"] as { y?: unknown }).y),
-            w: Number((p["sceneZone"] as { w?: unknown }).w),
-            h: Number((p["sceneZone"] as { h?: unknown }).h),
-          }
-        : Array.isArray(p["sceneZone"]) && p["sceneZone"][0]
-          ? {
-              x: Number((p["sceneZone"][0] as { x?: unknown }).x),
-              y: Number((p["sceneZone"][0] as { y?: unknown }).y),
-              w: Number((p["sceneZone"][0] as { w?: unknown }).w),
-              h: Number((p["sceneZone"][0] as { h?: unknown }).h),
-            }
-          : null,
+    sceneZone: p["sceneZone"] && typeof p["sceneZone"] === "object" ? normalizeShape(p["sceneZone"]) : null,
     descriptionHtml,
     specificationRows,
     featureLines,

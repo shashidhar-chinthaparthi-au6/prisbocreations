@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { composePrint, type DesignKind, type PrintZone } from "@/lib/studio/composePrint";
+import { composePrint, type DesignKind } from "@/lib/studio/composePrint";
+import { loopsOf, type PrintShape } from "@/lib/studio/printShape";
 
 export function PrintPreview({
   baseUrl,
-  zone,
+  shape,
   kind,
   placeholder,
   text,
   imageUrl,
 }: {
   baseUrl: string;
-  zone: PrintZone;
+  shape: PrintShape;
   kind: DesignKind;
   placeholder: string;
   text: string;
@@ -26,15 +27,25 @@ export function PrintPreview({
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
-          const plain = await composePrint({ baseUrl, zone, placeholder, text: "", kind, mode: "before" });
+          const areas = loopsOf(shape).map((loop) => {
+            const fill = loop.fill === "both" ? kind : loop.fill;
+            return {
+              points: loop.points,
+              kind: fill,
+              text: fill === "image" ? "" : text,
+              imageUrl: fill === "text" ? "" : imageUrl,
+            };
+          });
+          const plain = await composePrint({ baseUrl, shape, placeholder, text: "", kind, mode: "before", areas });
           const printed = await composePrint({
             baseUrl,
-            zone,
+            shape,
             placeholder,
             text: kind === "image" ? "" : text,
             imageUrl: kind === "text" ? "" : imageUrl,
             kind,
             mode: "after",
+            areas,
           });
           if (dead) return;
           setBefore(plain.toDataURL("image/jpeg", 0.82));
@@ -51,21 +62,17 @@ export function PrintPreview({
       dead = true;
       window.clearTimeout(timer);
     };
-  }, [baseUrl, zone, kind, placeholder, text, imageUrl]);
+  }, [baseUrl, shape, kind, placeholder, text, imageUrl]);
 
   if (!before) return null;
 
   return (
-    <div
-      className="relative isolate aspect-video w-full overflow-hidden bg-[#f3eee6]"
-      role="img"
-      aria-label="Your design wiping into the text or photo that will be printed."
-    >
+    <div className="relative overflow-hidden rounded-2xl bg-[#f3eee6]" role="img" aria-label="Your design wiping into the text or photo that will be printed.">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={before} alt="Your design" className="absolute inset-0 h-full w-full object-cover" />
+      <img src={before} alt="Your design" className="block h-auto w-full" />
       {after ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={after} alt="How it looks after printing" className="print-pair absolute inset-0 h-full w-full object-cover" />
+        <img src={after} alt="How it looks after printing" className="print-pair absolute inset-0 h-full w-full object-contain" />
       ) : null}
       <style>{`
         @keyframes print-pair {

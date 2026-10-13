@@ -10,7 +10,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.55 "DM Sans", system-ui, sans-serif;
+  font: 15px/1.55 var(--font-sans), system-ui, sans-serif;
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr);
 }
@@ -26,12 +26,12 @@
   padding: 30px 16px;
 }
 .studio-root .br {
-  font: 500 24px "Playfair Display", Georgia, serif;
+  font: 500 24px var(--font-display), Georgia, serif;
   padding: 0 12px 26px;
 }
 .studio-root .br small {
   display: block;
-  font: 500 11px "DM Sans", system-ui, sans-serif;
+  font: 500 11px var(--font-sans), system-ui, sans-serif;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cop);
@@ -77,7 +77,7 @@
 }
 .studio-root .eb i { width: 28px; height: 1px; background: var(--cop); }
 .studio-root h1 {
-  font: 400 clamp(34px, 5vw, 50px) / 1.08 "Playfair Display", Georgia, serif;
+  font: 400 clamp(34px, 5vw, 50px) / 1.08 var(--font-display), Georgia, serif;
   margin: 10px 0 0;
   letter-spacing: -0.01em;
 }
@@ -91,7 +91,7 @@
   margin-bottom: 28px;
 }
 .studio-root .tt > div:last-child { display: flex; gap: 10px; }
-.studio-root h4 { margin: 0 0 4px; font: 500 20px "Playfair Display", Georgia, serif; }
+.studio-root h4 { margin: 0 0 4px; font: 500 20px var(--font-display), Georgia, serif; }
 .studio-root .sub { color: var(--mut); font-size: 13px; margin: 0 0 4px; }
 .studio-root .btn {
   padding: 11px 20px;
@@ -158,7 +158,7 @@
 }
 .studio-root .em b {
   display: block;
-  font: 400 26px "Playfair Display", serif;
+  font: 400 26px var(--font-display), Georgia, serif;
   color: var(--ink);
   margin-bottom: 4px;
 }
@@ -298,7 +298,7 @@
 .studio-root .vt .in { margin: 0; height: 38px; }
 .studio-root .tg { display: flex; gap: 10px; align-items: center; color: var(--ink); font-size: 15px; margin-top: 14px; }
 .studio-root .tg input { accent-color: var(--cop); width: 17px; height: 17px; }
-.studio-root details summary { cursor: pointer; font: 500 20px "Playfair Display", serif; list-style: none; }
+.studio-root details summary { cursor: pointer; font: 500 20px var(--font-display), Georgia, serif; list-style: none; }
 .studio-root details summary:after { content: " +"; color: var(--cop); }
 .studio-root details[open] summary:after { content: " −"; }
 .studio-root .r3 { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 8px; margin-bottom: 8px; }
@@ -347,7 +347,7 @@
 .studio-root .tb td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .studio-root .tb select { border: 0; background: none; font: inherit; color: var(--ink); }
 .studio-root .hero { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 34px 36px; }
-.studio-root .hero h2 { font: 400 clamp(34px, 5vw, 54px) / 1.05 "Playfair Display", serif; margin: 14px 0 14px; }
+.studio-root .hero h2 { font: 400 clamp(34px, 5vw, 54px) / 1.05 var(--font-display), Georgia, serif; margin: 14px 0 14px; }
 .studio-root .hero h2 em { color: var(--cop); display: block; }
 .studio-root .hero p { color: var(--mut); max-width: 42ch; margin: 0 0 22px; }
 .studio-root .hero .row { display: flex; gap: 26px; align-items: center; flex-wrap: wrap; }
@@ -377,8 +377,51 @@
   100% { clip-path: inset(0 0 0 100%); }
 }
 .studio-root .pair-wipe { animation: pair-wipe 7.6s ease-in-out infinite; }
-.studio-root .print-frame { position: relative; max-width: 640px; border-radius: 8px; overflow: hidden; background: #f3eee6; }
-.studio-root .print-frame img { width: 100%; display: block; }
+.studio-root .print-frame { position: relative; max-width: 640px; border-radius: 8px; overflow: visible; line-height: 0; background: transparent; }
+.studio-root .print-frame > img { position: relative; z-index: 0; width: 100%; height: auto; display: block; border-radius: 8px; }
+.studio-root .print-frame > canvas.print-ink { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; border-radius: 8px; }
+.studio-root .shape-edit { position: absolute; inset: 0; z-index: 2; touch-action: none; }
+.studio-root .shape-edit svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.studio-root .shape-edit path { fill: rgba(190, 108, 59, 0.12); stroke: #be6c3b; stroke-width: 1.6; vector-effect: non-scaling-stroke; cursor: move; pointer-events: auto; }
+.studio-root .shape-edit.drawing path { pointer-events: none; }
+.studio-root .shape-edit .draw-tools {
+  position: absolute; left: 12px; bottom: 12px; z-index: 6; display: flex; gap: 8px; line-height: normal;
+}
+.studio-root .shape-edit .draw-tools button {
+  border: 0; background: #fff; color: #2a2520; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+  font: 500 13px var(--font-sans), system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+.studio-root .shape-edit .draw-tools button:disabled { opacity: 0.4; cursor: default; }
+.studio-root .shape-edit .box { fill: none; stroke: #fff; stroke-width: 1.2; stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.studio-root .shape-edit line,
+.studio-root .shape-edit polyline { fill: none; stroke: #be6c3b; stroke-width: 1.4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.studio-root .shape-edit .draw-hint {
+  position: absolute; left: 12px; right: 12px; top: 12px; z-index: 5; margin: 0;
+  padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.92); color: #2a2520;
+  font: 500 13px var(--font-sans), system-ui, sans-serif; pointer-events: none;
+}
+.studio-root .shape-edit .anchor,
+.studio-root .shape-edit .handle,
+.studio-root .shape-edit .rot,
+.studio-root .shape-edit .grip {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+}
+.studio-root .shape-edit .anchor { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid #be6c3b; z-index: 4; cursor: grab; }
+.studio-root .shape-edit .anchor.on { background: #be6c3b; }
+.studio-root .shape-edit .handle { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #2a2520; z-index: 4; cursor: grab; }
+.studio-root .shape-edit .rot { width: 18px; height: 18px; border-radius: 50%; background: #2a2520; border: 2px solid #fff; z-index: 5; cursor: grab; }
+.studio-root .shape-edit .grip { width: 14px; height: 14px; border-radius: 3px; background: #fff; border: 2px solid #be6c3b; z-index: 5; }
+.studio-root .shape-edit .grip.n,
+.studio-root .shape-edit .grip.s { cursor: ns-resize; }
+.studio-root .shape-edit .grip.e,
+.studio-root .shape-edit .grip.w { cursor: ew-resize; }
+.studio-root .shape-edit .grip.nw,
+.studio-root .shape-edit .grip.se { cursor: nwse-resize; }
+.studio-root .shape-edit .grip.ne,
+.studio-root .shape-edit .grip.sw { cursor: nesw-resize; }
 .studio-root .kind { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
 .studio-root .kind button {
   border: 1px solid #e4ddd2;
@@ -386,7 +429,7 @@
   border-radius: 999px;
   padding: 8px 14px;
   cursor: pointer;
-  font: 500 13px "DM Sans", sans-serif;
+  font: 500 13px var(--font-sans), system-ui, sans-serif;
   color: #2a2520;
 }
 .studio-root .kind button.on { background: #2a2520; color: #fbf7f1; border-color: #2a2520; }
@@ -395,6 +438,7 @@
 .studio-root .print-preview img.en { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .studio-root .print-zone {
   position: absolute;
+  z-index: 2;
   border: 1.5px dashed #be6c3b;
   background: rgba(246, 243, 238, 0.42);
   color: #9a5a32;
@@ -403,7 +447,7 @@
   text-align: center;
   padding: 4px;
   cursor: move;
-  font: italic 500 13px "Playfair Display", Georgia, serif;
+  font: italic 500 13px var(--font-display), Georgia, serif;
   line-height: 1.1;
   touch-action: none;
   overflow: hidden;

@@ -130,7 +130,7 @@ export function RecipientCards({ variant = "default" }: Props) {
             aria-hidden
           />
           <div className="absolute bottom-5 left-5 z-[2] text-white">
-            <p className="font-display text-lg font-bold leading-tight sm:text-[22px]">{card.label}</p>
+            <p className="font-display text-lg font-medium leading-tight tracking-[-0.02em] sm:text-[22px]">{card.label}</p>
             <p className="mt-1 text-[13px] text-white/75 underline-offset-2 group-hover:underline">Browse</p>
           </div>
         </Link>

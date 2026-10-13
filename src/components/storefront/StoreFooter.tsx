@@ -37,10 +37,9 @@ export function StoreFooter() {
         {/* Col 1 — Brand */}
         <div className="space-y-4">
           {/* Wordmark in white */}
-          <Link href="/" className="inline-flex items-center gap-0 font-sans text-[17px] font-bold tracking-tight">
-            <span className="text-white">Prisbo</span>
-            <span style={{ color: "var(--brand-amber)", margin: "0 3px", fontSize: "13px" }}>·</span>
-            <span className="text-white">Creations</span>
+          <Link href="/" className="inline-flex items-baseline gap-1.5 font-display text-[22px] font-medium tracking-[-0.03em]">
+            <span className="text-white">prisbo</span>
+            <span className="italic" style={{ color: "var(--brand-amber)" }}>creations.</span>
           </Link>
 
           <p className="text-[13px] leading-relaxed text-white/60">Crafted for your story.</p>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Playfair_Display } from "next/font/google";
+import { DM_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { ConditionalStoreShell } from "@/components/storefront/ConditionalStoreShell";
@@ -16,9 +16,9 @@ const display = Playfair_Display({
   preload: true,
 });
 
-const sans = Inter({
+const sans = DM_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
   display: "swap",
   preload: true,

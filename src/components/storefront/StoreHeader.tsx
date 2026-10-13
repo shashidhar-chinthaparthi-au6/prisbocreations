@@ -16,9 +16,9 @@ type NavCategory = { slug: string; name: string; subcategories: { slug: string; 
 /* ─── Logo ─────────────────────────────────────────────────────────────── */
 function Wordmark() {
   return (
-    <Link href="/" className="font-sans text-[22px] font-extrabold leading-none tracking-[-0.045em]">
+    <Link href="/" className="font-display text-[26px] font-medium leading-none tracking-[-0.03em]">
       <span className="text-[#2c2824]">prisbo</span>
-      <span className="text-[#ae6f3a]">creations.</span>
+      <span className="italic text-[#ae6f3a]">creations.</span>
     </Link>
   );
 }

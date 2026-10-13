@@ -1,5 +1,7 @@
 // Port of the Pris Creations admin prototype. DOM is built the same way; saves go to the studio API.
-import { composePrint, normalizeKind, normalizeZones, suggestPrintZone, type DesignKind, type PrintZone } from "@/lib/studio/composePrint";
+import { composePrint, normalizeKind, type DesignKind } from "@/lib/studio/composePrint";
+import { loopsOf, normalizeShape, presetShape, shapeBounds, SHAPE_LABELS, type PrintShape } from "@/lib/studio/printShape";
+import { attachShapeEditor } from "./shapeEditor";
 
 export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "products") {
   const $ = (s: string, e: ParentNode = root) => e.querySelector(s) as HTMLElement | null;
@@ -30,6 +32,8 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
   for (const key of ["orders", "inquiries", "reviews", "users"] as const) {
     db.recs[key] = db.recs[key] || [];
   }
+
+  let stopShapeEdit = () => {};
 
   root.innerHTML =
     '<aside class="sb"><div class="br">Pris Creations<small>Admin</small></div><nav id="nav"></nav></aside><main id="main"></main><div id="toast"></div>';
@@ -652,7 +656,9 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       printStudio();
     };
     let samplePic = "";
+    const loopPics: string[] = [];
     const printStudio = () => {
+      stopShapeEdit();
       const box = $("#print-studio");
       if (!box) return;
       if (!p.imgs.length) {
@@ -660,19 +666,30 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
         return;
       }
       if (!p.print) {
-        p.print = { on: false, photo: 0, zone: { x: 0.3, y: 0.36, w: 0.4, h: 0.26 }, kind: "both", sample: "" };
+        p.print = { on: false, photo: 0, zone: { x: 0.3, y: 0.36, w: 0.4, h: 0.26 }, shape: presetShape("rect", { x: 0.3, y: 0.36, w: 0.4, h: 0.26 }), kind: "both", sample: "" };
       }
       const print = p.print;
+      if (!print.shape) print.shape = normalizeShape(print.zone);
       print.photo = Math.min(print.photo, p.imgs.length - 1);
       const kind = normalizeKind(print.kind);
+      let shape = normalizeShape(print.shape);
+      let activeLoop = 0;
+      if (shape.loops?.length === 1 && !shape.loops[0]!.sample) {
+        shape.loops[0]!.fill = kind;
+        shape.loops[0]!.sample = print.sample || "";
+      }
+      print.shape = shape;
+      print.zone = shapeBounds(shape);
       box.innerHTML = `<div style="margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
         <h4>Print area</h4>
-        <p class="sub">Drag the window to the freestyle spot where the print should sit, or let it find the artwork already on the photo. That place stays “Your design” until a buyer adds a picture, text, or both.</p>
+        <p class="sub">Pull the points into any shape. The small dots curve a corner, and the dark dot rotates the whole outline.</p>
         <label class="tg"><input type="checkbox" id="print-on" ${print.on ? "checked" : ""}> Buyers can preview a print on this photo</label>
         <div id="print-body" style="${print.on ? "" : "display:none"}">
           <label>Photo<select class="in" id="print-photo">${p.imgs.map((_, i) => `<option value="${i}" ${print.photo === i ? "selected" : ""}>${i === 0 ? "Cover" : "Photo " + (i + 1)}</option>`).join("")}</select></label>
-          <div class="print-frame" id="print-frame"><img alt=""></div>
-          <div class="pa"><button class="btn na" type="button" id="print-find">Find the print</button></div>
+          <div class="kind" id="print-shapes">${SHAPE_LABELS.map((item) => `<button type="button" data-shape="${item.kind}" class="${shape.kind === item.kind ? "on" : ""}">${item.label}</button>`).join("")}</div>
+          <p class="sub" id="print-shape-note">White squares resize from every side. Round points reshape. The two small dots on the selected point curve it. The dark dot rotates.</p>
+          <div class="print-frame" id="print-frame"><img class="print-photo" alt=""><canvas class="print-ink"></canvas></div>
+          <p class="sub" id="print-loop-label">Inside this area</p>
           <div class="kind" id="print-kind">
             <button type="button" data-k="image" class="${kind === "image" ? "on" : ""}">Picture</button>
             <button type="button" data-k="text" class="${kind === "text" ? "on" : ""}">Text</button>
@@ -680,82 +697,93 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
           </div>
           <label id="print-text-field">Sample text<input class="in" id="print-sample" value="${esc(print.sample)}" placeholder="Team 2026"></label>
           <label id="print-pic-field">Sample picture<input class="in" id="print-pic" type="file" accept="image/jpeg,image/png,image/webp"></label>
-          <div class="print-preview" id="print-preview"></div>
         </div>
       </div>`;
-      const zone = { ...normalizeZones(print.zone)[0]! };
-      print.zone = zone;
       const frame = $("#print-frame");
-      const img = frame?.querySelector("img");
-      if (img && frame) img.src = p.imgs[print.photo]?.src || "";
-      const overlay = document.createElement("div");
-      overlay.className = "print-zone";
-      overlay.innerHTML = `<span>Your design</span><i data-handle></i>`;
-      frame?.appendChild(overlay);
-      const place = () => {
-        overlay.style.left = `${zone.x * 100}%`;
-        overlay.style.top = `${zone.y * 100}%`;
-        overlay.style.width = `${zone.w * 100}%`;
-        overlay.style.height = `${zone.h * 100}%`;
-        print.zone = { ...zone };
+      const img = frame?.querySelector("img.print-photo") as HTMLImageElement | null;
+      const showPhoto = (src: string) => {
+        if (!img || img.dataset.origin === src) return;
+        img.dataset.origin = src;
+        img.src = src;
       };
-      place();
-      let drag: { mode: "move" | "resize"; px: number; py: number; zone: PrintZone } | null = null;
-      overlay.addEventListener("pointerdown", (e) => {
-        const mode = (e.target as HTMLElement).hasAttribute("data-handle") ? "resize" : "move";
-        overlay.setPointerCapture(e.pointerId);
-        drag = { mode, px: e.clientX, py: e.clientY, zone: { ...zone } };
-      });
-      overlay.addEventListener("pointermove", (e) => {
-        if (!drag || !frame || !overlay.hasPointerCapture(e.pointerId)) return;
-        const rect = frame.getBoundingClientRect();
-        const dx = (e.clientX - drag.px) / rect.width;
-        const dy = (e.clientY - drag.py) / rect.height;
-        if (drag.mode === "move") {
-          zone.x = Math.min(1 - zone.w, Math.max(0, drag.zone.x + dx));
-          zone.y = Math.min(1 - zone.h, Math.max(0, drag.zone.y + dy));
-        } else {
-          zone.w = Math.min(1 - zone.x, Math.max(0.12, drag.zone.w + dx));
-          zone.h = Math.min(1 - zone.y, Math.max(0.1, drag.zone.h + dy));
-        }
-        place();
-      });
-      overlay.addEventListener("pointerup", () => {
-        drag = null;
-        void paint();
-      });
-      const showKind = () => {
+      showPhoto(p.imgs[print.photo]?.src || "");
+      let paint = async () => {};
+      let paintTimer = 0;
+      const editor = frame
+        ? attachShapeEditor(
+            frame,
+            shape,
+            (next) => {
+              const prevCount = shape.loops?.length ?? loopsOf(shape).length;
+              shape = next;
+              print.shape = next;
+              print.zone = shapeBounds(next.loops?.length === 0 ? { kind: "free", points: next.points } : next);
+              if ((next.loops?.length ?? 0) < prevCount) loopPics.length = next.loops?.length ?? 0;
+              box.querySelectorAll("[data-shape]").forEach((el) => el.classList.toggle("on", (el as HTMLElement).dataset.shape === next.kind));
+              window.clearTimeout(paintTimer);
+              paintTimer = window.setTimeout(() => void paint(), 90);
+            },
+            (index) => {
+              activeLoop = index;
+              syncLoopForm();
+            },
+          )
+        : null;
+      if (editor) stopShapeEdit = editor.stop;
+      const currentLoop = () => {
+        const loops = shape.loops?.length ? shape.loops : loopsOf(shape);
+        return loops[Math.min(activeLoop, loops.length - 1)] ?? loops[0];
+      };
+      const syncLoopForm = () => {
+        const loop = currentLoop();
+        if (!loop) return;
+        print.kind = loop.fill;
+        print.sample = loop.sample;
+        samplePic = loopPics[activeLoop] || "";
+        const label = $("#print-loop-label");
+        const count = shape.loops?.length || 1;
+        if (label) label.textContent = count > 1 ? `Inside loop ${activeLoop + 1} of ${count}` : "Inside this area";
+        box.querySelectorAll("[data-k]").forEach((el) => el.classList.toggle("on", (el as HTMLElement).dataset.k === loop.fill));
+        const sampleInput = $("#print-sample") as HTMLInputElement | null;
+        if (sampleInput && sampleInput.value !== loop.sample) sampleInput.value = loop.sample;
         const text = $("#print-text-field");
         const pic = $("#print-pic-field");
-        if (text) text.style.display = print.kind === "image" ? "none" : "";
-        if (pic) pic.style.display = print.kind === "text" ? "none" : "";
+        if (text) text.style.display = loop.fill === "image" ? "none" : "";
+        if (pic) pic.style.display = loop.fill === "text" ? "none" : "";
       };
+      const showKind = () => syncLoopForm();
       showKind();
-      const paint = async () => {
-        const preview = $("#print-preview");
+      paint = async () => {
         const src = p.imgs[print.photo]?.src;
-        if (!preview || !src || !print.on) return;
+        const ink = frame?.querySelector(":scope > canvas.print-ink") as HTMLCanvasElement | null;
+        if (!frame || !ink || !src || !print.on) return;
+        showPhoto(src);
+        const ctx = ink.getContext("2d");
+        if (!ctx) return;
         try {
-          const before = await composePrint({
+          const loops = shape.loops?.length ? shape.loops : loopsOf(shape);
+          const printed = await composePrint({
             baseUrl: src,
-            zone,
+            shape,
             placeholder: "Your design",
-            text: "",
-            kind: print.kind,
-            mode: "before",
-          });
-          const after = await composePrint({
-            baseUrl: src,
-            zone,
-            placeholder: "Your design",
-            text: print.kind === "image" ? "" : print.sample,
-            imageUrl: print.kind === "text" ? "" : samplePic,
+            text: print.sample,
+            imageUrl: samplePic,
             kind: print.kind,
             mode: "after",
+            inkOnly: true,
+            areas: loops.map((loop, index) => ({
+              points: loop.points,
+              kind: loop.fill,
+              text: loop.fill === "image" ? "" : loop.sample,
+              imageUrl: loop.fill === "text" ? "" : loopPics[index] || "",
+            })),
           });
-          preview.innerHTML = `<img src="${before.toDataURL("image/jpeg", 0.86)}" alt="Your design"><img class="en pair-wipe" src="${after.toDataURL("image/jpeg", 0.86)}" alt="Printed" style="filter:none">`;
+          ink.width = printed.width;
+          ink.height = printed.height;
+          ctx.clearRect(0, 0, ink.width, ink.height);
+          ctx.drawImage(printed, 0, 0);
         } catch {
-          preview.innerHTML = `<p class="hint">The photo could not be read for a preview.</p>`;
+          ctx.clearRect(0, 0, ink.width, ink.height);
         }
       };
       const on = $("#print-on") as HTMLInputElement | null;
@@ -770,32 +798,38 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       if (photoSel)
         photoSel.onchange = () => {
           print.photo = Number(photoSel.value) || 0;
-          if (img) img.src = p.imgs[print.photo]?.src || "";
+          showPhoto(p.imgs[print.photo]?.src || "");
           void paint();
         };
-      const find = $("#print-find");
-      if (find)
-        find.onclick = async () => {
-          const src = p.imgs[print.photo]?.src;
-          if (!src) return;
-          try {
-            const found = await suggestPrintZone(src);
-            zone.x = found.x;
-            zone.y = found.y;
-            zone.w = found.w;
-            zone.h = found.h;
-            place();
-            toast("Print area placed on the artwork");
-            void paint();
-          } catch {
-            toast("Could not read that photo");
+      box.querySelectorAll("[data-shape]").forEach((node) => {
+        const button = node as HTMLButtonElement;
+        button.onclick = () => {
+          const nextKind = (button.dataset.shape || "rect") as PrintShape["kind"];
+          const note = $("#print-shape-note");
+          if (nextKind === "free") {
+            editor?.startDraw();
+            box.querySelectorAll("[data-shape]").forEach((el) => el.classList.toggle("on", (el as HTMLElement).dataset.shape === "free"));
+            if (note) note.textContent = "Click the photo to place points. Undo removes the last point. Close loop finishes that outline, and you can close another one right after. Then choose picture, text, or both for the loop you clicked.";
+            return;
           }
+          shape = presetShape(nextKind, shapeBounds(shape));
+          shape.loops = [{ points: shape.points, fill: print.kind, sample: print.sample }];
+          print.shape = shape;
+          print.zone = shapeBounds(shape);
+          editor?.set(shape);
+          box.querySelectorAll("[data-shape]").forEach((el) => el.classList.toggle("on", (el as HTMLElement).dataset.shape === shape.kind));
+          if (note) note.textContent = "White squares resize from every side. Round points reshape. The two small dots on the selected point curve it. The dark dot rotates.";
+          void paint();
         };
+      });
       box.querySelectorAll("[data-k]").forEach((node) => {
         const button = node as HTMLButtonElement;
         button.onclick = () => {
-          print.kind = normalizeKind(button.dataset.k);
-          box.querySelectorAll("[data-k]").forEach((el) => el.classList.toggle("on", (el as HTMLElement).dataset.k === print.kind));
+          const fill = normalizeKind(button.dataset.k);
+          print.kind = fill;
+          if (!shape.loops?.length) shape.loops = [{ points: shape.points, fill, sample: print.sample }];
+          else shape.loops[Math.min(activeLoop, shape.loops.length - 1)]!.fill = fill;
+          print.shape = shape;
           showKind();
           void paint();
         };
@@ -804,6 +838,9 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       if (sample)
         sample.oninput = () => {
           print.sample = sample.value;
+          const loop = currentLoop();
+          if (loop) loop.sample = sample.value;
+          if (shape.loops?.length) print.shape = shape;
           void paint();
         };
       const pic = $("#print-pic") as HTMLInputElement | null;
@@ -818,6 +855,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
           const reader = new FileReader();
           reader.onload = () => {
             samplePic = String(reader.result || "");
+            loopPics[activeLoop] = samplePic;
             void paint();
           };
           reader.readAsDataURL(file);
@@ -1262,6 +1300,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
 
   render();
   return () => {
+    stopShapeEdit();
     root.removeEventListener("click", onClick);
     root.innerHTML = "";
   };
@@ -1291,7 +1330,7 @@ type StudioProduct = {
   mfr: string;
   country: string;
   pers: { text: boolean; label: string; max: number | string; photo: boolean; note: boolean; fee: number | string };
-  print?: { on: boolean; photo: number; zone: PrintZone; kind: DesignKind; sample: string };
+  print?: { on: boolean; photo: number; zone: { x: number; y: number; w: number; h: number }; shape?: PrintShape; kind: DesignKind; sample: string };
 };
 type StudioDb = {
   cats: StudioCat[];

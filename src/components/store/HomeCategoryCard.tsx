@@ -38,7 +38,7 @@ export function HomeCategoryCard({ href, name, slug, imageSrc }: Props) {
 
       {/* Text */}
       <div className="absolute inset-x-0 bottom-0 z-[3] p-4">
-        <p className="text-[15px] font-semibold text-white leading-tight">{name}</p>
+        <p className="font-display text-[18px] font-medium leading-tight text-white">{name}</p>
         <p className="mt-1 flex items-center gap-1 text-[12px] text-white/75 group-hover:text-white transition-colors">
           Shop now
           <span className="inline-block transition-transform duration-200 group-hover:translate-x-1" aria-hidden>

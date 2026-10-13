@@ -17,7 +17,8 @@ import { WishlistHeart } from "@/components/ui/WishlistHeart";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { packageDimensionSpecRows } from "@/lib/product-package-display";
 import { PrintPreview } from "@/components/studio/PrintPreview";
-import { normalizeKind, normalizeZones, type DesignKind } from "@/lib/studio/composePrint";
+import { normalizeKind, type DesignKind } from "@/lib/studio/composePrint";
+import { loopsOf, normalizeShape, type PrintShape } from "@/lib/studio/printShape";
 
 type Props = {
   defaultImages: string[];
@@ -41,7 +42,7 @@ type Props = {
   sceneBaseUrl?: string;
   scenePlaceholder?: string;
   sceneDesignMode?: DesignKind;
-  sceneZone?: { x: number; y: number; w: number; h: number } | null;
+  sceneZone?: PrintShape | { x: number; y: number; w: number; h: number } | null;
   /** Deep-link selected colour (`/products/:slug?color=`). */
   initialColorKey?: string;
 };
@@ -76,8 +77,17 @@ export function ProductPageClient({
       setPrint((prev) => (prev.text === value.text && prev.imageUrl === value.imageUrl ? prev : value));
     };
   }, []);
-  const printZone = useMemo(() => normalizeZones(sceneZone)[0]!, [sceneZone]);
+  const printShape = useMemo(() => normalizeShape(sceneZone), [sceneZone]);
   const designKind = normalizeKind(sceneDesignMode);
+  const printMode = useMemo(() => {
+    const fills = loopsOf(printShape).map((loop) => loop.fill);
+    if (fills.every((fill) => fill === "both")) return designKind;
+    const image = fills.some((fill) => fill === "image" || fill === "both");
+    const text = fills.some((fill) => fill === "text" || fill === "both");
+    if (image && text) return "both" as const;
+    if (image) return "image" as const;
+    return "text" as const;
+  }, [printShape, designKind]);
   const [colorKey, setColorKey] = useState(() => {
     if (initialColorKey?.trim() && colorVariants.some((c) => c.key === initialColorKey.trim())) {
       return initialColorKey.trim();
@@ -215,18 +225,18 @@ export function ProductPageClient({
             <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--brand-ink)]/10">
               <PrintPreview
                 baseUrl={sceneBaseUrl}
-                zone={printZone}
-                kind={designKind}
+                shape={printShape}
+                kind={printMode}
                 placeholder={scenePlaceholder || "Your design"}
                 text={print.text}
                 imageUrl={print.imageUrl}
               />
               <p className="bg-[#fbf7f1] px-4 py-2.5 text-[12px] text-[var(--brand-muted)]">
-                {designKind === "image"
-                  ? "Upload a picture. The center wipes from “Your design” into that picture."
-                  : designKind === "text"
-                    ? "Type a line. The center wipes from “Your design” into your words."
-                    : "Add a picture and a line. The center wipes from “Your design” into both."}
+                {printMode === "image"
+                  ? "Upload a picture. It prints inside the area on this photo."
+                  : printMode === "text"
+                    ? "Type a line. It prints inside the area on this photo."
+                    : "Add a picture and a line. Both print inside the area on this photo."}
               </p>
             </div>
           ) : null}
@@ -268,6 +278,7 @@ export function ProductPageClient({
             packageDimensionsRows={packageDimensionsRows}
             detailSections="none"
             onPrintChange={sceneBaseUrl ? onPrintChange : undefined}
+            printMode={sceneBaseUrl ? printMode : null}
           />
         </div>
         {backLink}

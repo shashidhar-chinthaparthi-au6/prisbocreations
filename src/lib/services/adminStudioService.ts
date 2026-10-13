@@ -12,7 +12,8 @@ import { Review } from "@/lib/models/Review";
 import { StorefrontSettings } from "@/lib/models/StorefrontSettings";
 import { Subcategory } from "@/lib/models/Subcategory";
 import { User } from "@/lib/models/User";
-import { clampZone, normalizeKind } from "@/lib/studio/composePrint";
+import { normalizeKind } from "@/lib/studio/composePrint";
+import { normalizeShape, shapeBounds } from "@/lib/studio/printShape";
 
 const DH = {
   eyebrow: "Made to feel like yours",
@@ -84,7 +85,7 @@ type StudioProduct = {
     note: boolean;
     fee: number | string;
   };
-  print?: { on: boolean; photo: number; zone: { x: number; y: number; w: number; h: number }; kind: string; sample: string };
+  print?: { on: boolean; photo: number; zone: { x: number; y: number; w: number; h: number }; shape?: unknown; kind: string; sample: string };
 };
 
 type StudioNote = { id: string; msg: string; at: number; read: boolean };
@@ -344,7 +345,8 @@ function productOut(doc: {
       print: {
         on: true,
         photo,
-        zone: clampZone(doc.sceneZone),
+        zone: shapeBounds(normalizeShape(doc.sceneZone)),
+        shape: normalizeShape(doc.sceneZone),
         kind: normalizeKind(doc.sceneDesignMode),
         sample: "",
       },
@@ -705,7 +707,7 @@ export async function saveStudio(raw: unknown, actorId: string): Promise<StudioD
     const printPhoto = print?.on ? images[Number(print.photo)] : "";
     if (print?.on && printPhoto) {
       set.sceneBaseUrl = printPhoto;
-      set.sceneZone = clampZone(print.zone);
+      set.sceneZone = normalizeShape(print.shape ?? print.zone);
       set.sceneDesignMode = normalizeKind(print.kind);
       set.scenePlaceholder = "Your design";
       set.sceneBeforeUrl = "";
