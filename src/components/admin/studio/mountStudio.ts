@@ -2,6 +2,7 @@
 import { composePrint, normalizeKind, type DesignKind } from "@/lib/studio/composePrint";
 import { loopsOf, normalizeShape, presetShape, shapeBounds, SHAPE_LABELS, type PrintShape } from "@/lib/studio/printShape";
 import { attachShapeEditor } from "./shapeEditor";
+import { uploadAdminImageWithProgress } from "@/lib/api/upload-progress";
 
 export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "products") {
   const $ = (s: string, e: ParentNode = root) => e.querySelector(s) as HTMLElement | null;
@@ -132,12 +133,8 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
           c.toBlob(async (blob) => {
             try {
               if (!blob) return no(new Error("resize"));
-              const fd = new FormData();
-              fd.set("file", new File([blob], "photo.jpg", { type: "image/jpeg" }));
-              const res = await fetch("/api/v1/admin/upload", { method: "POST", body: fd });
-              const j = await res.json();
-              if (!j.ok) return no(new Error(j.error || "Upload failed"));
-              ok(j.data.url as string);
+              const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+              ok(await uploadAdminImageWithProgress(file, () => {}));
             } catch (err) {
               no(err);
             }
