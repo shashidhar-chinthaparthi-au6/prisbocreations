@@ -372,7 +372,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       `<div class="ed"><div class="col">
  <div class="cd"><h4>Basics</h4><label>Name<input class="in" data-k="name"></label><label>Description<textarea class="in" data-k="desc" placeholder="What makes it special? Mention material, size and who it is for."></textarea></label><div class="r2"><label>Price (₹)<input class="in" type="number" min="0" data-k="price"></label><label>Original price (optional)<input class="in" type="number" min="0" data-k="compare" placeholder="Shown struck through"></label></div></div>
  <div class="cd"><h4>Photos</h4><p class="sub" id="ph-h"></p><div class="up" id="dz">${UPTXT()}</div><div class="ph" id="ph"></div><div id="print-studio"></div></div>
- <div class="cd"><h4>Where it belongs</h4><label>Category<select class="in" id="cat"></select></label><div class="add" style="margin-top:10px"><input class="in" id="newcat" placeholder="New category"><button class="btn p na" id="addcat" type="button">Add</button></div><div class="add" style="margin-top:10px"><input class="in" id="newsub" placeholder="New subcategory in the selected category"><button class="btn p na" id="addsub" type="button">Add</button></div><label>Recipient</label><div class="ch" id="rec" style="margin-top:6px"></div><label>Occasion</label><div class="ch" id="occ" style="margin-top:6px"></div></div>
+ <div class="cd"><h4>Where it belongs</h4><label>Category<select class="in" id="cat"></select></label><div id="newcatbox" hidden><label>Category name<input class="in" id="newcat" placeholder="e.g. Mugs"></label><label>Category photo</label><div class="up" id="cat-up"></div><button class="btn p na" id="addcat" type="button">Add category</button></div><label>Subcategory<select class="in" id="sub"></select></label><div id="newsubbox" hidden><label>Subcategory name<input class="in" id="newsub" placeholder="e.g. Travel mugs"></label><label>Subcategory photo</label><div class="up" id="sub-up"></div><button class="btn p na" id="addsub" type="button">Add subcategory</button></div><label>Recipient</label><div class="ch" id="rec" style="margin-top:6px"></div><label>Occasion</label><div class="ch" id="occ" style="margin-top:6px"></div></div>
  <div class="cd"><h4>Colours</h4><p class="sub">Tap a colour to add it, or pick your own. Link each colour to a photo so shoppers see the right one.</p><div class="pal" id="pal"></div><div id="cl"></div></div>
  <div class="cd"><h4>Sizes</h4><div class="ch" id="sz" style="margin-top:6px"></div></div>
  <div class="cd"><h4>Stock</h4><div id="stk"></div></div>
@@ -390,81 +390,168 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       });
     bind(m);
     const cat = $("#cat") as HTMLSelectElement | null;
-    const fillCat = () => {
-      if (!cat) return;
+    const sub = $("#sub") as HTMLSelectElement | null;
+    const newCatBox = $("#newcatbox");
+    const newSubBox = $("#newsubbox");
+    let newCatImg = "";
+    let newSubImg = "";
+    const placeOf = (id: string) => {
+      const direct = db.cats.find((c) => c.id == id);
+      if (direct) return { cat: direct, sub: "" };
+      for (const row of db.cats) {
+        if ((row.subs || []).some((s) => s.id == id)) return { cat: row, sub: id };
+      }
+      return { cat: null as StudioCat | null, sub: "" };
+    };
+    const paintUp = (id: string, url: string) => {
+      const zone = $("#" + id);
+      if (!zone) return;
+      zone.classList.remove("busy");
+      zone.innerHTML = url ? `<img src="${url}">` : UPTXT();
+    };
+    const bindUp = (id: string, set: (url: string) => void) => {
+      const zone = $("#" + id);
+      if (!zone) return;
+      dropzone(zone, (fs) => {
+        const file = fs[0];
+        if (!file) return;
+        void (async () => {
+          let cropped: File;
+          try {
+            cropped = await adjustCrop(file);
+          } catch {
+            return;
+          }
+          zone.classList.add("busy");
+          zone.innerHTML = '<i class="spin"></i><div>Uploading…</div>';
+          try {
+            set(await readImg(cropped, 800));
+          } catch {
+            toast("Could not upload that photo");
+          }
+          paintUp(id, id == "cat-up" ? newCatImg : newSubImg);
+        })();
+      });
+    };
+    const fillPlace = () => {
+      if (!cat || !sub) return;
+      const loc = placeOf(p.cat);
+      const catId = loc.cat?.id || "";
       cat.innerHTML =
         '<option value="">Select…</option>' +
-        db.cats
-          .map(
-            (c) =>
-              `<option value="${c.id}" ${c.id == p.cat ? "selected" : ""}>${esc(c.name)}</option>` +
-              (c.subs || []).map((s) => `<option value="${s.id}" ${s.id == p.cat ? "selected" : ""}>${esc(c.name)} › ${esc(s.name)}</option>`).join(""),
-          )
-          .join("");
+        db.cats.map((c) => `<option value="${c.id}" ${c.id == catId ? "selected" : ""}>${esc(c.name)}</option>`).join("") +
+        '<option value="__new__">New category</option>';
+      const subs = loc.cat?.subs || [];
+      sub.innerHTML =
+        `<option value="">${catId ? "Select…" : "Choose a category first"}</option>` +
+        subs.map((s) => `<option value="${s.id}" ${s.id == loc.sub ? "selected" : ""}>${esc(s.name)}</option>`).join("") +
+        (catId ? '<option value="__new__">New subcategory</option>' : "");
+      sub.disabled = !catId;
+      if (newCatBox) newCatBox.hidden = true;
+      if (newSubBox) newSubBox.hidden = true;
     };
-    fillCat();
+    fillPlace();
+    paintUp("cat-up", "");
+    paintUp("sub-up", "");
+    bindUp("cat-up", (url) => {
+      newCatImg = url;
+    });
+    bindUp("sub-up", (url) => {
+      newSubImg = url;
+    });
     if (cat)
-      cat.onchange = (e) => {
-        p.cat = (e.target as HTMLSelectElement).value;
-        sum();
-      };
-    const addNamed = async (inputId: string, buttonId: string, make: (name: string) => (() => void) | null) => {
-      const input = $("#" + inputId) as HTMLInputElement | null;
-      const button = $("#" + buttonId) as HTMLButtonElement | null;
-      if (!input || !button) return;
-      const run = async () => {
-        const name = input.value.trim();
-        if (!name || button.disabled) return;
-        const prev = p.cat;
-        const undo = make(name);
-        if (!undo) return;
-        button.disabled = true;
-        button.textContent = "Saving…";
-        if (!(await save())) {
-          undo();
-          p.cat = prev;
-          button.disabled = false;
-          button.textContent = "Add";
+      cat.onchange = () => {
+        if (cat.value == "__new__") {
+          if (newCatBox) newCatBox.hidden = false;
+          if (newSubBox) newSubBox.hidden = true;
+          sub.innerHTML = '<option value="">Add the category first</option>';
+          sub.disabled = true;
           return;
         }
-        input.value = "";
-        button.disabled = false;
-        button.textContent = "Add";
-        fillCat();
+        if (newCatBox) newCatBox.hidden = true;
+        p.cat = cat.value;
+        fillPlace();
         sum();
-        toast("Saved");
       };
-      button.onclick = () => void run();
-      input.onkeydown = (e) => {
-        if (e.key == "Enter") {
-          e.preventDefault();
-          void run();
+    if (sub)
+      sub.onchange = () => {
+        if (sub.value == "__new__") {
+          if (!placeOf(p.cat).cat) {
+            toast("Choose a category first");
+            sub.value = "";
+            return;
+          }
+          if (newSubBox) newSubBox.hidden = false;
+          return;
         }
+        if (newSubBox) newSubBox.hidden = true;
+        const parent = placeOf(p.cat).cat;
+        p.cat = sub.value || parent?.id || "";
+        sum();
       };
-    };
-    void addNamed("newcat", "addcat", (name) => {
-      const row = { id: uid(), name, slug: slug(name), img: "", subs: [] as StudioSub[] };
-      db.cats.push(row);
-      p.cat = row.id;
-      return () => {
-        db.cats = db.cats.filter((c) => c.id != row.id);
+    const addCatBtn = $("#addcat") as HTMLButtonElement | null;
+    const addSubBtn = $("#addsub") as HTMLButtonElement | null;
+    if (addCatBtn)
+      addCatBtn.onclick = async () => {
+        const input = $("#newcat") as HTMLInputElement | null;
+        const name = input?.value.trim() || "";
+        if (!name) return toast("Add a category name");
+        if (!newCatImg) return toast("Add a photo for this category");
+        if (addCatBtn.disabled) return;
+        const row = { id: uid(), name, slug: slug(name), img: newCatImg, subs: [] as StudioSub[] };
+        db.cats.push(row);
+        const prev = p.cat;
+        p.cat = row.id;
+        addCatBtn.disabled = true;
+        addCatBtn.textContent = "Saving…";
+        if (!(await save())) {
+          db.cats = db.cats.filter((c) => c.id != row.id);
+          p.cat = prev;
+          addCatBtn.disabled = false;
+          addCatBtn.textContent = "Add category";
+          return;
+        }
+        if (input) input.value = "";
+        newCatImg = "";
+        paintUp("cat-up", "");
+        addCatBtn.disabled = false;
+        addCatBtn.textContent = "Add category";
+        fillPlace();
+        sum();
+        toast("Category added");
       };
-    });
-    void addNamed("newsub", "addsub", (name) => {
-      const parent =
-        db.cats.find((c) => c.id == p.cat) || db.cats.find((c) => (c.subs || []).some((s) => s.id == p.cat));
-      if (!parent) {
-        toast("Choose a category first");
-        return null;
-      }
-      parent.subs = parent.subs || [];
-      const row = { id: uid(), name, slug: slug(name), img: "" };
-      parent.subs.push(row);
-      p.cat = row.id;
-      return () => {
-        parent.subs = (parent.subs || []).filter((s) => s.id != row.id);
+    if (addSubBtn)
+      addSubBtn.onclick = async () => {
+        const input = $("#newsub") as HTMLInputElement | null;
+        const name = input?.value.trim() || "";
+        const parent = placeOf(p.cat).cat;
+        if (!parent) return toast("Choose a category first");
+        if (!name) return toast("Add a subcategory name");
+        if (!newSubImg) return toast("Add a photo for this subcategory");
+        if (addSubBtn.disabled) return;
+        parent.subs = parent.subs || [];
+        const row = { id: uid(), name, slug: slug(name), img: newSubImg };
+        parent.subs.push(row);
+        const prev = p.cat;
+        p.cat = row.id;
+        addSubBtn.disabled = true;
+        addSubBtn.textContent = "Saving…";
+        if (!(await save())) {
+          parent.subs = parent.subs.filter((s) => s.id != row.id);
+          p.cat = prev;
+          addSubBtn.disabled = false;
+          addSubBtn.textContent = "Add subcategory";
+          return;
+        }
+        if (input) input.value = "";
+        newSubImg = "";
+        paintUp("sub-up", "");
+        addSubBtn.disabled = false;
+        addSubBtn.textContent = "Add subcategory";
+        fillPlace();
+        sum();
+        toast("Subcategory added");
       };
-    });
     const chips = (id: string, key: "rec" | "occ", listKey: "recipients" | "occasions") => {
       const h = $("#" + id);
       if (!h) return;
