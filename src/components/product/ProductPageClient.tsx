@@ -71,7 +71,7 @@ export function ProductPageClient({
   initialColorKey,
 }: Props) {
   const [print, setPrint] = useState({ text: "", imageUrl: "", font: "sans", fontLabel: "Modern sans" });
-  const [photoOpen, setPhotoOpen] = useState<string | null>(null);
+  const [photoIndex, setPhotoIndex] = useState(0);
   const onPrintChange = useMemo(() => {
     return (value: { text: string; imageUrl: string; font?: string; fontLabel?: string }) => {
       setPrint((prev) =>
@@ -107,6 +107,10 @@ export function ProductPageClient({
     return colorVariants[0]?.key ?? "";
   });
   const [packKey, setPackKey] = useState("");
+
+  useEffect(() => {
+    setPhotoIndex(0);
+  }, [colorKey]);
 
   useEffect(() => {
     if (!colorVariants.length) return;
@@ -268,19 +272,56 @@ export function ProductPageClient({
         {sceneBaseUrl && galleryImages.length ? (
           <div>
             <h2 className="mb-2 text-[13px] font-semibold text-[var(--brand-muted)]">Product photos</h2>
-            <div className="grid grid-cols-4 gap-2.5">
-              {galleryImages.slice(0, 8).map((src) => (
-                <button
-                  key={src}
-                  type="button"
-                  className="aspect-square overflow-hidden rounded-[14px] border border-[var(--brand-border)] bg-[var(--brand-surface)]"
-                  onClick={() => setPhotoOpen(src)}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
+            <div className="relative overflow-hidden rounded-[28px] bg-[var(--brand-surface)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={galleryImages[Math.min(photoIndex, galleryImages.length - 1)]}
+                alt={`${galleryProductName} photo ${Math.min(photoIndex, galleryImages.length - 1) + 1}`}
+                className="block max-h-[420px] w-full object-contain"
+              />
+              {galleryImages.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous photo"
+                    className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[var(--brand-ink)] shadow-sm"
+                    onClick={() => setPhotoIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length)}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next photo"
+                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[var(--brand-ink)] shadow-sm"
+                    onClick={() => setPhotoIndex((i) => (i + 1) % galleryImages.length)}
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </>
+              ) : null}
             </div>
+            {galleryImages.length > 1 ? (
+              <div className="mt-2.5 grid grid-cols-4 gap-2.5">
+                {galleryImages.map((src, i) => (
+                  <button
+                    key={src}
+                    type="button"
+                    aria-label={`Show photo ${i + 1}`}
+                    className={`aspect-square overflow-hidden rounded-[14px] border bg-[var(--brand-surface)] ${
+                      i === photoIndex ? "border-[var(--brand-amber)]" : "border-[var(--brand-border)]"
+                    }`}
+                    onClick={() => setPhotoIndex(i)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
         <div className="mt-1 grid gap-7 sm:grid-cols-2">
@@ -357,15 +398,6 @@ export function ProductPageClient({
         <div className="mt-4">{backLink}</div>
       </div>
     </div>
-    {photoOpen ? (
-      <dialog open className="fixed inset-0 z-[80] m-auto max-h-[92vh] max-w-[min(92vw,720px)] rounded-[20px] bg-white p-0" onClick={() => setPhotoOpen(null)}>
-        <button type="button" className="absolute right-3 top-3 rounded-full bg-white px-3.5 py-2 text-sm font-semibold" onClick={() => setPhotoOpen(null)}>
-          Close
-        </button>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photoOpen} alt={galleryProductName} className="block w-full" />
-      </dialog>
-    ) : null}
     {adminPreview ? null : (
       <div className="mx-auto mt-8 max-w-[1120px]">
         <ReviewSection productId={product.id} productSlug={product.slug} productName={product.name} />
