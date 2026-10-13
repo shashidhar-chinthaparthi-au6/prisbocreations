@@ -238,92 +238,123 @@ export function ProductPageClient({
     <>
     <div className="mx-auto grid max-w-[1120px] items-start gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-x-7">
       <div className="grid min-w-0 content-start gap-3.5 overflow-hidden">
-        <div className="relative overflow-hidden rounded-[28px] bg-[var(--brand-surface)]">
-          {adminPreview ? null : (
-            <div className="absolute right-3 top-3 z-10">
-              <WishlistHeart productId={product.id} productName={product.name} size="md" />
-            </div>
-          )}
-          <span className="pointer-events-none absolute left-4 top-4 z-10 text-[13px] font-semibold text-[var(--brand-muted)]">
-            Live preview
-          </span>
-          {sceneBaseUrl ? (
-            <PrintPreview
-              baseUrl={sceneBaseUrl}
-              shape={printShape}
-              kind={printMode}
-              placeholder={scenePlaceholder || "Your design"}
-              text={print.text}
-              imageUrl={print.imageUrl}
-              font={print.font}
-            />
-          ) : (
-            <ProductGallery images={galleryImages} productName={galleryProductName} />
-          )}
-          {colorLabel || print.fontLabel ? (
-            <div className="absolute bottom-4 left-4 z-10 rounded-full bg-white px-3.5 py-1.5 text-[13px] text-[var(--brand-muted)] shadow-sm">
-              {colorLabel ? <b className="font-semibold text-[var(--brand-ink)]">{colorLabel}</b> : null}
-              {colorLabel ? " · " : null}
-              {print.fontLabel}
-            </div>
-          ) : null}
-        </div>
-        {sceneBaseUrl ? <p className="px-1 text-[13px] text-[var(--brand-muted)]">{printCaption}</p> : null}
-        {sceneBaseUrl && galleryImages.length ? (
-          <div>
-            <h2 className="mb-2 text-[13px] font-semibold text-[var(--brand-muted)]">Product photos</h2>
-            <div className="relative overflow-hidden rounded-[28px] bg-[var(--brand-surface)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={galleryImages[Math.min(photoIndex, galleryImages.length - 1)]}
-                alt={`${galleryProductName} photo ${Math.min(photoIndex, galleryImages.length - 1) + 1}`}
-                className="block max-h-[420px] w-full object-contain"
-              />
-              {galleryImages.length > 1 ? (
-                <>
+        {(() => {
+          const slideCount = (sceneBaseUrl ? 1 : 0) + galleryImages.length;
+          const safeIndex = slideCount ? Math.min(photoIndex, slideCount - 1) : 0;
+          const showingLive = Boolean(sceneBaseUrl) && safeIndex === 0;
+          const photoSrc = sceneBaseUrl ? galleryImages[safeIndex - 1] : galleryImages[safeIndex];
+          const go = (dir: number) => {
+            if (slideCount < 2) return;
+            setPhotoIndex((i) => (Math.min(i, slideCount - 1) + dir + slideCount) % slideCount);
+          };
+          return (
+            <>
+              <div className="relative overflow-hidden rounded-[28px] bg-[var(--brand-surface)]">
+                {adminPreview ? null : (
+                  <div className="absolute right-3 top-3 z-10">
+                    <WishlistHeart productId={product.id} productName={product.name} size="md" />
+                  </div>
+                )}
+                {showingLive ? (
+                  <span className="pointer-events-none absolute left-4 top-4 z-10 text-[13px] font-semibold text-[var(--brand-muted)]">
+                    Live preview
+                  </span>
+                ) : sceneBaseUrl ? (
                   <button
                     type="button"
-                    aria-label="Previous photo"
-                    className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[var(--brand-ink)] shadow-sm"
-                    onClick={() => setPhotoIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length)}
+                    className="absolute left-4 top-4 z-10 rounded-full bg-white px-3 py-1 text-[13px] font-semibold text-[var(--brand-ink)] shadow-sm"
+                    onClick={() => setPhotoIndex(0)}
                   >
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
-                      <path d="M15 18l-6-6 6-6" />
-                    </svg>
+                    Live preview
                   </button>
-                  <button
-                    type="button"
-                    aria-label="Next photo"
-                    className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[var(--brand-ink)] shadow-sm"
-                    onClick={() => setPhotoIndex((i) => (i + 1) % galleryImages.length)}
-                  >
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
-                  </button>
-                </>
-              ) : null}
-            </div>
-            {galleryImages.length > 1 ? (
-              <div className="mt-2.5 grid grid-cols-4 gap-2.5">
-                {galleryImages.map((src, i) => (
-                  <button
-                    key={src}
-                    type="button"
-                    aria-label={`Show photo ${i + 1}`}
-                    className={`aspect-square overflow-hidden rounded-[14px] border bg-[var(--brand-surface)] ${
-                      i === photoIndex ? "border-[var(--brand-amber)]" : "border-[var(--brand-border)]"
-                    }`}
-                    onClick={() => setPhotoIndex(i)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt="" className="h-full w-full object-cover" />
-                  </button>
-                ))}
+                ) : null}
+                {sceneBaseUrl ? (
+                  <div className={showingLive ? "" : "hidden"}>
+                    <PrintPreview
+                      baseUrl={sceneBaseUrl}
+                      shape={printShape}
+                      kind={printMode}
+                      placeholder={scenePlaceholder || "Your design"}
+                      text={print.text}
+                      imageUrl={print.imageUrl}
+                      font={print.font}
+                    />
+                  </div>
+                ) : (
+                  <ProductGallery images={galleryImages} productName={galleryProductName} />
+                )}
+                {photoSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photoSrc}
+                    alt={`${galleryProductName} photo ${sceneBaseUrl ? safeIndex : safeIndex + 1}`}
+                    className={`block max-h-[420px] w-full object-contain ${showingLive ? "hidden" : ""}`}
+                  />
+                ) : null}
+                {slideCount > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous slide"
+                      className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[var(--brand-ink)] shadow-sm"
+                      onClick={() => go(-1)}
+                    >
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                        <path d="M15 18l-6-6 6-6" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next slide"
+                      className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[var(--brand-ink)] shadow-sm"
+                      onClick={() => go(1)}
+                    >
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
+                    </button>
+                  </>
+                ) : null}
+                {showingLive && (colorLabel || print.fontLabel) ? (
+                  <div className="absolute bottom-4 left-4 z-10 rounded-full bg-white px-3.5 py-1.5 text-[13px] text-[var(--brand-muted)] shadow-sm">
+                    {colorLabel ? <b className="font-semibold text-[var(--brand-ink)]">{colorLabel}</b> : null}
+                    {colorLabel ? " · " : null}
+                    {print.fontLabel}
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-        ) : null}
+              {showingLive ? <p className="px-1 text-[13px] text-[var(--brand-muted)]">{printCaption}</p> : null}
+              {sceneBaseUrl && galleryImages.length ? (
+                <div className="grid grid-cols-4 gap-2.5">
+                  <button
+                    type="button"
+                    aria-label="Show live preview"
+                    className={`flex aspect-square items-center justify-center rounded-[14px] border bg-[var(--brand-surface)] px-2 text-center text-[12px] font-semibold text-[var(--brand-ink)] ${
+                      showingLive ? "border-[var(--brand-amber)]" : "border-[var(--brand-border)]"
+                    }`}
+                    onClick={() => setPhotoIndex(0)}
+                  >
+                    Live preview
+                  </button>
+                  {galleryImages.map((src, i) => (
+                    <button
+                      key={src}
+                      type="button"
+                      aria-label={`Show photo ${i + 1}`}
+                      className={`aspect-square overflow-hidden rounded-[14px] border bg-[var(--brand-surface)] ${
+                        safeIndex === i + 1 ? "border-[var(--brand-amber)]" : "border-[var(--brand-border)]"
+                      }`}
+                      onClick={() => setPhotoIndex(i + 1)}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          );
+        })()}
         <div className="mt-1 grid gap-7 sm:grid-cols-2">
           <div>
             <h2 className="text-[15px] font-semibold text-[var(--brand-ink)]">About this piece</h2>
