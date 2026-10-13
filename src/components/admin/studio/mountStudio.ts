@@ -13,7 +13,16 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
     String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] || c);
 
   db.cats = db.cats || [];
-  db.prods = db.prods || [];
+  db.prods = (db.prods || []).map((p) => ({
+    ...p,
+    imgs: p.imgs || [],
+    colours: p.colours || [],
+    sizes: p.sizes || [],
+    vs: p.vs || {},
+    rec: p.rec || [],
+    occ: p.occ || [],
+    specs: p.specs || [],
+  }));
   db.recs = db.recs || { orders: [], inquiries: [], reviews: [], users: [] };
   db.notes = db.notes || [];
   db.known = db.known || { cats: [], subs: [], orders: [], inquiries: [], reviews: [], users: [], notes: [] };
@@ -202,15 +211,18 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
     return "";
   };
   const combos = (p: StudioProduct) => {
-    const C = p.colours.length ? p.colours : [null];
-    const S = p.sizes.length ? p.sizes : [null];
-    return p.colours.length || p.sizes.length
+    const colours = p.colours || [];
+    const sizes = p.sizes || [];
+    const C = colours.length ? colours : [null];
+    const S = sizes.length ? sizes : [null];
+    return colours.length || sizes.length
       ? C.flatMap((c) => S.map((s) => ({ c, s, k: (c ? c.id : "-") + "|" + (s || "-") })))
       : [];
   };
   const total = (p: StudioProduct) => {
+    const stock = p.vs || {};
     const cb = combos(p);
-    return cb.length ? cb.reduce((a, x) => a + (+p.vs[x.k] || 0), 0) : +p.stock || 0;
+    return cb.length ? cb.reduce((a, x) => a + (+stock[x.k] || 0), 0) : +p.stock || 0;
   };
 
   function render() {

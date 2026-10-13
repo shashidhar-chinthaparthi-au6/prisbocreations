@@ -388,7 +388,15 @@ function productOut(doc: {
     };
   };
   if (stored.name != null || stored.imgs != null || stored.colours != null) {
-    return withPrint({ ...(stored as StudioProduct), id: sid(doc) });
+    const product = { ...(stored as StudioProduct), id: sid(doc) };
+    product.imgs = product.imgs || [];
+    product.colours = product.colours || [];
+    product.sizes = product.sizes || [];
+    product.vs = product.vs || {};
+    product.rec = product.rec || [];
+    product.occ = product.occ || [];
+    product.specs = product.specs || [];
+    return withPrint(product);
   }
   const status = (doc.status || "DRAFT").toLowerCase();
   return withPrint({
