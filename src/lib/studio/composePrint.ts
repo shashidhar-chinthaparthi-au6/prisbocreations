@@ -413,16 +413,84 @@ function blendArt(
 }
 
 function drawText(ctx: CanvasRenderingContext2D, text: string, w: number, h: number, ink: string) {
-  const fontSize = Math.max(14, Math.min(w * 0.13, h * 0.36));
-  ctx.font = `italic 500 ${fontSize}px "Playfair Display", Georgia, serif`;
+  const along = w > h * 2.2;
+  let fontSize = Math.max(8, along ? Math.min(h * 0.72, w * 0.22) : Math.min(w * 0.16, h * 0.42));
+  const font = (size: number) => `italic 500 ${size}px "Playfair Display", Georgia, serif`;
+  ctx.font = font(fontSize);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = ink;
-  const lines = wrapLines(ctx, text, w * 0.84);
-  const lineHeight = fontSize * 1.18;
+  const maxWidth = w * 0.9;
+  if (along) {
+    while (fontSize > 8 && ctx.measureText(text).width > maxWidth) {
+      fontSize *= 0.9;
+      ctx.font = font(fontSize);
+    }
+    ctx.fillText(text, w / 2, h / 2);
+    return;
+  }
+  const lines = wrapLines(ctx, text, maxWidth);
+  const lineHeight = fontSize * 1.15;
   const block = lines.length * lineHeight;
   const start = h / 2 - block / 2 + lineHeight / 2;
   lines.forEach((line, i) => ctx.fillText(line, w / 2, start + i * lineHeight));
+}
+
+/** The print sits on the long side of the area, so a rotated pen carries the words along the barrel. */
+function contentFrame(points: Anchor[], box: PrintZone, width: number, height: number) {
+  const local = points.map((point) => ({
+    x: ((point.x - box.x) / Math.max(box.w, 1e-6)) * width,
+    y: ((point.y - box.y) / Math.max(box.h, 1e-6)) * height,
+  }));
+  if (local.length < 3) return { cx: width / 2, cy: height / 2, angle: 0, w: width, h: height };
+  let ox = 0;
+  let oy = 0;
+  for (const point of local) {
+    ox += point.x;
+    oy += point.y;
+  }
+  ox /= local.length;
+  oy /= local.length;
+  let xx = 0;
+  let xy = 0;
+  let yy = 0;
+  for (const point of local) {
+    const dx = point.x - ox;
+    const dy = point.y - oy;
+    xx += dx * dx;
+    xy += dx * dy;
+    yy += dy * dy;
+  }
+  let angle = 0.5 * Math.atan2(2 * xy, xx - yy);
+  while (angle > Math.PI / 2) angle -= Math.PI;
+  while (angle < -Math.PI / 2) angle += Math.PI;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const cx = ox;
+  const cy = oy;
+  let minU = Infinity;
+  let maxU = -Infinity;
+  let minV = Infinity;
+  let maxV = -Infinity;
+  for (const point of local) {
+    const dx = point.x - cx;
+    const dy = point.y - cy;
+    const u = dx * cos + dy * sin;
+    const v = -dx * sin + dy * cos;
+    minU = Math.min(minU, u);
+    maxU = Math.max(maxU, u);
+    minV = Math.min(minV, v);
+    maxV = Math.max(maxV, v);
+  }
+  const midU = (minU + maxU) / 2;
+  const midV = (minV + maxV) / 2;
+  return {
+    cx: cx + midU * cos - midV * sin,
+    cy: cy + midU * sin + midV * cos,
+    angle,
+    w: Math.max(8, (maxU - minU) * 0.92),
+    h: Math.max(8, (maxV - minV) * 0.86),
+  };
 }
 
 /**
@@ -545,26 +613,32 @@ function drawBlended(
   if (!actx) return;
   actx.filter = "blur(0.4px)";
   const ink = fabric.l > 150 ? "#2a2520" : "#f4efe8";
-  const textBand = photo && text ? art.height * 0.3 : 0;
+  const frame = contentFrame(shape.points, box, art.width, art.height);
+  actx.save();
+  actx.translate(frame.cx, frame.cy);
+  actx.rotate(frame.angle);
+  actx.translate(-frame.w / 2, -frame.h / 2);
+  const textBand = photo && text ? frame.h * 0.34 : 0;
   if (photo) {
-    const pad = Math.min(art.width, art.height) * 0.06;
-    const iw = art.width - pad * 2;
-    const ih = art.height - pad * 2 - textBand;
+    const pad = Math.min(frame.w, frame.h) * 0.06;
+    const iw = frame.w - pad * 2;
+    const ih = frame.h - pad * 2 - textBand;
     const scale = Math.min(iw / photo.width, ih / photo.height);
     const dw = photo.width * scale;
     const dh = photo.height * scale;
-    actx.drawImage(photo, (art.width - dw) / 2, pad + (ih - dh) / 2, dw, dh);
+    actx.drawImage(photo, (frame.w - dw) / 2, pad + (ih - dh) / 2, dw, dh);
   }
   if (text) {
     if (textBand) {
       actx.save();
-      actx.translate(0, art.height - textBand);
-      drawText(actx, text, art.width, textBand, ink);
+      actx.translate(0, frame.h - textBand);
+      drawText(actx, text, frame.w, textBand, ink);
       actx.restore();
     } else {
-      drawText(actx, text, art.width, art.height, ink);
+      drawText(actx, text, frame.w, frame.h, ink);
     }
   }
+  actx.restore();
   blendArt(ctx, art, x, y, photo ? backdrop : null, fabric.l, shape, box);
 }
 
