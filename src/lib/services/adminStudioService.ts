@@ -683,7 +683,7 @@ export async function saveStudio(raw: unknown, actorId: string): Promise<StudioD
       return {
         key,
         label: (c.n || "Colour").slice(0, 120),
-        images: linked ? [linked] : images[0] ? [images[0]] : [],
+        images: linked ? [linked] : [],
       };
     });
     const colourVariants = colours.map((c, index) => {

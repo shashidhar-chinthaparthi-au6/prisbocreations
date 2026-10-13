@@ -164,6 +164,13 @@ export function ProductPageClient({
     [colorKey, colorVariants, defaultImages],
   );
 
+  const previewBaseUrl = useMemo(() => {
+    if (!sceneBaseUrl) return "";
+    const photos = colorVariants.map((c) => c.images[0] || "").filter(Boolean);
+    if (new Set(photos).size < 2) return sceneBaseUrl;
+    return colorVariants.find((c) => c.key === colorKey)?.images[0] || sceneBaseUrl;
+  }, [sceneBaseUrl, colorVariants, colorKey]);
+
   const cartThumbnailUrl = galleryImages[0] ?? product.image;
 
   const effectivePackageDims = useMemo(() => {
@@ -259,19 +266,11 @@ export function ProductPageClient({
                   <span className="pointer-events-none absolute left-4 top-4 z-10 text-[13px] font-semibold text-[var(--brand-muted)]">
                     Live preview
                   </span>
-                ) : sceneBaseUrl ? (
-                  <button
-                    type="button"
-                    className="absolute left-4 top-4 z-10 rounded-full bg-white px-3 py-1 text-[13px] font-semibold text-[var(--brand-ink)] shadow-sm"
-                    onClick={() => setPhotoIndex(0)}
-                  >
-                    Live preview
-                  </button>
                 ) : null}
                 {sceneBaseUrl ? (
                   <div className={showingLive ? "" : "hidden"}>
                     <PrintPreview
-                      baseUrl={sceneBaseUrl}
+                      baseUrl={previewBaseUrl}
                       shape={printShape}
                       kind={printMode}
                       placeholder={scenePlaceholder || "Your design"}
