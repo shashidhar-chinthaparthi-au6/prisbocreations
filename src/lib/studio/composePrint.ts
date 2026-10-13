@@ -185,20 +185,27 @@ export async function suggestPrintZone(src: string): Promise<PrintZone> {
 }
 
 function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
+  const paragraphs = text.replace(/\r\n/g, "\n").split("\n");
   const lines: string[] = [];
-  let line = "";
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (ctx.measureText(next).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = next;
+  for (const paragraph of paragraphs) {
+    const words = paragraph.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      lines.push("");
+      continue;
     }
+    let line = "";
+    for (const word of words) {
+      const next = line ? `${line} ${word}` : word;
+      if (ctx.measureText(next).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = next;
+      }
+    }
+    if (line) lines.push(line);
   }
-  if (line) lines.push(line);
-  return lines.slice(0, 4);
+  return lines.slice(0, 8);
 }
 
 type RGB = { r: number; g: number; b: number; l: number };
@@ -428,31 +435,43 @@ function blendArt(
 }
 
 function drawText(ctx: CanvasRenderingContext2D, text: string, w: number, h: number, ink: string, fontKey = "serif") {
-  const along = w > h * 2.2;
+  const source = text.replace(/\r\n/g, "\n");
+  const broken = source.includes("\n");
+  const along = !broken && w > h * 2.2;
   let fontSize = Math.max(8, along ? Math.min(h * 0.72, w * 0.22) : Math.min(w * 0.16, h * 0.42));
   const font = (size: number) => {
     if (fontKey === "sans") return `500 ${size}px "DM Sans", system-ui, sans-serif`;
     if (fontKey === "script") return `italic 600 ${size}px "Playfair Display", Georgia, serif`;
     return `italic 500 ${size}px "Playfair Display", Georgia, serif`;
   };
-  ctx.font = font(fontSize);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = ink;
   const maxWidth = w * 0.9;
   if (along) {
-    while (fontSize > 8 && ctx.measureText(text).width > maxWidth) {
+    ctx.font = font(fontSize);
+    while (fontSize > 8 && ctx.measureText(source).width > maxWidth) {
       fontSize *= 0.9;
       ctx.font = font(fontSize);
     }
-    ctx.fillText(text, w / 2, h / 2);
+    ctx.fillText(source, w / 2, h / 2);
     return;
   }
-  const lines = wrapLines(ctx, text, maxWidth);
+  let lines: string[] = [];
+  while (fontSize > 8) {
+    ctx.font = font(fontSize);
+    lines = wrapLines(ctx, source, maxWidth);
+    const lineHeight = fontSize * 1.15;
+    const widest = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0);
+    if (widest <= maxWidth && lines.length * lineHeight <= h * 0.92) break;
+    fontSize *= 0.88;
+  }
   const lineHeight = fontSize * 1.15;
-  const block = lines.length * lineHeight;
+  const block = Math.max(lines.length, 1) * lineHeight;
   const start = h / 2 - block / 2 + lineHeight / 2;
-  lines.forEach((line, i) => ctx.fillText(line, w / 2, start + i * lineHeight));
+  lines.forEach((line, i) => {
+    if (line) ctx.fillText(line, w / 2, start + i * lineHeight);
+  });
 }
 
 /** The print sits on the long side of the area, so a rotated pen carries the words along the barrel. */

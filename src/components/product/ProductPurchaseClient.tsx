@@ -751,14 +751,15 @@ export function ProductPurchaseClient({
                   {customerNotes.length}/{maxNotes}
                 </span>
               </div>
-              <input
+              <textarea
                 value={customerNotes}
                 maxLength={maxNotes}
                 placeholder={textPlaceholder}
+                rows={3}
                 onChange={(e) => setCustomerNotes(e.target.value)}
                 className="w-full rounded-[14px] border border-[var(--brand-border)] bg-white px-3.5 py-3 text-[16px] text-[var(--brand-ink)] outline-none focus:border-[var(--brand-amber)]"
               />
-              <p className="mt-1.5 text-[12px] text-[var(--brand-muted)]">Short names print larger and cleaner.</p>
+              <p className="mt-1.5 text-[12px] text-[var(--brand-muted)]">Press Enter to start the next line. Short lines print larger.</p>
             </li>
             <li className="border-t border-[var(--brand-border)] pt-4">
               <div className="mb-2.5 flex items-baseline justify-between gap-3">

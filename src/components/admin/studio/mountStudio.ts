@@ -898,7 +898,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
             <button type="button" data-k="text" class="${kind === "text" ? "on" : ""}">Text</button>
             <button type="button" data-k="both" class="${kind === "both" ? "on" : ""}">Picture and text</button>
           </div>
-          <label id="print-text-field">Sample text<input class="in" id="print-sample" value="${esc(print.sample)}" placeholder="Team 2026"></label>
+          <label id="print-text-field">Sample text<textarea class="in" id="print-sample" rows="3" placeholder="Team 2026">${esc(print.sample)}</textarea></label>
           <label id="print-pic-field">Sample picture<input class="in" id="print-pic" type="file" accept="image/jpeg,image/png,image/webp"></label>
         </div>
       </div>`;
@@ -947,7 +947,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
         const count = shape.loops?.length || 1;
         if (label) label.textContent = count > 1 ? `Inside loop ${activeLoop + 1} of ${count}` : "Inside this area";
         box.querySelectorAll("[data-k]").forEach((el) => el.classList.toggle("on", (el as HTMLElement).dataset.k === loop.fill));
-        const sampleInput = $("#print-sample") as HTMLInputElement | null;
+        const sampleInput = $("#print-sample") as HTMLTextAreaElement | null;
         if (sampleInput && sampleInput.value !== loop.sample) sampleInput.value = loop.sample;
         const text = $("#print-text-field");
         const pic = $("#print-pic-field");
@@ -1037,7 +1037,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
           void paint();
         };
       });
-      const sample = $("#print-sample") as HTMLInputElement | null;
+      const sample = $("#print-sample") as HTMLTextAreaElement | null;
       if (sample)
         sample.oninput = () => {
           print.sample = sample.value;
