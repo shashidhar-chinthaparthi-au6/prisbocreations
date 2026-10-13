@@ -17,6 +17,9 @@ const StorefrontSettingsSchema = new Schema(
       cta: { type: String, default: "" },
       link: { type: String, default: "" },
     },
+    /** Labels the product editor can add. Shop filters use these. */
+    recipients: { type: [String], default: [] },
+    occasions: { type: [String], default: [] },
   },
   { timestamps: true },
 );

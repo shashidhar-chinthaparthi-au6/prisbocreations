@@ -34,6 +34,17 @@ function parseSort(s: string | undefined): StorefrontSort | undefined {
   return undefined;
 }
 
+function recipientKey(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const slug = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+  return slug || null;
+}
+
 export function generateStaticParams() {
   return RECIPIENT_SLUGS.map((recipient) => ({ recipient }));
 }
@@ -44,15 +55,17 @@ export async function generateMetadata({
   params: Promise<{ recipient: string }>;
 }): Promise<Metadata> {
   const { recipient: raw } = await params;
-  const slug = parseRecipientSlug(raw);
+  const slug = recipientKey(raw);
   if (!slug) return { title: "Recipient" };
-  const m = RECIPIENT_META[slug];
+  const known = parseRecipientSlug(slug);
+  const m = known ? RECIPIENT_META[known] : null;
+  const title = m?.title || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return {
-    title: `${m.title} — Prisbo Creations`,
-    description: m.description,
+    title: `${title} — Prisbo Creations`,
+    description: m?.description || `Personalised gifts for ${title.toLowerCase()}.`,
     openGraph: {
-      title: `${m.title} — Prisbo Creations`,
-      images: [{ url: m.image }],
+      title: `${title} — Prisbo Creations`,
+      images: m ? [{ url: m.image }] : undefined,
     },
   };
 }
@@ -65,7 +78,7 @@ async function RecipientListingSection({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { recipient: raw } = await params;
-  const slug = parseRecipientSlug(raw);
+  const slug = recipientKey(raw);
   if (!slug) notFound();
 
   const sp = await searchParams;
@@ -83,7 +96,16 @@ async function RecipientListingSection({
   const material = typeof sp.material === "string" ? sp.material : undefined;
   const minAverageRating = sp.rating === "4" ? 4 : undefined;
 
-  const meta = RECIPIENT_META[slug];
+  const known = parseRecipientSlug(slug);
+  const titled = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const meta = known
+    ? RECIPIENT_META[known]
+    : {
+        title: titled,
+        description: `Personalised gifts for ${titled.toLowerCase()}.`,
+        image: RECIPIENT_META.him.image,
+        color: "#1A2234",
+      };
 
   let counts: Awaited<ReturnType<typeof listStorefrontCategoryRows>> = [];
   let result: Awaited<ReturnType<typeof listStorefrontProducts>> = {

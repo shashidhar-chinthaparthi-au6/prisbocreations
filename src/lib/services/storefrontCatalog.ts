@@ -6,8 +6,6 @@ import { Review } from "@/lib/models/Review";
 import { minOptionPricePaise, productHasOptions } from "@/lib/product-options";
 import { colorVariantsFromDoc, listingPrimaryThumb } from "@/lib/product-color-variants";
 import type { ProductDoc } from "@/lib/models/Product";
-import { parseRecipientSlug } from "@/lib/recipients";
-
 function searchPattern(q: string): RegExp {
   const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(escaped, "i");
@@ -490,7 +488,11 @@ async function buildStorefrontBrowseMatch(
 
   const recipientRaw = params.recipient?.trim() ?? "";
   if (recipientRaw) {
-    const slug = parseRecipientSlug(recipientRaw);
+    const slug = recipientRaw
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40);
     if (!slug) {
       return { empty: true };
     }
@@ -516,13 +518,18 @@ export async function listStorefrontFilterFacets(params: {
     recipient: params.recipient,
   });
   if ("empty" in built) return { occasions: [], materials: [] };
-  const rows = await Product.find(built.match).select("specValues").lean();
+  const rows = await Product.find(built.match).select("specValues occasions").lean();
   const occ = new Set<string>();
   const mat = new Set<string>();
   for (const row of rows) {
-    const o = specValuesString(row as ProductDoc, "occasion");
-    const m = specValuesString(row as ProductDoc, "material");
+    const doc = row as ProductDoc;
+    const o = specValuesString(doc, "occasion");
+    const m = specValuesString(doc, "material");
     if (o) occ.add(o);
+    for (const extra of doc.occasions || []) {
+      const name = String(extra || "").trim();
+      if (name) occ.add(name);
+    }
     if (m) mat.add(m);
   }
   return {
@@ -590,7 +597,12 @@ export async function listStorefrontProducts(
     if (excludedIds.has(idStr)) return false;
     if (ratingOk && !ratingOk.has(String(doc._id))) return false;
     const occ = params.occasion?.trim().toLowerCase();
-    if (occ && specValuesString(doc, "occasion").toLowerCase() !== occ) return false;
+    if (occ) {
+      const names = [specValuesString(doc, "occasion"), ...(doc.occasions || [])]
+        .map((name) => String(name || "").trim().toLowerCase())
+        .filter(Boolean);
+      if (!names.includes(occ)) return false;
+    }
     const mat = params.material?.trim().toLowerCase();
     if (mat && specValuesString(doc, "material").toLowerCase() !== mat) return false;
     return true;

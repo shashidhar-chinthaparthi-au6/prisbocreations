@@ -89,7 +89,40 @@ type StudioProduct = {
 };
 
 type StudioNote = { id: string; msg: string; at: number; read: boolean };
-type StudioStore = { name: string; banner: string; open: boolean; hero: typeof DH };
+const DEFAULT_RECIPIENTS = ["him", "her", "kids", "couples", "Corporate"];
+const DEFAULT_OCCASIONS = ["Birthday", "Wedding", "Anniversary", "Festive", "Baby"];
+
+type StudioStore = {
+  name: string;
+  banner: string;
+  open: boolean;
+  hero: typeof DH;
+  recipients: string[];
+  occasions: string[];
+};
+
+function facetSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+}
+
+function nameList(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) return fallback;
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    const name = String(item ?? "").trim().slice(0, 40);
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+  }
+  return out.length ? out : fallback;
+}
 type StudioOrder = {
   id: string;
   status: string;
@@ -291,6 +324,8 @@ export async function loadStudio(): Promise<StudioDb> {
       banner: storeDoc?.banner ?? "",
       open: storeDoc?.ordersOpen !== false,
       hero,
+      recipients: nameList(storeDoc?.recipients, DEFAULT_RECIPIENTS),
+      occasions: nameList(storeDoc?.occasions, DEFAULT_OCCASIONS),
     },
     recs: {
       orders: orders.map((o) => orderOut(o, productName)),
@@ -507,6 +542,8 @@ function assertDb(raw: unknown): StudioDb {
       banner: typeof asRecord(body.store).banner === "string" ? String(asRecord(body.store).banner) : "",
       open: asRecord(body.store).open !== false,
       hero: { ...DH, ...asRecord(asRecord(body.store).hero) } as typeof DH,
+      recipients: nameList(asRecord(body.store).recipients, DEFAULT_RECIPIENTS),
+      occasions: nameList(asRecord(body.store).occasions, DEFAULT_OCCASIONS),
     },
     recs: {
       orders: Array.isArray(recs.orders) ? (recs.orders as StudioOrder[]) : [],
@@ -681,7 +718,7 @@ export async function saveStudio(raw: unknown, actorId: string): Promise<StudioD
       status,
       isActive: status !== "ARCHIVED",
       ...(status === "PUBLISHED" ? { publishedAt: existing?.get("publishedAt") || new Date() } : {}),
-      recipients: (p.rec || []).map((r) => String(r).toLowerCase()),
+      recipients: (p.rec || []).map((r) => facetSlug(String(r))).filter(Boolean),
       occasions: p.occ || [],
       categoryId: categoryId || undefined,
       subcategoryId: subcategoryId || undefined,
@@ -740,6 +777,8 @@ export async function saveStudio(raw: unknown, actorId: string): Promise<StudioD
       $set: {
         banner: db.store.banner || "",
         ordersOpen: db.store.open !== false,
+        recipients: db.store.recipients,
+        occasions: db.store.occasions,
         hero: {
           eyebrow: heroIn.eyebrow ?? "",
           l1: heroIn.l1 ?? "",

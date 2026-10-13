@@ -29,6 +29,8 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       cta: "Explore the collection",
       link: "Get to know us",
     },
+    recipients: [],
+    occasions: [],
   };
   for (const key of ["orders", "inquiries", "reviews", "users"] as const) {
     db.recs[key] = db.recs[key] || [];
@@ -84,8 +86,30 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
     ["notifications", "Notifications"],
     ["users", "Users"],
   ];
-  const REC = ["him", "her", "kids", "couples", "Corporate"];
-  const OCC = ["Birthday", "Wedding", "Anniversary", "Festive", "Baby"];
+  const DEFAULT_REC = ["him", "her", "kids", "couples", "Corporate"];
+  const DEFAULT_OCC = ["Birthday", "Wedding", "Anniversary", "Festive", "Baby"];
+  const namesOf = (saved: string[] | undefined, fallback: string[], extra: string[]) => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const item of [...(saved?.length ? saved : fallback), ...extra]) {
+      const name = String(item || "").trim();
+      const key = name.toLowerCase();
+      if (!name || seen.has(key)) continue;
+      seen.add(key);
+      out.push(name);
+    }
+    return out;
+  };
+  db.store.recipients = namesOf(
+    db.store.recipients,
+    DEFAULT_REC,
+    db.prods.flatMap((p) => p.rec || []),
+  );
+  db.store.occasions = namesOf(
+    db.store.occasions,
+    DEFAULT_OCC,
+    db.prods.flatMap((p) => p.occ || []),
+  );
   const SZ = ["XS", "S", "M", "L", "XL", "XXL", "One size"];
   const ENH = "brightness(1.06) contrast(1.08) saturate(1.2)";
   const PAL = [
@@ -248,7 +272,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       ]
         .map(([k, n]) => `<span class="c ${f.st == k ? "on" : ""}" data-s="${k}">${n}</span>`)
         .join("");
-      fr.innerHTML = '<span class="sub">Recipient</span>' + REC.map((r) => `<span class="c ${f.rec == r ? "on" : ""}" data-r="${r}">${r}</span>`).join("");
+      fr.innerHTML = '<span class="sub">Recipient</span>' + db.store.recipients.map((r) => `<span class="c ${f.rec == r ? "on" : ""}" data-r="${esc(r)}">${esc(r)}</span>`).join("");
       const l = list();
       ls.innerHTML = l.length
         ? `<div class="pl">${l
@@ -348,7 +372,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       `<div class="ed"><div class="col">
  <div class="cd"><h4>Basics</h4><label>Name<input class="in" data-k="name"></label><label>Description<textarea class="in" data-k="desc" placeholder="What makes it special? Mention material, size and who it is for."></textarea></label><div class="r2"><label>Price (₹)<input class="in" type="number" min="0" data-k="price"></label><label>Original price (optional)<input class="in" type="number" min="0" data-k="compare" placeholder="Shown struck through"></label></div></div>
  <div class="cd"><h4>Photos</h4><p class="sub" id="ph-h"></p><div class="up" id="dz">${UPTXT()}</div><div class="ph" id="ph"></div><div id="print-studio"></div></div>
- <div class="cd"><h4>Where it belongs</h4><label>Category<select class="in" id="cat"></select></label><div id="nocat"></div><label>Recipient</label><div class="ch" id="rec" style="margin-top:6px"></div><label>Occasion</label><div class="ch" id="occ" style="margin-top:6px"></div></div>
+ <div class="cd"><h4>Where it belongs</h4><label>Category<select class="in" id="cat"></select></label><div class="add" style="margin-top:10px"><input class="in" id="newcat" placeholder="New category"><button class="btn p na" id="addcat" type="button">Add</button></div><div class="add" style="margin-top:10px"><input class="in" id="newsub" placeholder="New subcategory in the selected category"><button class="btn p na" id="addsub" type="button">Add</button></div><label>Recipient</label><div class="ch" id="rec" style="margin-top:6px"></div><label>Occasion</label><div class="ch" id="occ" style="margin-top:6px"></div></div>
  <div class="cd"><h4>Colours</h4><p class="sub">Tap a colour to add it, or pick your own. Link each colour to a photo so shoppers see the right one.</p><div class="pal" id="pal"></div><div id="cl"></div></div>
  <div class="cd"><h4>Sizes</h4><div class="ch" id="sz" style="margin-top:6px"></div></div>
  <div class="cd"><h4>Stock</h4><div id="stk"></div></div>
@@ -366,7 +390,8 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       });
     bind(m);
     const cat = $("#cat") as HTMLSelectElement | null;
-    if (cat) {
+    const fillCat = () => {
+      if (!cat) return;
       cat.innerHTML =
         '<option value="">Select…</option>' +
         db.cats
@@ -376,28 +401,108 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
               (c.subs || []).map((s) => `<option value="${s.id}" ${s.id == p.cat ? "selected" : ""}>${esc(c.name)} › ${esc(s.name)}</option>`).join(""),
           )
           .join("");
+    };
+    fillCat();
+    if (cat)
       cat.onchange = (e) => {
         p.cat = (e.target as HTMLSelectElement).value;
         sum();
       };
-    }
-    const nocat = $("#nocat");
-    if (nocat && !db.cats.length)
-      nocat.innerHTML = '<p class="hint">No categories yet. <button class="lk" data-go="categories">Add one first</button></p>';
-    const chips = (id: string, arr: string[], key: "rec" | "occ") => {
+    const addNamed = async (inputId: string, buttonId: string, make: (name: string) => (() => void) | null) => {
+      const input = $("#" + inputId) as HTMLInputElement | null;
+      const button = $("#" + buttonId) as HTMLButtonElement | null;
+      if (!input || !button) return;
+      const run = async () => {
+        const name = input.value.trim();
+        if (!name || button.disabled) return;
+        const prev = p.cat;
+        const undo = make(name);
+        if (!undo) return;
+        button.disabled = true;
+        button.textContent = "Saving…";
+        if (!(await save())) {
+          undo();
+          p.cat = prev;
+          button.disabled = false;
+          button.textContent = "Add";
+          return;
+        }
+        input.value = "";
+        button.disabled = false;
+        button.textContent = "Add";
+        fillCat();
+        sum();
+        toast("Saved");
+      };
+      button.onclick = () => void run();
+      input.onkeydown = (e) => {
+        if (e.key == "Enter") {
+          e.preventDefault();
+          void run();
+        }
+      };
+    };
+    void addNamed("newcat", "addcat", (name) => {
+      const row = { id: uid(), name, slug: slug(name), img: "", subs: [] as StudioSub[] };
+      db.cats.push(row);
+      p.cat = row.id;
+      return () => {
+        db.cats = db.cats.filter((c) => c.id != row.id);
+      };
+    });
+    void addNamed("newsub", "addsub", (name) => {
+      const parent =
+        db.cats.find((c) => c.id == p.cat) || db.cats.find((c) => (c.subs || []).some((s) => s.id == p.cat));
+      if (!parent) {
+        toast("Choose a category first");
+        return null;
+      }
+      parent.subs = parent.subs || [];
+      const row = { id: uid(), name, slug: slug(name), img: "" };
+      parent.subs.push(row);
+      p.cat = row.id;
+      return () => {
+        parent.subs = (parent.subs || []).filter((s) => s.id != row.id);
+      };
+    });
+    const chips = (id: string, key: "rec" | "occ", listKey: "recipients" | "occasions") => {
       const h = $("#" + id);
       if (!h) return;
-      h.innerHTML = arr.map((r) => `<span class="c ${p[key].includes(r) ? "on" : ""}" data-r="${r}">${r}</span>`).join("");
+      const arr = db.store[listKey];
+      h.innerHTML =
+        arr.map((r) => `<span class="c ${p[key].some((x) => x.toLowerCase() == r.toLowerCase()) ? "on" : ""}" data-r="${esc(r)}">${esc(r)}</span>`).join("") +
+        '<input placeholder="Add another, press Enter">';
       h.querySelectorAll("[data-r]").forEach((c) => {
         (c as HTMLElement).onclick = () => {
           const r = (c as HTMLElement).dataset.r || "";
-          p[key] = p[key].includes(r) ? p[key].filter((x) => x != r) : [...p[key], r];
-          chips(id, arr, key);
+          const on = p[key].some((x) => x.toLowerCase() == r.toLowerCase());
+          p[key] = on ? p[key].filter((x) => x.toLowerCase() != r.toLowerCase()) : [...p[key], r];
+          chips(id, key, listKey);
         };
       });
+      const input = h.querySelector("input") as HTMLInputElement | null;
+      if (!input) return;
+      input.onkeydown = async (e) => {
+        if (e.key != "Enter") return;
+        const name = input.value.trim();
+        if (!name) return;
+        e.preventDefault();
+        const exists = arr.some((x) => x.toLowerCase() == name.toLowerCase());
+        if (!exists) arr.push(name);
+        if (!p[key].some((x) => x.toLowerCase() == name.toLowerCase())) p[key] = [...p[key], name];
+        input.disabled = true;
+        input.placeholder = "Saving…";
+        if (!(await save())) {
+          if (!exists) arr.pop();
+          p[key] = p[key].filter((x) => x.toLowerCase() != name.toLowerCase());
+          chips(id, key, listKey);
+          return;
+        }
+        chips(id, key, listKey);
+      };
     };
-    chips("rec", REC, "rec");
-    chips("occ", OCC, "occ");
+    chips("rec", "rec", "recipients");
+    chips("occ", "occ", "occasions");
     const stock = () => {
       const cb = combos(p);
       const stk = $("#stk");
@@ -864,13 +969,19 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       dropzone(
         dz,
         async (fs) => {
-          for (const f of fs.slice(0, 8 - p.imgs.length)) {
+          const batch = fs.slice(0, 8 - p.imgs.length);
+          if (!batch.length) return;
+          dz.classList.add("busy");
+          dz.innerHTML = '<i class="spin"></i><div>Uploading…</div>';
+          for (const f of batch) {
             try {
               p.imgs.push({ src: await readImg(f), enh: true });
             } catch {
               toast("Could not upload that photo");
             }
           }
+          dz.classList.remove("busy");
+          dz.innerHTML = UPTXT();
           photos();
           sum();
         },
@@ -915,12 +1026,178 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
     sum();
   }
 
+  function adjustCrop(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const photo = new Image();
+      photo.onload = () => {
+        const layer = document.createElement("div");
+        layer.className = "crop-layer";
+        layer.innerHTML =
+          '<div class="crop-box" role="dialog" aria-label="Adjust the photo"><h3>Adjust the photo</h3><p class="sub">Drag the photo to move it. Drag the frame or its corners to crop.</p><div class="crop-stage"><img alt=""></div><label>Zoom<input type="range" min="1" max="3" step="0.01" value="1"></label><div class="ch"><span class="c on" data-a="0">Free</span><span class="c" data-a="1">Square</span><span class="c" data-a="1.333">4:3</span><span class="c" data-a="0.75">3:4</span><span class="c" data-a="1.778">16:9</span></div><div class="crop-actions"><button class="btn" type="button" data-act="cancel">Cancel</button><button class="btn p na" type="button" data-act="ok">Use this crop</button></div></div>';
+        root.appendChild(layer);
+        const stage = layer.querySelector(".crop-stage") as HTMLElement;
+        const imgEl = layer.querySelector("img") as HTMLImageElement;
+        const rect = document.createElement("div");
+        rect.className = "crop-rect";
+        rect.innerHTML = '<i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i>';
+        stage.appendChild(rect);
+        imgEl.src = url;
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        let aspect = 0;
+        let box = { x: 24, y: 24, w: 160, h: 160 };
+        const frame = () => {
+          const sw = stage.clientWidth || 520;
+          const sh = stage.clientHeight || 320;
+          const fit = Math.min(sw / photo.naturalWidth, sh / photo.naturalHeight);
+          const scale = fit * zoom;
+          const dw = photo.naturalWidth * scale;
+          const dh = photo.naturalHeight * scale;
+          const left = (sw - dw) / 2 + panX;
+          const top = (sh - dh) / 2 + panY;
+          imgEl.style.width = dw + "px";
+          imgEl.style.height = dh + "px";
+          imgEl.style.left = left + "px";
+          imgEl.style.top = top + "px";
+          return { left, top, dw, dh, scale, sw, sh };
+        };
+        const clampBox = () => {
+          const f = frame();
+          box.w = Math.max(32, Math.min(box.w, f.dw));
+          box.h = Math.max(32, Math.min(box.h, f.dh));
+          if (aspect) box.h = box.w / aspect;
+          if (box.h > f.dh) {
+            box.h = f.dh;
+            if (aspect) box.w = box.h * aspect;
+          }
+          box.x = Math.min(Math.max(box.x, f.left), f.left + f.dw - box.w);
+          box.y = Math.min(Math.max(box.y, f.top), f.top + f.dh - box.h);
+          rect.style.left = box.x + "px";
+          rect.style.top = box.y + "px";
+          rect.style.width = box.w + "px";
+          rect.style.height = box.h + "px";
+        };
+        const fitBox = () => {
+          const f = frame();
+          const inset = 0.08;
+          let w = f.dw * (1 - inset * 2);
+          let h = f.dh * (1 - inset * 2);
+          if (aspect) {
+            if (w / h > aspect) w = h * aspect;
+            else h = w / aspect;
+          }
+          box = { x: f.left + (f.dw - w) / 2, y: f.top + (f.dh - h) / 2, w, h };
+          clampBox();
+        };
+        requestAnimationFrame(fitBox);
+        const zoomInput = layer.querySelector('input[type="range"]') as HTMLInputElement;
+        zoomInput.oninput = () => {
+          zoom = Number(zoomInput.value) || 1;
+          clampBox();
+        };
+        layer.querySelectorAll("[data-a]").forEach((node) => {
+          (node as HTMLElement).onclick = () => {
+            aspect = Number((node as HTMLElement).dataset.a) || 0;
+            layer.querySelectorAll("[data-a]").forEach((n) => n.classList.toggle("on", n === node));
+            fitBox();
+          };
+        });
+        let mode: "pan" | "move" | "nw" | "ne" | "sw" | "se" | "" = "";
+        let start = { x: 0, y: 0, panX: 0, panY: 0, box: { ...box } };
+        stage.onpointerdown = (e) => {
+          const handle = (e.target as HTMLElement).dataset.h as "nw" | "ne" | "sw" | "se" | undefined;
+          mode = handle || (rect.contains(e.target as Node) ? "move" : "pan");
+          start = { x: e.clientX, y: e.clientY, panX, panY, box: { ...box } };
+          stage.setPointerCapture(e.pointerId);
+        };
+        stage.onpointermove = (e) => {
+          if (!mode) return;
+          const dx = e.clientX - start.x;
+          const dy = e.clientY - start.y;
+          if (mode == "pan") {
+            panX = start.panX + dx;
+            panY = start.panY + dy;
+            clampBox();
+            return;
+          }
+          if (mode == "move") {
+            box.x = start.box.x + dx;
+            box.y = start.box.y + dy;
+            clampBox();
+            return;
+          }
+          let w = start.box.w;
+          let h = start.box.h;
+          let x = start.box.x;
+          let y = start.box.y;
+          if (mode == "se") {
+            w = start.box.w + dx;
+            h = aspect ? w / aspect : start.box.h + dy;
+          } else if (mode == "sw") {
+            w = start.box.w - dx;
+            h = aspect ? w / aspect : start.box.h + dy;
+            x = start.box.x + start.box.w - w;
+          } else if (mode == "ne") {
+            w = start.box.w + dx;
+            h = aspect ? w / aspect : start.box.h - dy;
+            y = start.box.y + start.box.h - h;
+          } else {
+            w = start.box.w - dx;
+            h = aspect ? w / aspect : start.box.h - dy;
+            x = start.box.x + start.box.w - w;
+            y = start.box.y + start.box.h - h;
+          }
+          box = { x, y, w: Math.max(32, w), h: Math.max(32, h) };
+          clampBox();
+        };
+        stage.onpointerup = () => {
+          mode = "";
+        };
+        const close = (out?: File) => {
+          URL.revokeObjectURL(url);
+          layer.remove();
+          if (out) resolve(out);
+          else reject(new Error("cancel"));
+        };
+        layer.querySelector('[data-act="cancel"]')?.addEventListener("click", () => close());
+        layer.querySelector('[data-act="ok"]')?.addEventListener("click", () => {
+          const f = frame();
+          const sx = Math.max(0, (box.x - f.left) / f.scale);
+          const sy = Math.max(0, (box.y - f.top) / f.scale);
+          const sw = Math.min(photo.naturalWidth - sx, box.w / f.scale);
+          const sh = Math.min(photo.naturalHeight - sy, box.h / f.scale);
+          const canvas = document.createElement("canvas");
+          const limit = 1200;
+          const k = Math.min(1, limit / Math.max(sw, sh));
+          canvas.width = Math.max(1, Math.round(sw * k));
+          canvas.height = Math.max(1, Math.round(sh * k));
+          canvas.getContext("2d")?.drawImage(photo, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return close();
+              close(new File([blob], "photo.jpg", { type: "image/jpeg" }));
+            },
+            "image/jpeg",
+            0.9,
+          );
+        });
+      };
+      photo.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("image"));
+      };
+      photo.src = url;
+    });
+  }
+
   function Cats(m: HTMLElement) {
     const cf: { ed: string | null; sub: string | null } = { ed: null, sub: null };
     let drag: string | null = null;
     m.innerHTML =
       hd("Catalogue", "Your <em>categories.</em>") +
-      `<div class="g2"><div><div class="cd"><div class="add"><input class="in" id="na" placeholder="New category, e.g. Mugs"><button class="btn p na" id="ab">Add</button></div></div><div class="cd" id="tr" style="margin-top:16px;padding:12px"></div></div><div id="side"></div></div>`;
+      `<div class="g2"><div><div class="cd" id="tr" style="padding:12px"></div></div><div id="side"></div><div class="veil" id="veil" hidden><i class="spin"></i><span>Saving…</span></div></div>`;
     const find = (id: string): [StudioCat | StudioSub | null, StudioCat | null] => {
       for (const c of db.cats) {
         if (c.id == id) return [c, null];
@@ -931,6 +1208,24 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
     const cnt = (c: { id: string; subs?: { id: string }[] }) =>
       db.prods.filter((p) => p.cat == c.id || (c.subs || []).some((s) => s.id == p.cat)).length;
     const th = (x: { img?: string }) => (x.img ? `<img src="${x.img}">` : "<i></i>");
+    let catBusy = false;
+    const withBusy = async (label: string, work: () => Promise<void>) => {
+      if (catBusy) return;
+      catBusy = true;
+      const show = (on: boolean) => {
+        const v = $("#veil");
+        const lab = v?.querySelector("span");
+        if (lab) lab.textContent = label;
+        if (v) v.hidden = !on;
+      };
+      show(true);
+      try {
+        await work();
+      } finally {
+        catBusy = false;
+        show(false);
+      }
+    };
     const tree = () => {
       const T = $("#tr");
       if (!T) return;
@@ -948,7 +1243,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
                 (cf.sub == c.id ? '<div class="tn sub"><input class="in" id="ns" placeholder="Subcategory name, press Enter" style="margin:0"></div>' : ""),
             )
             .join("")
-        : '<div class="em" style="border:0;margin:0"><b>No categories yet</b>Type a name above to create your first one.</div>';
+        : '<div class="em" style="border:0;margin:0"><b>No categories yet</b>Add one while you add a product.</div>';
       const ns = $("#ns") as HTMLInputElement | null;
       if (ns) {
         ns.focus();
@@ -961,11 +1256,18 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
             const found = find(cf.sub || "");
             const c = found[0] as StudioCat | null;
             if (!c || !("subs" in c)) return;
+            const name = ns.value.trim();
             c.subs = c.subs || [];
-            c.subs.push({ id: uid(), name: ns.value.trim(), slug: slug(ns.value), img: "" });
+            const row = { id: uid(), name, slug: slug(name), img: "" };
+            c.subs.push(row);
             cf.sub = null;
-            if (!(await save())) return;
-            tree();
+            await withBusy("Saving…", async () => {
+              if (!(await save())) {
+                c.subs = (c.subs || []).filter((s) => s.id != row.id);
+                return;
+              }
+              tree();
+            });
           }
         };
       }
@@ -981,14 +1283,20 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
           }
           if (target.dataset.d) {
             if (armed == id) {
+              const before = JSON.stringify(db.cats);
               const [it, par] = find(id);
               if (par && it) par.subs = (par.subs || []).filter((s) => s != it);
               else db.cats = db.cats.filter((c) => c != it);
               armed = null;
               if (cf.ed == id) cf.ed = null;
-              if (!(await save())) return;
-              tree();
-              side();
+              await withBusy("Saving…", async () => {
+                if (!(await save())) {
+                  db.cats = JSON.parse(before) as StudioCat[];
+                  return;
+                }
+                tree();
+                side();
+              });
             } else {
               armed = id;
               tree();
@@ -1010,11 +1318,17 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
           const [b, pb] = find(n.dataset.e || "");
           if (!a || a === b) return;
           if (pa !== pb) return toast("Drag within the same level");
+          const before = JSON.stringify(db.cats);
           const arr = (pa ? pa.subs : db.cats) as ({ id: string } | StudioCat)[];
           arr.splice(arr.indexOf(a as never), 1);
           arr.splice(arr.indexOf(b as never), 0, a as never);
-          if (!(await save())) return;
-          tree();
+          await withBusy("Saving…", async () => {
+            if (!(await save())) {
+              db.cats = JSON.parse(before) as StudioCat[];
+              return;
+            }
+            tree();
+          });
         };
       });
     };
@@ -1024,7 +1338,7 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       if (!S) return;
       if (!it) {
         S.innerHTML =
-          '<div class="cd"><h4>Keep it simple</h4><p class="sub">Two levels is enough: a category, then a subcategory.</p><p class="sub">Colour, size, recipient and occasion are filters on each product, so they do not need their own categories.</p><p class="sub">Drag rows to change the order shoppers see.</p></div>';
+          '<div class="cd"><h4>Photos and order</h4><p class="sub">New categories, recipients and occasions are added on the product.</p><p class="sub">Drag rows to change the order shoppers see. Open a row to crop its photo.</p></div>';
         return;
       }
       let img = it.img || "";
@@ -1035,15 +1349,25 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
       };
       pvImg();
       if (zone)
-        dropzone(zone, async (fs) => {
-          if (fs[0]) {
+        dropzone(zone, (fs) => {
+          const file = fs[0];
+          if (!file || catBusy) return;
+          void (async () => {
+            let cropped: File;
             try {
-              img = await readImg(fs[0], 800);
-              pvImg();
+              cropped = await adjustCrop(file);
             } catch {
-              toast("Could not upload that photo");
+              return;
             }
-          }
+            await withBusy("Uploading…", async () => {
+              try {
+                img = await readImg(cropped, 800);
+                pvImg();
+              } catch {
+                toast("Could not upload that photo");
+              }
+            });
+          })();
         });
       const nm = $("#nm") as HTMLInputElement | null;
       const sl = $("#sl") as HTMLInputElement | null;
@@ -1053,33 +1377,16 @@ export function mountStudio(root: HTMLElement, db: StudioDb, initialView = "prod
         };
       const sv = $("#sv");
       if (sv)
-        sv.onclick = async () => {
-          const n = nm?.value.trim() || "";
-          if (!n) return toast("Add a name");
-          Object.assign(it, { name: n, slug: slug(sl?.value || n), img });
-          if (!(await save())) return;
-          toast("Saved");
-          tree();
-          side();
-        };
-    };
-    const add = async () => {
-      const na = $("#na") as HTMLInputElement | null;
-      const n = na?.value.trim() || "";
-      if (!n) return;
-      const c = { id: uid(), name: n, slug: slug(n), img: "", subs: [] as StudioSub[] };
-      db.cats.push(c);
-      cf.ed = c.id;
-      if (na) na.value = "";
-      if (!(await save())) return;
-      tree();
-      side();
-    };
-    const ab = $("#ab");
-    if (ab) ab.onclick = () => void add();
-    const na = $("#na") as HTMLInputElement | null;
-    if (na) na.onkeydown = (e) => {
-      if (e.key == "Enter") void add();
+        sv.onclick = () =>
+          void withBusy("Saving…", async () => {
+            const n = nm?.value.trim() || "";
+            if (!n) return toast("Add a name");
+            Object.assign(it, { name: n, slug: slug(sl?.value || n), img });
+            if (!(await save())) return;
+            toast("Saved");
+            tree();
+            side();
+          });
     };
     tree();
     side();
@@ -1338,6 +1645,8 @@ type StudioDb = {
     banner: string;
     open: boolean;
     hero: { eyebrow: string; l1: string; l2: string; sub: string; cta: string; link: string };
+    recipients: string[];
+    occasions: string[];
   };
   recs: {
     orders: Record<string, string>[];
