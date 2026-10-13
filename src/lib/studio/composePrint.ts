@@ -368,6 +368,7 @@ function blendArt(
   fabricLum: number,
   shape: PrintShape,
   box: PrintZone,
+  textPrint = false,
 ) {
   const ix = Math.max(0, Math.floor(x));
   const iy = Math.max(0, Math.floor(y));
@@ -376,12 +377,13 @@ function blendArt(
   const cloth = ctx.getImageData(ix, iy, Math.min(iw, ctx.canvas.width - ix), Math.min(ih, ctx.canvas.height - iy));
   const artCtx = art.getContext("2d", { willReadFrequently: true });
   if (!artCtx) return;
-  const ink = artCtx.getImageData(0, 0, iw, ih);
+      const ink = artCtx.getImageData(0, 0, iw, ih);
   const mask = shapeMask(iw, ih, shape, box);
   const cover = mask?.getContext("2d")?.getImageData(0, 0, iw, ih).data;
   const feather = Math.max(10, Math.round(Math.min(iw, ih) * 0.1));
   const out = cloth.data;
   const src = ink.data;
+  const lightCloth = fabricLum > 140;
   for (let py = 0; py < cloth.height; py++) {
     for (let px0 = 0; px0 < cloth.width; px0++) {
       const i = (py * iw + px0) * 4;
@@ -400,6 +402,19 @@ function blendArt(
       const cr = out[o] ?? 0;
       const cg = out[o + 1] ?? 0;
       const cb = out[o + 2] ?? 0;
+      if (textPrint) {
+        const ir = (src[i] ?? 0) / 255;
+        const ig = (src[i + 1] ?? 0) / 255;
+        const ib = (src[i + 2] ?? 0) / 255;
+        const pr = lightCloth ? cr * ir : 255 - ((255 - cr) * (1 - ir));
+        const pg = lightCloth ? cg * ig : 255 - ((255 - cg) * (1 - ig));
+        const pb = lightCloth ? cb * ib : 255 - ((255 - cb) * (1 - ib));
+        const sit = 0.9;
+        out[o] = (cr * (1 - a) + (pr * sit + cr * (1 - sit)) * a) | 0;
+        out[o + 1] = (cg * (1 - a) + (pg * sit + cg * (1 - sit)) * a) | 0;
+        out[o + 2] = (cb * (1 - a) + (pb * sit + cb * (1 - sit)) * a) | 0;
+        continue;
+      }
       const gain = Math.min(1.08, Math.max(0.9, luminance(cr, cg, cb) / Math.max(12, fabricLum)));
       const pr = (src[i] ?? 0) * gain;
       const pg = (src[i + 1] ?? 0) * gain;
@@ -548,7 +563,6 @@ export async function composePrint(opts: {
     const w = zone.w * canvas.width;
     const h = zone.h * canvas.height;
     const fabric = sampleFabric(ctx, x, y, w, h);
-    if (!opts.inkOnly) restoreCloth(ctx, x, y, w, h, fabric, local, zone);
     const areaKind = normalizeKind(area.kind);
     const wantImage = !showPlaceholder && (areaKind === "image" || areaKind === "both") && Boolean(area.imageUrl);
     const wantText = showPlaceholder || areaKind === "text" || areaKind === "both";
@@ -561,8 +575,9 @@ export async function composePrint(opts: {
       }
     }
     const line = wantText ? area.text.trim() : "";
-    if (!photo && !line) drawBlended(ctx, x, y, w, h, null, opts.placeholder.trim() || "Your design", fabric, null, local, zone);
-    else drawBlended(ctx, x, y, w, h, photo, line, fabric, photo ? cornerBackdrop(photo) : null, local, zone);
+    if (!opts.inkOnly && photo) restoreCloth(ctx, x, y, w, h, fabric, local, zone);
+    if (!photo && !line) drawBlended(ctx, x, y, w, h, null, opts.placeholder.trim() || "Your design", fabric, null, local, zone, true);
+    else drawBlended(ctx, x, y, w, h, photo, line, fabric, photo ? cornerBackdrop(photo) : null, local, zone, !photo && Boolean(line));
   }
   if (opts.inkOnly && original) keepInk(ctx, original, areas.map((area) => area.points));
   return canvas;
@@ -605,13 +620,14 @@ function drawBlended(
   backdrop: RGB | null,
   shape: PrintShape,
   box: PrintZone,
+  textPrint = false,
 ) {
   const art = document.createElement("canvas");
   art.width = Math.max(1, Math.round(w));
   art.height = Math.max(1, Math.round(h));
   const actx = art.getContext("2d");
   if (!actx) return;
-  actx.filter = "blur(0.4px)";
+  if (!textPrint) actx.filter = "blur(0.4px)";
   const ink = fabric.l > 150 ? "#2a2520" : "#f4efe8";
   const frame = contentFrame(shape.points, box, art.width, art.height);
   actx.save();
@@ -639,7 +655,7 @@ function drawBlended(
     }
   }
   actx.restore();
-  blendArt(ctx, art, x, y, photo ? backdrop : null, fabric.l, shape, box);
+  blendArt(ctx, art, x, y, photo ? backdrop : null, fabric.l, shape, box, textPrint);
 }
 
 export function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
