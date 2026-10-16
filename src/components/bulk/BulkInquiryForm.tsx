@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { BUDGET_RANGES, CUSTOMISATION_CHOICES, PACKAGING_CHOICES } from "@/lib/bulk/offer";
+import { BULK_ENQUIRY_MIN, BULK_PRICE_MOQ } from "@/lib/bulk/pricing";
+import { bulkWhatsAppHref } from "@/lib/bulk/whatsapp";
+import { WhatsAppMark } from "@/components/bulk/WhatsAppMark";
 
 const schema = z.object({
   company: z.string().trim().min(1, "Company name is required"),
@@ -11,8 +15,23 @@ const schema = z.object({
   email: z.string().trim().email("Enter a valid email"),
   phone: z.string().trim().min(10, "Enter a valid 10-digit phone number").max(15),
   productInterest: z.string().trim().max(500).optional(),
-  quantity: z.coerce.number().int().positive().optional().or(z.literal("")),
-  deadlineDate: z.string().optional(),
+  quantity: z.coerce
+    .number({ invalid_type_error: "Enter a quantity" })
+    .int()
+    .min(BULK_ENQUIRY_MIN, `Enter at least ${BULK_ENQUIRY_MIN} pieces`),
+  budget: z.string().trim().min(1, "Choose a budget range"),
+  customisation: z.array(z.string()).min(1, "Choose at least one customisation"),
+  packaging: z.array(z.string()).optional(),
+  deadlineDate: z
+    .string()
+    .min(1, "Choose a delivery date")
+    .refine((value) => {
+      const day = new Date(`${value}T00:00:00`);
+      if (Number.isNaN(day.getTime())) return false;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return day >= today;
+    }, "Choose today or a later date"),
   notes: z.string().trim().max(1000).optional(),
 });
 
@@ -23,57 +42,124 @@ const inputCls =
 const labelCls = "block text-sm font-medium text-ink mb-1";
 const errorCls = "text-xs text-red-600 mt-1";
 
-export function BulkInquiryForm() {
-  const [submitted, setSubmitted] = useState(false);
+function friendlyError(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, string[] | undefined>;
+    const first = Object.values(parsed).flat().find((msg) => typeof msg === "string" && msg.trim());
+    if (first) return first;
+  } catch {
+    /* The API already sent a sentence. */
+  }
+  return raw;
+}
+
+function daysUntil(value: string): number | null {
+  const day = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(day.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((day.getTime() - today.getTime()) / 86_400_000);
+}
+
+export function BulkInquiryForm({ whatsappPhone = "" }: { whatsappPhone?: string }) {
+  const [submitted, setSubmitted] = useState<FormValues | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [today, setToday] = useState("");
+  const wa = whatsappPhone || process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_E164 || "";
 
   const {
     register,
     handleSubmit,
+    getValues,
+    watch,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      company: "",
+      contactName: "",
+      email: "",
+      phone: "",
+      productInterest: "",
+      budget: "",
+      customisation: [],
+      packaging: ["Bulk carton"],
+      deadlineDate: "",
+      notes: "",
+    },
+  });
+
+  useEffect(() => {
+    const day = new Date();
+    const month = String(day.getMonth() + 1).padStart(2, "0");
+    const date = String(day.getDate()).padStart(2, "0");
+    setToday(`${day.getFullYear()}-${month}-${date}`);
+  }, []);
+
+  const deadline = watch("deadlineDate");
+  const soon = deadline ? daysUntil(deadline) : null;
+
+  function openWhatsApp() {
+    const href = bulkWhatsAppHref(wa, getValues());
+    if (!href) return;
+    window.open(href, "_blank", "noopener,noreferrer");
+  }
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
+    const packaging = values.packaging?.length ? values.packaging : ["Bulk carton"];
+    const customisation = `${values.customisation.join(", ")}. Packaging: ${packaging.join(", ")}`;
     try {
       const res = await fetch("/api/v1/bulk-inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          company: values.company,
+          contactName: values.contactName,
+          email: values.email,
+          phone: values.phone,
+          productInterest: values.productInterest,
+          quantity: values.quantity,
+          budget: values.budget,
+          customisation,
+          deadlineDate: values.deadlineDate,
+          notes: values.notes,
+        }),
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? "Something went wrong. Please try again.");
+        throw new Error(friendlyError(data.error ?? "Something went wrong. Please try again."));
       }
-      setSubmitted(true);
+      setSubmitted(values);
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Something went wrong.");
     }
   }
 
   if (submitted) {
-    const wa = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_E164;
+    const href = bulkWhatsAppHref(wa, {
+      ...submitted,
+      customisation: submitted.customisation,
+      packaging: submitted.packaging,
+    });
     return (
       <div className="bg-white rounded-2xl border border-sand-deep p-8 text-center">
-        <div className="text-4xl mb-4">🎉</div>
-        <h2 className="font-display text-xl text-ink mb-2">We&apos;ve got your enquiry!</h2>
+        <h2 className="font-display text-xl text-ink mb-2">We&apos;ve got your enquiry</h2>
         <p className="text-ink-muted text-sm mb-6">
-          We&apos;ll review your requirements and get back to you within 24 hours. For
-          urgent requirements, reach us directly on WhatsApp.
+          We&apos;ll review the quantity, budget, customisation, and delivery date, and reply within 24
+          hours. For a faster conversation, continue on WhatsApp.
         </p>
-        {wa && (
+        {href ? (
           <a
-            href={`https://wa.me/${wa}?text=Hi%2C+I+just+submitted+a+bulk+inquiry+on+your+website.`}
+            href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-full px-5 py-2.5 transition-colors"
+            className="inline-flex items-center gap-2 bg-[#128C7E] hover:bg-[#0d7368] text-white text-sm font-medium rounded-full px-5 py-2.5 transition-colors"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
+            <WhatsAppMark />
             Continue on WhatsApp
           </a>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -85,24 +171,25 @@ export function BulkInquiryForm() {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label className={labelCls}>
-            Company / Organisation <span className="text-red-500">*</span>
+          <label className={labelCls} htmlFor="bulk-company">
+            Company / organisation <span className="text-red-500">*</span>
           </label>
-          <input {...register("company")} className={inputCls} placeholder="Acme Corp" />
+          <input id="bulk-company" {...register("company")} className={inputCls} placeholder="Acme Corp" />
           {errors.company && <p className={errorCls}>{errors.company.message}</p>}
         </div>
         <div>
-          <label className={labelCls}>
+          <label className={labelCls} htmlFor="bulk-name">
             Your name <span className="text-red-500">*</span>
           </label>
-          <input {...register("contactName")} className={inputCls} placeholder="Priya Sharma" />
+          <input id="bulk-name" {...register("contactName")} className={inputCls} placeholder="Priya Sharma" />
           {errors.contactName && <p className={errorCls}>{errors.contactName.message}</p>}
         </div>
         <div>
-          <label className={labelCls}>
+          <label className={labelCls} htmlFor="bulk-email">
             Work email <span className="text-red-500">*</span>
           </label>
           <input
+            id="bulk-email"
             {...register("email")}
             type="email"
             className={inputCls}
@@ -111,10 +198,11 @@ export function BulkInquiryForm() {
           {errors.email && <p className={errorCls}>{errors.email.message}</p>}
         </div>
         <div>
-          <label className={labelCls}>
+          <label className={labelCls} htmlFor="bulk-phone">
             Phone <span className="text-red-500">*</span>
           </label>
           <input
+            id="bulk-phone"
             {...register("phone")}
             type="tel"
             className={inputCls}
@@ -125,38 +213,122 @@ export function BulkInquiryForm() {
       </div>
 
       <div>
-        <label className={labelCls}>Product interest</label>
+        <label className={labelCls} htmlFor="bulk-pieces">
+          Pieces you have in mind
+        </label>
         <input
+          id="bulk-pieces"
           {...register("productInterest")}
           className={inputCls}
-          placeholder="e.g. Custom mugs, branded t-shirts, desk plaques"
+          placeholder="e.g. Logo pens, photo mugs, tote bags"
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label className={labelCls}>Approx. quantity</label>
+          <label className={labelCls} htmlFor="bulk-quantity">
+            Quantity <span className="text-red-500">*</span>
+          </label>
           <input
+            id="bulk-quantity"
             {...register("quantity")}
             type="number"
-            min={25}
+            min={BULK_ENQUIRY_MIN}
             className={inputCls}
             placeholder="e.g. 100"
           />
+          {errors.quantity && <p className={errorCls}>{errors.quantity.message}</p>}
+          <p className="mt-1 text-xs text-ink-muted">
+            Listed prices start at {BULK_PRICE_MOQ}. From {BULK_ENQUIRY_MIN} we can still quote.
+          </p>
         </div>
         <div>
-          <label className={labelCls}>Required by</label>
-          <input {...register("deadlineDate")} type="date" className={inputCls} />
+          <label className={labelCls} htmlFor="bulk-budget">
+            Budget <span className="text-red-500">*</span>
+          </label>
+          <select id="bulk-budget" {...register("budget")} className={inputCls} defaultValue="">
+            <option value="" disabled>
+              Choose a range
+            </option>
+            {BUDGET_RANGES.map((range) => (
+              <option key={range} value={range}>
+                {range}
+              </option>
+            ))}
+          </select>
+          {errors.budget && <p className={errorCls}>{errors.budget.message}</p>}
         </div>
       </div>
 
+      <fieldset>
+        <legend className={labelCls}>
+          Customisation <span className="text-red-500">*</span>
+        </legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {CUSTOMISATION_CHOICES.map((choice) => (
+            <label
+              key={choice}
+              className="flex items-start gap-2 rounded-xl border border-sand-deep px-3 py-2.5 text-sm text-ink"
+            >
+              <input
+                type="checkbox"
+                value={choice}
+                {...register("customisation")}
+                className="mt-0.5"
+              />
+              <span>{choice}</span>
+            </label>
+          ))}
+        </div>
+        {errors.customisation && <p className={errorCls}>{errors.customisation.message}</p>}
+      </fieldset>
+
+      <fieldset>
+        <legend className={labelCls}>Packaging</legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {PACKAGING_CHOICES.map((choice) => (
+            <label
+              key={choice}
+              className="flex items-start gap-2 rounded-xl border border-sand-deep px-3 py-2.5 text-sm text-ink"
+            >
+              <input type="checkbox" value={choice} {...register("packaging")} className="mt-0.5" />
+              <span>{choice}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <div>
-        <label className={labelCls}>Notes / requirements</label>
+        <label className={labelCls} htmlFor="bulk-date">
+          Delivery date <span className="text-red-500">*</span>
+        </label>
+        <input
+          id="bulk-date"
+          {...register("deadlineDate")}
+          type="date"
+          min={today || undefined}
+          className={inputCls}
+        />
+        {errors.deadlineDate && <p className={errorCls}>{errors.deadlineDate.message}</p>}
+        {soon != null && soon < 14 ? (
+          <p className="mt-1 text-xs text-ink-muted">
+            That date is soon for a bulk run. We will tell you if the studio can meet it.
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-ink-muted">The date you need the order in hand.</p>
+        )}
+      </div>
+
+      <div>
+        <label className={labelCls} htmlFor="bulk-notes">
+          Anything else
+        </label>
         <textarea
+          id="bulk-notes"
           {...register("notes")}
           rows={4}
           className={inputCls}
-          placeholder="Any specific design requirements, budget, delivery location, etc."
+          placeholder="Colours, artwork notes, delivery city, or how the pieces will be handed out."
         />
       </div>
 
@@ -164,16 +336,28 @@ export function BulkInquiryForm() {
         <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{serverError}</p>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full bg-accent hover:bg-[#b06d26] disabled:opacity-60 text-white font-medium rounded-full py-3 transition-colors text-sm"
-      >
-        {isSubmitting ? "Sending…" : "Send inquiry"}
-      </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-accent hover:bg-[#b06d26] disabled:opacity-60 text-white font-medium rounded-full py-3 transition-colors text-sm"
+        >
+          {isSubmitting ? "Sending…" : "Send enquiry"}
+        </button>
+        {wa ? (
+          <button
+            type="button"
+            onClick={openWhatsApp}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#128C7E] py-3 text-sm font-medium text-[#0d7368] transition-colors hover:bg-[#128C7E]/10"
+          >
+            <WhatsAppMark />
+            WhatsApp this enquiry
+          </button>
+        ) : null}
+      </div>
 
       <p className="text-xs text-ink-muted text-center">
-        We respond within 24 hours (Mon–Sat). Minimum order: 25 units.
+        We respond within 24 hours, Monday to Saturday. Listed prices start at {BULK_PRICE_MOQ} pieces.
       </p>
     </form>
   );

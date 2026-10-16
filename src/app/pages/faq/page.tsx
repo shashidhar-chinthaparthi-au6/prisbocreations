@@ -34,7 +34,7 @@ const FAQ = [
   },
   {
     q: "Can I order in bulk for corporate gifting or events?",
-    a: "Absolutely! We specialise in bulk personalised orders for weddings, corporate gifting, school events, and more. Minimum quantities and pricing vary by product. Fill in our Bulk & Corporate Inquiry form and we’ll get back to you within 24 hours.",
+    a: "Yes. The bulk order page lists unit prices at 50, 100, 250, and 500 pieces, with personalisation, logo printing, packaging, minimums, and delivery times. You can download the catalogue or send an enquiry, and we reply within 24 hours.",
   },
   {
     q: "What is your return and refund policy?",

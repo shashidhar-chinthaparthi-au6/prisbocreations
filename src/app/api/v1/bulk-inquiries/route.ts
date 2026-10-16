@@ -12,8 +12,13 @@ const createSchema = z.object({
   email: z.string().trim().email("Valid email required"),
   phone: z.string().trim().min(10, "Valid phone required").max(15),
   productInterest: z.string().trim().max(500).optional(),
-  quantity: z.coerce.number().int().positive().optional(),
-  deadlineDate: z.string().optional(),
+  quantity: z.coerce.number().int().min(25, "Minimum quantity is 25"),
+  budget: z.string().trim().min(1, "Budget required").max(80),
+  customisation: z.string().trim().min(1, "Customisation required").max(500),
+  deadlineDate: z
+    .string()
+    .min(1, "Delivery date required")
+    .refine((value) => !Number.isNaN(new Date(value).getTime()), "Delivery date required"),
   notes: z.string().trim().max(1000).optional(),
 });
 
@@ -46,7 +51,9 @@ export async function POST(req: Request) {
     phone: d.phone,
     productInterest: d.productInterest,
     quantity: d.quantity,
-    deadlineDate: d.deadlineDate ? new Date(d.deadlineDate) : undefined,
+    budget: d.budget,
+    customisation: d.customisation,
+    deadlineDate: new Date(d.deadlineDate),
     notes: d.notes,
   });
 

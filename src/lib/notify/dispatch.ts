@@ -486,6 +486,8 @@ export async function notifyBulkInquiry(inquiry: {
   phone: string;
   productInterest?: string;
   quantity?: number;
+  budget?: string;
+  customisation?: string;
   deadlineDate?: Date;
   notes?: string;
   _id: { toString(): string };
@@ -500,6 +502,8 @@ export async function notifyBulkInquiry(inquiry: {
     phone: inquiry.phone,
     productInterest: inquiry.productInterest,
     quantity: inquiry.quantity,
+    budget: inquiry.budget,
+    customisation: inquiry.customisation,
     deadlineDate: inquiry.deadlineDate?.toLocaleDateString("en-IN"),
     notes: inquiry.notes,
     adminInboxUrl: `${baseUrl}/admin/bulk-inquiries`,

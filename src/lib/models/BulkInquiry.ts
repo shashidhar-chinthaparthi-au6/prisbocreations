@@ -7,6 +7,8 @@ export interface IBulkInquiry extends Document {
   phone: string;
   productInterest?: string;
   quantity?: number;
+  budget?: string;
+  customisation?: string;
   deadlineDate?: Date;
   notes?: string;
   status: "new" | "contacted" | "quoted" | "won" | "lost";
@@ -22,6 +24,8 @@ const BulkInquirySchema = new Schema<IBulkInquiry>({
   phone: { type: String, required: true, trim: true },
   productInterest: { type: String, trim: true },
   quantity: { type: Number, min: 1 },
+  budget: { type: String, trim: true, maxlength: 80 },
+  customisation: { type: String, trim: true, maxlength: 500 },
   deadlineDate: { type: Date },
   notes: { type: String, trim: true, maxlength: 1000 },
   status: {

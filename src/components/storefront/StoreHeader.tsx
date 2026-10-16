@@ -292,7 +292,7 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
               Our story
             </Link>
             <Link href="/bulk" className={pathname.startsWith("/bulk") ? pillActive : pillIdle}>
-              Custom orders
+              Bulk orders
             </Link>
           </nav>
 
@@ -625,6 +625,13 @@ export function StoreHeader({ assistantEnabled = true }: { assistantEnabled?: bo
 
                 {/* Account / utility links */}
                 <div className="mt-5 space-y-1 border-t border-[var(--brand-border)] pt-4">
+                  <Link
+                    href="/bulk"
+                    className="block rounded-lg py-2.5 text-[14px] text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Bulk orders
+                  </Link>
                   <Link
                     href="/track"
                     className="block rounded-lg py-2.5 text-[14px] text-[var(--brand-ink)] hover:text-[var(--brand-amber-dark)]"

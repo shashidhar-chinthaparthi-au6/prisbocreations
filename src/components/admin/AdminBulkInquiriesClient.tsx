@@ -10,15 +10,18 @@ type Inquiry = {
   phone: string;
   productInterest?: string;
   quantity?: number;
+  budget?: string;
+  customisation?: string;
   deadlineDate?: string;
   notes?: string;
-  status: "new" | "contacted" | "won" | "lost";
+  status: "new" | "contacted" | "quoted" | "won" | "lost";
   createdAt: string;
 };
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
   contacted: "bg-yellow-100 text-yellow-800",
+  quoted: "bg-purple-100 text-purple-800",
   won: "bg-green-100 text-green-800",
   lost: "bg-gray-100 text-gray-600",
 };
@@ -90,6 +93,7 @@ export function AdminBulkInquiriesClient() {
               >
                 <option value="new">New</option>
                 <option value="contacted">Contacted</option>
+                <option value="quoted">Quoted</option>
                 <option value="won">Won</option>
                 <option value="lost">Lost</option>
               </select>
@@ -118,12 +122,24 @@ export function AdminBulkInquiriesClient() {
             {inq.quantity && (
               <div>
                 <p className="text-xs text-ink-muted mb-0.5">Quantity</p>
-                <p className="text-ink">{inq.quantity} units</p>
+                <p className="text-ink">{inq.quantity} pieces</p>
+              </div>
+            )}
+            {inq.budget && (
+              <div>
+                <p className="text-xs text-ink-muted mb-0.5">Budget</p>
+                <p className="text-ink">{inq.budget}</p>
+              </div>
+            )}
+            {inq.customisation && (
+              <div className="col-span-2">
+                <p className="text-xs text-ink-muted mb-0.5">Customisation</p>
+                <p className="text-ink">{inq.customisation}</p>
               </div>
             )}
             {inq.deadlineDate && (
               <div>
-                <p className="text-xs text-ink-muted mb-0.5">Required by</p>
+                <p className="text-xs text-ink-muted mb-0.5">Delivery date</p>
                 <p className="text-ink">
                   {new Date(inq.deadlineDate).toLocaleDateString("en-IN")}
                 </p>

@@ -129,7 +129,7 @@ export default async function HomePage() {
                 Gifting for your whole team?
               </h2>
               <p className="mt-3 max-w-[44ch] text-[15px] leading-relaxed text-white/60">
-                Bulk personalised orders for offices, weddings, and events — from 25 pieces. Studio quality at volume pricing.
+                Bulk personalised orders for offices, weddings, and events. Volume prices from 50 pieces.
               </p>
             </div>
             <div className="shrink-0">
